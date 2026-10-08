@@ -96,6 +96,14 @@ export class QoS {
   get avoidRosNameSpaceConventions() { return this.#avoidRosNameSpaceConventions; }
   set avoidRosNameSpaceConventions(v: boolean) { this.#avoidRosNameSpaceConventions = Boolean(v); }
 
+  clone(): QoS {
+    const q = new QoS(this.#history, this.#depth, this.#reliability, this.#durability, this.#liveliness, this.#avoidRosNameSpaceConventions);
+    q.deadline = this.deadline;
+    q.lifespan = this.lifespan;
+    q.livelinessLeaseDuration = this.livelinessLeaseDuration;
+    return q;
+  }
+
   /** Packs into the shim's int64[9] layout. */
   toNative(): BigInt64Array {
     return BigInt64Array.from([

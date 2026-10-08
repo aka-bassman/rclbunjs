@@ -2,6 +2,7 @@
 import type { Pointer } from "bun:ffi";
 import { OperationError } from "./errors.ts";
 import type { QoS } from "./qos.ts";
+import type { QoSOverridingOptions } from "./qos_overriding_options.ts";
 
 /** Converts typed arrays to plain arrays (rclnodejs 'plain' mode / enableTypedArray:false). */
 export function toPlain(v: unknown): unknown {
@@ -46,6 +47,8 @@ export interface EntityOptions {
    * message). Default false.
    */
   zeroCopy?: boolean;
+  /** Publishers/subscriptions: declare `qos_overrides.*` parameters that can override the QoS. */
+  qosOverridingOptions?: QoSOverridingOptions;
   [k: string]: unknown;
 }
 

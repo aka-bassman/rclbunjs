@@ -38,7 +38,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Area | Supported |
 |---|---|
 | Context/Node | `init(argv)` with `--ros-args` (remapping, `-p`, `--params-file`), namespaces, domain id, node args |
-| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, typed arrays / `plain` / `json` modes, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration) |
+| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, `QoSOverridingOptions` (`qos_overrides.*` parameters), typed arrays / `plain` / `json` modes, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration) |
 | Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers); service introspection via `configureIntrospection` (Jazzy+) |
 | Actions | `ActionClient` / `ActionServer` (feedback, cancel, result, goal accept/reject), wire-compatible with rclcpp/rclpy |
 | Parameters | declare/get/set/undeclare, descriptors (read-only, ranges), on/pre/post-set callbacks, CLI and YAML overrides, `/parameter_events`, the standard parameter services, `ParameterClient`, `ParameterEventHandler`, `ParameterWatcher` |

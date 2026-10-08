@@ -24,6 +24,7 @@ import type { EventCallbacks } from "./event_handler.ts";
 import { Logging } from "./logging.ts";
 import { Publisher } from "./publisher.ts";
 import { QoS } from "./qos.ts";
+import { applyQoSOverrides } from "./qos_overriding_options.ts";
 import { ServiceResponse, Service, type ServiceRequestHandler } from "./service.ts";
 import { Subscription, type SubscriptionCallback } from "./subscription.ts";
 import { ObservableSubscription } from "./observable_subscription.ts";
@@ -253,6 +254,14 @@ export class Node {
     return { ...Node.getDefaultOptions(), ...(options ?? {}) };
   }
 
+  // Publisher/subscription options with `qos_overrides.*` parameters applied.
+  #topicOptions(kind: "publisher" | "subscription", topic: string, options: EntityOptions | undefined): EntityOptions {
+    const opts = this.#entityOptions(options);
+    if (!opts.qosOverridingOptions) return opts;
+    const qos = QoS.from(opts.qos);
+    return { ...opts, qos: applyQoSOverrides(kind, this, this.resolveTopicName(topic), qos, opts.qosOverridingOptions) };
+  }
+
   #added(): void {
     this.#executor.notify();
   }
@@ -264,7 +273,7 @@ export class Node {
     eventCallbacks?: EventCallbacks,
   ): Publisher<T> {
     this.#assertAlive();
-    const p = new Publisher<T>(this.handle, this.#logger.name, msgType(typeClass), topic, this.#entityOptions(options), eventCallbacks);
+    const p = new Publisher<T>(this.handle, this.#logger.name, msgType(typeClass), topic, this.#topicOptions("publisher", topic, options), eventCallbacks);
     this.#publishers.add(p);
     if (p._events.length) this.#added();
     return p;
@@ -300,7 +309,7 @@ export class Node {
     this.#assertAlive();
     const [options, callback] = typeof optionsOrCb === "function" ? [undefined, optionsOrCb] : [optionsOrCb, cb];
     if (typeof callback !== "function") throw new TypeValidationError("subscription callback must be a function");
-    const s = new Subscription<T>(this.handle, this.#logger.name, msgType(typeClass), topic, this.#entityOptions(options), callback, eventCallbacks);
+    const s = new Subscription<T>(this.handle, this.#logger.name, msgType(typeClass), topic, this.#topicOptions("subscription", topic, options), callback, eventCallbacks);
     s._quiesce = () => this.#executor.quiesce();
     this.#subscriptions.add(s);
     this.#added();

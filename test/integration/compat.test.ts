@@ -180,3 +180,54 @@ describe("action graph", () => {
     other.destroy();
   });
 });
+
+describe("QoS overriding options", () => {
+  const { QoSOverridingOptions, QoSPolicyKind, ReliabilityPolicy, Parameter, ParameterType } = rclbun;
+
+  test("qos_overrides.* parameters override publisher and subscription QoS", () => {
+    const n = rclbun.createNode(
+      "qos_override_node",
+      "",
+      undefined,
+      {
+        parameterOverrides: [
+          new Parameter("qos_overrides./qos_topic.publisher.depth", ParameterType.PARAMETER_INTEGER, 42n),
+          new Parameter("qos_overrides./qos_topic.publisher.reliability", ParameterType.PARAMETER_STRING, "best_effort"),
+        ],
+      },
+      ["--ros-args", "-p", "qos_overrides./qos_topic.subscription_fast.depth:=7"],
+    );
+    const pub = n.createPublisher("std_msgs/msg/String", "qos_topic", { qosOverridingOptions: QoSOverridingOptions.withDefaultPolicies() });
+    expect(pub.qos.depth).toBe(42);
+    expect(pub.qos.reliability).toBe(ReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+    expect(n.getParameter("qos_overrides./qos_topic.publisher.history").value).toBe("keep_last");
+    // read-only once declared
+    expect(n.setParameter(new Parameter("qos_overrides./qos_topic.publisher.depth", ParameterType.PARAMETER_INTEGER, 1n)).successful).toBe(false);
+
+    const sub = n.createSubscription(
+      "std_msgs/msg/String",
+      "qos_topic",
+      { qosOverridingOptions: new QoSOverridingOptions([QoSPolicyKind.DEPTH], { entityId: "fast" }) },
+      () => {},
+    );
+    expect(sub.qos.depth).toBe(7);
+    expect(sub.qos.reliability).toBe(ReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE);
+
+    // without options nothing is declared or overridden
+    const plain = n.createPublisher("std_msgs/msg/String", "other_topic");
+    expect(plain.qos.depth).toBe(10);
+    expect(n.hasParameter("qos_overrides./other_topic.publisher.depth")).toBe(false);
+    n.destroy();
+  });
+
+  test("validation callback can reject the final QoS", () => {
+    const n = rclbun.createNode("qos_override_reject", "", undefined, {
+      parameterOverrides: [new Parameter("qos_overrides./strict_topic.publisher.depth", ParameterType.PARAMETER_INTEGER, 1n)],
+    });
+    const opts = QoSOverridingOptions.withDefaultPolicies({
+      callback: (q) => (q.depth < 5 ? { successful: false, reason: "depth too small" } : { successful: true }),
+    });
+    expect(() => n.createPublisher("std_msgs/msg/String", "strict_topic", { qosOverridingOptions: opts })).toThrow("depth too small");
+    n.destroy();
+  });
+});

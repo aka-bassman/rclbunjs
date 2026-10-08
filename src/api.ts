@@ -31,6 +31,8 @@ export { TypeDescriptionService } from "./core/type_description_service.ts";
 export { Timer, GuardCondition, Rate } from "./core/timer.ts";
 export type { TimerInfo } from "./core/timer.ts";
 export { QoS, HistoryPolicy, ReliabilityPolicy, DurabilityPolicy, LivelinessPolicy, QoSPolicyKind } from "./core/qos.ts";
+export { QoSOverridingOptions } from "./core/qos_overriding_options.ts";
+export type { QoSOverridingResult } from "./core/qos_overriding_options.ts";
 export { Clock, ROSClock, ClockChange, ClockEvent } from "./core/clock.ts";
 export type { ClockCallbackObject, JumpInfo } from "./core/clock.ts";
 export { Time, Duration, ClockType } from "./core/time.ts";
