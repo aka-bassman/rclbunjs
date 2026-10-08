@@ -1,7 +1,7 @@
 // RSS growth per kind of entity churn (create + destroy), to compare RMWs and
 // client libraries; see churn_rss.py for the same with rclpy.
 //   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh bun test/soak/churn_rss.ts
-//   KINDS=client,node scripts/docker-test.sh bun test/soak/churn_rss.ts
+//   SOAK_KINDS=client,node scripts/docker-test.sh bun test/soak/churn_rss.ts
 import * as rclbun from "../../src/index.ts";
 await rclbun.init();
 const node = rclbun.createNode("churn");
@@ -21,7 +21,7 @@ async function kind(name: string, n: number, fn: (i: number) => Promise<void> | 
   }
   console.log(`${name.padEnd(16)} x${n} per round, rss MB: ${out.join(" / ")}`);
 }
-const only = process.env.KINDS?.split(",");
+const only = process.env.SOAK_KINDS?.split(",");
 const want = (k: string) => !only || only.includes(k);
 if (want("pubsub")) await kind("pub+sub", 1000, (i) => {
   const s = node.createSubscription("std_msgs/msg/String", `c/t${i % 7}`, () => {});
