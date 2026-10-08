@@ -11,7 +11,7 @@ A ROS 2 client library for [Bun](https://bun.sh), written in TypeScript on top o
   `rcl_publish/take_serialized_message`; services use an `rmw_serialize/deserialize` bridge.
 
 Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on ROS 2 Humble, Jazzy
-(Fast DDS and Cyclone DDS) and Kilted, on arm64 and x86_64.
+(Fast DDS and Cyclone DDS) and Kilted on arm64; x86_64 has been tested under emulation.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on
 ## Quick start
 
 ```ts
-import * as rclbun from "rclbunjs";
+import * as rclbun from "rclbunjs"; // or: import rclbun from "rclbunjs"
 
 await rclbun.init();
 const node = rclbun.createNode("talker");
@@ -58,6 +58,9 @@ Messages are plain objects. Missing fields get their default values.
 
 - `int64`/`uint64` become `bigint`.
 - Numeric arrays decode to TypedArrays. Choose `serializationMode: "plain"` to get plain arrays instead.
+- As in rclnodejs, a bare value stands for the `data` field: `pub.publish("hello")` on a `std_msgs/msg/String` topic.
+- `{ validateMessages: true }` (publishers) and `{ validateRequests: true }` (clients) check messages against the
+  interface definition before sending, with field-level errors.
 
 Interface definitions are discovered at runtime through `AMENT_PREFIX_PATH`, so custom packages from an
 overlay workspace work as soon as the workspace is sourced.
@@ -103,6 +106,7 @@ scripts/docker-test.sh             # integration tests in a ROS 2 container (rcl
 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh
 ROS_DISTRO=humble scripts/docker-test.sh
 bunx tsc --noEmit && bunx tsc --noEmit -p test/types
+SOAK_MINUTES=60 scripts/docker-test.sh bun test/soak/soak.ts   # long-running stability / memory trend
 ```
 
 `test/interop/gen_golden.py` regenerates the CDR golden vectors with rclpy.
