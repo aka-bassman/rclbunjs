@@ -17,6 +17,7 @@ import {
 } from "./interfaces/registry.ts";
 import { listInterfacePackages, listInterfaces } from "./interfaces/discovery.ts";
 import type { DecodeOptions } from "./interfaces/cdr.ts";
+import { spawn, type ChildProcess } from "node:child_process";
 
 export { Context } from "./core/context.ts";
 export { Node, NodeOptions } from "./core/node.ts";
@@ -246,6 +247,27 @@ export function expandTopicName(topic: string, nodeName: string, namespace = "/"
   return t;
 }
 
+
+function ros2(verb: "run" | "launch", pkg: string, target: string, args: string[]): Promise<{ process: ChildProcess }> {
+  return new Promise((resolve, reject) => {
+    if (typeof pkg !== "string" || !pkg.trim()) return reject(new Error("Package name must be a non-empty string"));
+    if (typeof target !== "string" || !target.trim()) return reject(new Error(`${verb === "run" ? "Executable" : "Launch file"} name must be a non-empty string`));
+    if (!Array.isArray(args)) return reject(new Error("Arguments must be an array"));
+    const child = spawn("ros2", [verb, pkg, target, ...args]);
+    child.on("error", (e) => reject(new Error(`Failed to start ros2 ${verb}: ${e.message}`)));
+    child.on("spawn", () => resolve({ process: child }));
+  });
+}
+
+/** Starts `ros2 run <pkg> <executable> ...args`; resolves once the process has spawned. */
+export function ros2Run(packageName: string, executableName: string, args: string[] = []): Promise<{ process: ChildProcess }> {
+  return ros2("run", packageName, executableName, args);
+}
+
+/** Starts `ros2 launch <pkg> <launch file> ...args`; resolves once the process has spawned. */
+export function ros2Launch(packageName: string, launchFile: string, args: string[] = []): Promise<{ process: ChildProcess }> {
+  return ros2("launch", packageName, launchFile, args);
+}
 
 /** Installed interface packages / interfaces (from the ament index). */
 export const interfaces = { packages: listInterfacePackages, list: listInterfaces };

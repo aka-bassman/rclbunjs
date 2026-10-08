@@ -286,6 +286,14 @@ describe("rclnodejs shorthands and validation hooks", () => {
     expect(((await cli.sendRequestAsync({ a: 1n, b: 2n }, { timeout: 5000 })) as any).sum).toBe(3n);
   });
 
+  test("ros2Run / ros2Launch spawn the ros2 CLI", async () => {
+    const { process: p } = await rclbun.ros2Run("rclbunjs_no_such_pkg", "nothing");
+    const code = await new Promise<number | null>((r) => p.on("exit", r));
+    expect(code).not.toBe(0);
+    await expect(rclbun.ros2Launch("", "x.launch.py")).rejects.toThrow("Package name");
+    await expect(rclbun.ros2Run("pkg", "exe", "nope" as any)).rejects.toThrow("Arguments must be an array");
+  }, 30000);
+
   test("node, context and logging helpers", () => {
     expect(node.getParameterTypes(["use_sim_time", "nope"])).toEqual([rclbun.ParameterType.PARAMETER_BOOL]);
     expect(rclbun.Context.defaultContext().isOk).toBe(true);
