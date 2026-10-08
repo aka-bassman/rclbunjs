@@ -30,3 +30,30 @@ ac.sendGoal({ order: 5 }, (fb) => fb.sequence).then((gh) => gh.getResult()).then
 // unknown names still compile (untyped)
 node.createPublisher("my_pkg/msg/NotGenerated", "x").publish({ anything: 1 });
 void sum;
+
+// observable subscriptions and waitForMessage are typed from the type name
+const obs = node.createObservableSubscription("std_msgs/msg/String", "chatter");
+obs.observable.subscribe((m) => m.data.toUpperCase());
+(async () => {
+  for await (const m of obs) {
+    const s: string = m.data;
+    void s;
+  }
+  const scan = await rclbun.waitForMessage("sensor_msgs/msg/LaserScan", node, "scan", { timeout: 1000, subscriptionOptions: { zeroCopy: true } });
+  const r: Float32Array | number[] = scan.ranges;
+  void r;
+})();
+
+// validation, introspection and QoS overriding
+const result: rclbun.MessageValidationResult = rclbun.validateMessage({ linear: { x: 1 } }, "geometry_msgs/msg/Twist");
+void result.valid;
+const srv = node.createService("example_interfaces/srv/AddTwoInts", "add2", (req) => ({ sum: req.a }));
+srv.configureIntrospection(node.getClock(), rclbun.QoS.profileSystemDefault, rclbun.ServiceIntrospectionStates.CONTENTS);
+node.createPublisher("std_msgs/msg/String", "t", { qosOverridingOptions: rclbun.QoSOverridingOptions.withDefaultPolicies() });
+node.getClock().addClockCallback({ _post_callback: (j) => j.delta + 1n }, true, 1n, 0n);
+
+// default export carries the API
+import rclbunDefault from "rclbunjs";
+rclbunDefault.createNode("n").createPublisher("std_msgs/msg/String", "t").publish({ data: "x" });
+// @ts-expect-error data must be a string
+rclbunDefault.createNode("n").createPublisher("std_msgs/msg/String", "t").publish({ data: 1 });

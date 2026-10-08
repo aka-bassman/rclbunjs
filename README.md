@@ -10,8 +10,8 @@ A ROS 2 client library for [Bun](https://bun.sh), written in TypeScript on top o
 - Messages cross the FFI boundary as CDR bytes, handled by a built-in codec. Topics use
   `rcl_publish/take_serialized_message`; services use an `rmw_serialize/deserialize` bridge.
 
-Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on ROS 2 Jazzy
-(Fast DDS and Cyclone DDS).
+Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on ROS 2 Humble, Jazzy
+(Fast DDS and Cyclone DDS) and Kilted, on arm64 and x86_64.
 
 ## Requirements
 
