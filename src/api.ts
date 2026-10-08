@@ -16,6 +16,7 @@ import {
   type TypeName,
 } from "./interfaces/registry.ts";
 import { listInterfacePackages, listInterfaces } from "./interfaces/discovery.ts";
+import type { DecodeOptions } from "./interfaces/cdr.ts";
 
 export { Context } from "./core/context.ts";
 export { Node, NodeOptions } from "./core/node.ts";
@@ -99,6 +100,7 @@ export * from "./core/errors.ts";
 export { toJSONSafe, toJSONString } from "./core/entity.ts";
 export { getMessageType, getServiceType, getActionType } from "./interfaces/registry.ts";
 export type { MessageType, ServiceType, ActionType, TypeName } from "./interfaces/registry.ts";
+export type { DecodeOptions } from "./interfaces/cdr.ts";
 
 /** Initializes `context` (default context) with ROS arguments from `argv`. */
 export async function init(context: Context = Context.defaultContext(), argv: string[] = process.argv): Promise<void> {
@@ -223,8 +225,9 @@ export function serializeMessage(msg: unknown, type: TypeName): Uint8Array {
   return getMessageType(type).encode(msg);
 }
 
-export function deserializeMessage<T = any>(bytes: Uint8Array, type: TypeName): T {
-  return getMessageType(type).decode(bytes);
+/** Decodes CDR bytes; with `{ zeroCopy: true }` numeric arrays are views into `bytes`. */
+export function deserializeMessage<T = any>(bytes: Uint8Array, type: TypeName, options?: DecodeOptions): T {
+  return getMessageType(type).decode(bytes, options);
 }
 
 export function isTopicOrServiceHidden(name: string): boolean {

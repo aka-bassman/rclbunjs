@@ -108,3 +108,52 @@ describe("registry", () => {
     });
   });
 });
+
+describe("codec options and buffers", () => {
+  test("zeroCopy returns views into the input where alignment allows", () => {
+    const mt = getMessageType("sensor_msgs/msg/LaserScan");
+    const ranges = Float32Array.from({ length: 50 }, (_, i) => i * 0.5);
+    const bytes = mt.encode({ header: { frame_id: "laser" }, ranges, intensities: new Float32Array(3) });
+    const copy = mt.decode(bytes);
+    const view = mt.decode(bytes, { zeroCopy: true });
+    expect(Array.from(view.ranges)).toEqual(Array.from(ranges));
+    expect(Array.from(view.ranges)).toEqual(Array.from(copy.ranges));
+    expect(view.ranges.buffer).toBe(bytes.buffer);
+    expect(copy.ranges.buffer).not.toBe(bytes.buffer);
+
+    // misaligned input: falls back to copies with the same values
+    const shifted = new Uint8Array(bytes.length + 1).subarray(1);
+    shifted.set(bytes);
+    const v2 = mt.decode(shifted, { zeroCopy: true });
+    expect(Array.from(v2.ranges)).toEqual(Array.from(ranges));
+    expect(v2.ranges.buffer).not.toBe(shifted.buffer);
+  });
+
+  test("uint8 arrays are always views with zeroCopy", () => {
+    const mt = getMessageType("sensor_msgs/msg/Image");
+    const data = Uint8Array.from({ length: 1000 }, (_, i) => i & 255);
+    const bytes = mt.encode({ encoding: "mono8", width: 1000, height: 1, step: 1000, data });
+    const m = mt.decode(bytes, { zeroCopy: true });
+    expect(m.data.buffer).toBe(bytes.buffer);
+    expect(m.data).toEqual(data);
+  });
+
+  test("encoding messages of growing and shrinking size", () => {
+    const mt = getMessageType("sensor_msgs/msg/JointState");
+    for (const n of [0, 1, 300, 2, 5000, 0, 64]) {
+      const msg = { name: Array.from({ length: n }, (_, i) => `joint_${i}`), position: Float64Array.from({ length: n }, (_, i) => i) };
+      const out = mt.decode(mt.encode(msg));
+      expect(out.name).toEqual(msg.name);
+      expect(Array.from(out.position)).toEqual(Array.from(msg.position));
+    }
+  });
+
+  test("truncated input throws", () => {
+    const mt = getMessageType("std_msgs/msg/String");
+    const bytes = mt.encode({ data: "a fairly long string value" });
+    expect(() => mt.decode(bytes.subarray(0, 12))).toThrow();
+    const scan = getMessageType("sensor_msgs/msg/LaserScan");
+    const sb = scan.encode({ ranges: new Float32Array(100) });
+    expect(() => scan.decode(sb.subarray(0, sb.length - 40))).toThrow();
+  });
+});

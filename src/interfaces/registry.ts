@@ -4,7 +4,7 @@ import type { MessageDefinition } from "@foxglove/message-definition";
 import { parse as parseMsg } from "@foxglove/rosmsg";
 import { parseRos2idl } from "@foxglove/ros2idl-parser";
 import type { Pointer } from "bun:ffi";
-import { buildCodec } from "./cdr.ts";
+import { buildCodec, type DecodeOptions } from "./cdr.ts";
 import { readInterface, type InterfaceKind } from "./discovery.ts";
 import { actionTypeSupport, messageTypeSupport, serviceTypeSupport } from "./typesupport.ts";
 import { InterfaceNotFoundError, TypeValidationError } from "../core/errors.ts";
@@ -77,7 +77,7 @@ export interface MessageType {
   readonly definitions: MessageDefinition[];
   readonly constants: Record<string, unknown>;
   encode(msg: unknown): Uint8Array;
-  decode(bytes: Uint8Array): any;
+  decode(bytes: Uint8Array, options?: DecodeOptions): any;
   /** A fresh object filled with default values. */
   create(): any;
   typeSupport(): Pointer;

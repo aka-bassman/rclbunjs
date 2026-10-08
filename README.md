@@ -67,6 +67,11 @@ const msg = rclbun.createMessageObject("sensor_msgs/msg/JointState"); // default
 const bytes = rclbun.serializeMessage({ data: "x" }, "std_msgs/msg/String"); // CDR
 ```
 
+The codec compiles each message type into straight-line JavaScript. For large numeric arrays (images, point
+clouds, scans), `deserializeMessage(bytes, type, { zeroCopy: true })` and the subscription option
+`{ zeroCopy: true }` return the arrays as views into one buffer per message instead of separate copies
+(`array.buffer` is then the whole message). `bun benchmark/codec.ts` measures the codec without ROS.
+
 ## Typed messages
 
 Generate declarations for the interfaces installed in your environment:

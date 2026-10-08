@@ -28,6 +28,7 @@ export interface ContentFilter {
 
 export type SubscriptionCallback<T> = (msg: T, info?: MessageInfo) => void;
 
+const ZERO_COPY = { zeroCopy: true };
 const OUT = new BigUint64Array(1);
 const INFO = new BigInt64Array(5);
 // Messages drained per wake-up before yielding back to the event loop.
@@ -125,7 +126,9 @@ export class Subscription<T = any> extends Entity implements Waitable {
       const n = Number(checkRc(lib.rb_sub_take(this.handle, ptr(OUT)), `take on ${this.topic}`));
       if (n === 0) return;
       const view = new Uint8Array(toArrayBuffer(Number(OUT[0]) as Pointer, 0, n));
-      const msg = this.isRaw ? view.slice() : convertForDelivery(this.typeClass.decode(view), this.options);
+      const msg = this.isRaw
+        ? view.slice()
+        : convertForDelivery(this.options.zeroCopy ? this.typeClass.decode(view.slice(), ZERO_COPY) : this.typeClass.decode(view), this.options);
       if (this.#wantsInfo) {
         lib.rb_sub_last_info(this.handle, ptr(INFO));
         this.#callback(msg, new MessageInfo(INFO[0]!, INFO[1]!, INFO[2]!, INFO[3]!, INFO[4] === 1n));

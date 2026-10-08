@@ -40,6 +40,12 @@ export interface EntityOptions {
   enableTypedArray?: boolean;
   isRaw?: boolean;
   serializationMode?: SerializationMode;
+  /**
+   * Subscriptions: copy each message once and decode numeric arrays as views
+   * into that copy (faster for large arrays; `array.buffer` is then the whole
+   * message). Default false.
+   */
+  zeroCopy?: boolean;
   [k: string]: unknown;
 }
 

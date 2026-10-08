@@ -1,33 +1,43 @@
 // CDR (XCDR1, little endian) codec for ROS 2 messages, compatible with the
-// rmw_fastrtps serialization used by rcl_*_serialized_message.
+// rmw serialization used by rcl_*_serialized_message.
 //
 // JS representation (mirrors rclnodejs):
 //   int64/uint64 -> bigint; other numbers -> number; bool -> boolean;
 //   string/wstring -> string; numeric primitive arrays -> TypedArray (except
 //   int64/uint64/bool/string, which are plain arrays); nested -> plain objects.
+//
+// Every struct is compiled (new Function) into straight-line read / write /
+// create functions; nested structs and arrays call each other's functions.
 import type { MessageDefinition, MessageDefinitionField } from "@foxglove/message-definition";
 import { RangeValidationError, TypeValidationError } from "../core/errors.ts";
 
 const HEADER = 4; // encapsulation: 00 01 00 00 (CDR_LE)
 
-type TypedArrayCtor =
-  | Uint8ArrayConstructor
-  | Int8ArrayConstructor
-  | Int16ArrayConstructor
-  | Uint16ArrayConstructor
-  | Int32ArrayConstructor
-  | Uint32ArrayConstructor
-  | Float32ArrayConstructor
-  | Float64ArrayConstructor;
-
 interface Prim {
   size: number;
-  read(dv: DataView, o: number): unknown;
-  write(dv: DataView, o: number, v: unknown): void;
-  zero: unknown;
-  typed?: TypedArrayCtor;
-  coerce(v: unknown, field: string): unknown;
+  /** DataView getter/setter suffix (getInt32 / setInt32) */
+  dv: string;
+  /** TypedArray constructor name used for arrays of this type */
+  typed?: string;
+  kind: "bool" | "number" | "bigint";
 }
+
+const PRIMS: Record<string, Prim> = {
+  bool: { size: 1, dv: "Uint8", kind: "bool" },
+  int8: { size: 1, dv: "Int8", typed: "Int8Array", kind: "number" },
+  uint8: { size: 1, dv: "Uint8", typed: "Uint8Array", kind: "number" },
+  int16: { size: 2, dv: "Int16", typed: "Int16Array", kind: "number" },
+  uint16: { size: 2, dv: "Uint16", typed: "Uint16Array", kind: "number" },
+  int32: { size: 4, dv: "Int32", typed: "Int32Array", kind: "number" },
+  uint32: { size: 4, dv: "Uint32", typed: "Uint32Array", kind: "number" },
+  float32: { size: 4, dv: "Float32", typed: "Float32Array", kind: "number" },
+  float64: { size: 8, dv: "Float64", typed: "Float64Array", kind: "number" },
+  int64: { size: 8, dv: "BigInt64", kind: "bigint" },
+  uint64: { size: 8, dv: "BigUint64", kind: "bigint" },
+};
+PRIMS.byte = PRIMS.uint8!;
+PRIMS.octet = PRIMS.uint8!;
+PRIMS.char = PRIMS.uint8!;
 
 const num = (v: unknown, field: string): number => {
   const n = typeof v === "bigint" ? Number(v) : (v as number);
@@ -40,28 +50,8 @@ const big = (v: unknown, field: string): bigint => {
   if (typeof v === "string" && /^-?\d+$/.test(v)) return BigInt(v);
   throw new TypeValidationError(`field '${field}' expects an integer (bigint), got ${String(v)}`);
 };
-
-const PRIMS: Record<string, Prim> = {
-  bool: {
-    size: 1, zero: false,
-    read: (dv, o) => dv.getUint8(o) !== 0,
-    write: (dv, o, v) => dv.setUint8(o, v ? 1 : 0),
-    coerce: (v) => Boolean(v),
-  },
-  int8: { size: 1, zero: 0, typed: Int8Array, read: (dv, o) => dv.getInt8(o), write: (dv, o, v) => dv.setInt8(o, v as number), coerce: num },
-  uint8: { size: 1, zero: 0, typed: Uint8Array, read: (dv, o) => dv.getUint8(o), write: (dv, o, v) => dv.setUint8(o, v as number), coerce: num },
-  int16: { size: 2, zero: 0, typed: Int16Array, read: (dv, o) => dv.getInt16(o, true), write: (dv, o, v) => dv.setInt16(o, v as number, true), coerce: num },
-  uint16: { size: 2, zero: 0, typed: Uint16Array, read: (dv, o) => dv.getUint16(o, true), write: (dv, o, v) => dv.setUint16(o, v as number, true), coerce: num },
-  int32: { size: 4, zero: 0, typed: Int32Array, read: (dv, o) => dv.getInt32(o, true), write: (dv, o, v) => dv.setInt32(o, v as number, true), coerce: num },
-  uint32: { size: 4, zero: 0, typed: Uint32Array, read: (dv, o) => dv.getUint32(o, true), write: (dv, o, v) => dv.setUint32(o, v as number, true), coerce: num },
-  float32: { size: 4, zero: 0, typed: Float32Array, read: (dv, o) => dv.getFloat32(o, true), write: (dv, o, v) => dv.setFloat32(o, v as number, true), coerce: num },
-  float64: { size: 8, zero: 0, typed: Float64Array, read: (dv, o) => dv.getFloat64(o, true), write: (dv, o, v) => dv.setFloat64(o, v as number, true), coerce: num },
-  int64: { size: 8, zero: 0n, read: (dv, o) => dv.getBigInt64(o, true), write: (dv, o, v) => dv.setBigInt64(o, v as bigint, true), coerce: big },
-  uint64: { size: 8, zero: 0n, read: (dv, o) => dv.getBigUint64(o, true), write: (dv, o, v) => dv.setBigUint64(o, v as bigint, true), coerce: big },
-};
-PRIMS.byte = PRIMS.uint8!;
-PRIMS.octet = PRIMS.uint8!;
-PRIMS.char = PRIMS.uint8!;
+const coerce = (p: Prim, v: unknown, field: string): unknown =>
+  p.kind === "bool" ? Boolean(v) : p.kind === "bigint" ? big(v, field) : num(v, field);
 
 const utf8d = new TextDecoder();
 const utf8e = new TextEncoder();
@@ -69,32 +59,55 @@ const utf8e = new TextEncoder();
 class Reader {
   dv: DataView;
   off = HEADER;
-  constructor(public u8: Uint8Array) {
+  constructor(
+    public u8: Uint8Array,
+    public zeroCopy: boolean,
+  ) {
     this.dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   }
-  align(n: number) {
-    const r = (this.off - HEADER) % n;
-    if (r) this.off += n - r;
-  }
-  u32(): number {
-    this.align(4);
-    const v = this.dv.getUint32(this.off, true);
-    this.off += 4;
-    return v;
+  /** string body of CDR length `n` (including the NUL) at `o` */
+  str(o: number, n: number): string {
+    const end = o + n - 1;
+    if (end > this.u8.length) throw new RangeValidationError("CDR buffer too short");
+    if (n <= 32) {
+      // short ASCII strings are cheaper to build by hand than with TextDecoder
+      const u8 = this.u8;
+      let s = "";
+      for (let i = o; i < end; i++) {
+        const c = u8[i]!;
+        if (c > 127) return utf8d.decode(u8.subarray(o, end));
+        s += String.fromCharCode(c);
+      }
+      return s;
+    }
+    return utf8d.decode(this.u8.subarray(o, end));
   }
   string(): string {
-    const len = this.u32();
-    if (len === 0) return "";
-    const s = utf8d.decode(this.u8.subarray(this.off, this.off + len - 1));
-    this.off += len;
+    let o = this.off;
+    o += (4 - ((o - HEADER) & 3)) & 3;
+    const n = this.dv.getUint32(o, true);
+    o += 4;
+    const s = n === 0 ? "" : this.str(o, n);
+    this.off = o + n;
     return s;
   }
   wstring(): string {
-    const n = this.u32();
+    let o = this.off;
+    o += (4 - ((o - HEADER) & 3)) & 3;
+    const n = this.dv.getUint32(o, true);
+    o += 4;
     let s = "";
-    for (let i = 0; i < n; i++) s += String.fromCharCode(this.dv.getUint32(this.off + i * 4, true));
-    this.off += n * 4;
+    for (let i = 0; i < n; i++) s += String.fromCharCode(this.dv.getUint32(o + i * 4, true));
+    this.off = o + n * 4;
     return s;
+  }
+  /** `n` elements of `size` bytes at `o` (already aligned) as a TypedArray */
+  typed<T>(C: new (buf: ArrayBufferLike, off?: number, len?: number) => T, o: number, n: number, size: number): T {
+    const bytes = n * size;
+    if (o + bytes > this.u8.length) throw new RangeValidationError("CDR buffer too short");
+    const start = this.u8.byteOffset + o;
+    if (this.zeroCopy && start % size === 0) return new C(this.u8.buffer, start, n);
+    return new C(this.u8.buffer.slice(start, start + bytes));
   }
 }
 
@@ -102,262 +115,285 @@ class Writer {
   buf: Uint8Array;
   dv: DataView;
   off = HEADER;
-  constructor(cap = 256) {
-    this.buf = new Uint8Array(cap);
+  cap: number;
+  constructor(cap: number) {
+    this.cap = cap;
+    this.buf = new Uint8Array(cap); // zero-filled, so alignment padding needs no writes
     this.buf[1] = 1; // CDR_LE
     this.dv = new DataView(this.buf.buffer);
   }
-  ensure(n: number) {
-    if (this.off + n <= this.buf.length) return;
-    let cap = this.buf.length * 2;
+  grow(n: number) {
+    let cap = this.cap * 2;
     while (cap < this.off + n) cap *= 2;
     const nb = new Uint8Array(cap);
     nb.set(this.buf.subarray(0, this.off));
     this.buf = nb;
     this.dv = new DataView(nb.buffer);
-  }
-  align(n: number) {
-    const r = (this.off - HEADER) % n;
-    if (r) {
-      this.ensure(n - r);
-      this.buf.fill(0, this.off, this.off + n - r);
-      this.off += n - r;
-    }
+    this.cap = cap;
   }
   u32(v: number) {
-    this.align(4);
-    this.ensure(4);
-    this.dv.setUint32(this.off, v, true);
-    this.off += 4;
+    if (this.off + 8 > this.cap) this.grow(8);
+    let o = this.off;
+    o += (4 - ((o - HEADER) & 3)) & 3;
+    this.dv.setUint32(o, v, true);
+    this.off = o + 4;
   }
   string(s: string) {
-    this.align(4);
-    this.ensure(4 + s.length * 3 + 1);
-    const { written } = utf8e.encodeInto(s, this.buf.subarray(this.off + 4));
-    this.dv.setUint32(this.off, written + 1, true);
-    this.buf[this.off + 4 + written] = 0;
-    this.off += 4 + written + 1;
+    const max = 8 + s.length * 3 + 1;
+    if (this.off + max > this.cap) this.grow(max);
+    let o = this.off;
+    o += (4 - ((o - HEADER) & 3)) & 3;
+    const { written } = utf8e.encodeInto(s, this.buf.subarray(o + 4));
+    this.dv.setUint32(o, written + 1, true);
+    this.off = o + 4 + written + 1; // NUL already zero
   }
   wstring(s: string) {
     this.u32(s.length);
-    this.ensure(s.length * 4);
+    if (this.off + s.length * 4 > this.cap) this.grow(s.length * 4);
     for (let i = 0; i < s.length; i++) this.dv.setUint32(this.off + i * 4, s.charCodeAt(i), true);
     this.off += s.length * 4;
   }
   finish(): Uint8Array {
-    return this.buf.slice(0, this.off);
+    // a fresh buffer that is mostly used is returned as is; otherwise trimmed
+    return this.off * 4 >= this.cap * 3 ? this.buf.subarray(0, this.off) : this.buf.slice(0, this.off);
   }
 }
 
-type ReadFn = (r: Reader) => unknown;
-type WriteFn = (w: Writer, v: unknown) => void;
-
-interface StructCodec {
-  read: ReadFn;
-  write: WriteFn;
-  create: () => Record<string, unknown>;
+export interface DecodeOptions {
+  /**
+   * Return numeric arrays as views into `bytes` instead of copies (when their
+   * alignment allows it). The views alias `bytes`, so do not reuse it.
+   */
+  zeroCopy?: boolean;
 }
 
 export interface Codec {
   encode(msg: unknown): Uint8Array;
-  decode(bytes: Uint8Array): any;
+  decode(bytes: Uint8Array, options?: DecodeOptions): any;
   create(): any;
 }
 
 const isString = (t: string) => t === "string" || t === "wstring";
+const lit = (s: string) => JSON.stringify(s);
+/** `o` advanced to the next multiple of `size` relative to the data start */
+const alignExpr = (v: string, size: number) => (size > 1 ? `${v} += (${size} - ((${v} - ${HEADER}) & ${size - 1})) & ${size - 1};` : "");
 
 /** Builds a codec for `defs[0]` (dependencies must be included in `defs`). */
 export function buildCodec(defs: MessageDefinition[]): Codec {
   const byName = new Map<string, MessageDefinition>();
   for (const d of defs) if (d.name) byName.set(d.name, d);
-  const structs = new Map<string, StructCodec>();
 
-  const struct = (d: MessageDefinition): StructCodec => {
-    const key = d.name ?? "";
-    const cached = structs.get(key);
-    if (cached) return cached;
-    // placeholder first to allow recursive references
-    const sc: StructCodec = { read: () => ({}), write: () => {}, create: () => ({}) };
-    structs.set(key, sc);
+  const consts: unknown[] = []; // values referenced by generated code as K[i]
+  const K = (v: unknown) => {
+    consts.push(v);
+    return `K[${consts.length - 1}]`;
+  };
+  const fns: string[] = [];
+  const structIds = new Map<string, number>();
+  let arrayId = 0;
+
+  const structId = (type: string): number => {
+    const known = structIds.get(type);
+    if (known !== undefined) return known;
+    const id = structIds.size;
+    structIds.set(type, id);
+    const d = byName.get(type);
+    if (!d) {
+      // fail when used, not when building (matches rclnodejs' lazy loading)
+      const err = `throw new TypeValidationError(${lit(`unknown nested type ${type}`)});`;
+      fns.push(`function r${id}(r) { ${err} }`, `function w${id}(w, v) { ${err} }`, `function c${id}() { ${err} }`);
+    } else {
+      emitStruct(id, d);
+    }
+    return id;
+  };
+
+  const emitStruct = (id: number, d: MessageDefinition) => {
     const fields = d.definitions.filter((f) => !f.isConstant);
     if (fields.length === 0) {
       // rosidl adds `uint8 structure_needs_at_least_one_member`
-      sc.read = (r) => {
-        r.off += 1;
-        return {};
-      };
-      sc.write = (w) => {
-        w.ensure(1);
-        w.buf[w.off++] = 0;
-      };
-      sc.create = () => ({});
-      return sc;
+      fns.push(
+        `function r${id}(r) { r.off += 1; return {}; }`,
+        `function w${id}(w, v) { if (w.off + 1 > w.cap) w.grow(1); w.off += 1; }`,
+        `function c${id}() { return {}; }`,
+      );
+      return;
     }
-    const parts = fields.map((f) => field(f));
-    const names = fields.map((f) => f.name);
-    sc.read = (r) => {
-      const o: Record<string, unknown> = {};
-      for (let i = 0; i < parts.length; i++) o[names[i]!] = parts[i]!.read(r);
-      return o;
-    };
-    sc.write = (w, v) => {
-      const o = (v ?? {}) as Record<string, unknown>;
-      for (let i = 0; i < parts.length; i++) {
-        const x = o[names[i]!];
-        parts[i]!.write(w, x === undefined ? parts[i]!.def() : x);
-      }
-    };
-    sc.create = () => {
-      const o: Record<string, unknown> = {};
-      for (let i = 0; i < parts.length; i++) o[names[i]!] = parts[i]!.def();
-      return o;
-    };
-    return sc;
-  };
-
-  const resolve = (type: string): StructCodec => {
-    const d = byName.get(type);
-    if (!d) throw new TypeValidationError(`unknown nested type ${type}`);
-    return struct(d);
-  };
-
-  interface FieldCodec {
-    read: ReadFn;
-    write: WriteFn;
-    def: () => unknown;
-  }
-
-  const field = (f: MessageDefinitionField): FieldCodec => {
-    const name = f.name;
-    const fixed = f.isArray && f.arrayLength !== undefined ? f.arrayLength : undefined;
-    const bound = f.isArray ? f.arrayUpperBound : undefined;
-    const strBound = f.upperBound;
-
-    // element read/write/zero
-    let elRead: ReadFn;
-    let elWrite: WriteFn;
-    let elZero: () => unknown;
-    let prim: Prim | undefined;
-    if (f.isComplex) {
-      const sc = () => resolve(f.type);
-      elRead = (r) => sc().read(r);
-      elWrite = (w, v) => sc().write(w, v);
-      elZero = () => sc().create();
-    } else if (isString(f.type)) {
-      const wide = f.type === "wstring";
-      elRead = wide ? (r) => r.wstring() : (r) => r.string();
-      elWrite = (w, v) => {
-        if (typeof v !== "string") throw new TypeValidationError(`field '${name}' expects a string, got ${typeof v}`);
-        if (strBound !== undefined && v.length > strBound) {
-          throw new RangeValidationError(`field '${name}' exceeds string bound ${strBound}`);
-        }
-        wide ? w.wstring(v) : w.string(v);
-      };
-      elZero = () => "";
-    } else {
-      const p = PRIMS[f.type];
-      if (!p) throw new TypeValidationError(`unsupported primitive type ${f.type}`);
-      prim = p;
-      elRead = (r) => {
-        r.align(p.size);
-        const v = p.read(r.dv, r.off);
-        r.off += p.size;
-        return v;
-      };
-      elWrite = (w, v) => {
-        w.align(p.size);
-        w.ensure(p.size);
-        p.write(w.dv, w.off, p.coerce(v, name));
-        w.off += p.size;
-      };
-      elZero = () => p.zero;
-    }
-
-    const dv = f.defaultValue;
-    const elDefault = (i?: number): unknown => {
-      if (dv === undefined) return elZero();
-      const x = i === undefined ? dv : (dv as unknown[])[i];
-      if (prim) return prim.coerce(x, name);
-      return x;
-    };
-
-    if (!f.isArray) {
-      return { read: elRead, write: elWrite, def: () => elDefault() };
-    }
-
-    const typed = prim?.typed;
-    const count = (r: Reader) => (fixed !== undefined ? fixed : r.u32());
-
-    const read: ReadFn = typed
-      ? (r) => {
-          const n = count(r);
-          if (n === 0) return new typed(0);
-          r.align(prim!.size);
-          const start = r.u8.byteOffset + r.off;
-          const bytes = n * prim!.size;
-          r.off += bytes;
-          return new typed(r.u8.buffer.slice(start, start + bytes) as ArrayBuffer);
-        }
-      : (r) => {
-          const n = count(r);
-          const out = new Array(n);
-          for (let i = 0; i < n; i++) out[i] = elRead(r);
-          return out;
-        };
-
-    const write: WriteFn = (w, v) => {
-      const arr = v as ArrayLike<unknown>;
-      if (arr === null || typeof arr !== "object" || typeof arr.length !== "number") {
-        throw new TypeValidationError(`field '${name}' expects an array`);
-      }
-      const n = arr.length;
-      if (fixed !== undefined) {
-        if (n !== fixed) throw new RangeValidationError(`field '${name}' expects exactly ${fixed} elements, got ${n}`);
+    const rd: string[] = [];
+    const wr: string[] = [];
+    const cr: string[] = [];
+    fields.forEach((f, i) => {
+      const key = lit(f.name);
+      const fv = `f${i}`;
+      if (f.isArray) {
+        const a = emitArray(f);
+        rd.push(`r.off = o; const ${fv} = ra${a}(r); o = r.off;`);
+        wr.push(`wa${a}(w, v[${key}]);`);
+        cr.push(`${key}: ca${a}()`);
+      } else if (f.isComplex) {
+        const s = structId(f.type);
+        rd.push(`r.off = o; const ${fv} = r${s}(r); o = r.off;`);
+        wr.push(`w${s}(w, v[${key}]);`);
+        cr.push(`${key}: c${s}()`);
+      } else if (isString(f.type)) {
+        const def = f.defaultValue === undefined ? '""' : lit(String(f.defaultValue));
+        if (f.type === "wstring") rd.push(`r.off = o; const ${fv} = r.wstring(); o = r.off;`);
+        else rd.push(`${alignExpr("o", 4)} n = dv.getUint32(o, true); o += 4; const ${fv} = n === 0 ? "" : r.str(o, n); o += n;`);
+        wr.push(`x = v[${key}]; if (x === undefined) x = ${def}; ${stringWrite(f, "x")}`);
+        cr.push(`${key}: ${def}`);
       } else {
-        if (bound !== undefined && n > bound) {
-          throw new RangeValidationError(`field '${name}' exceeds sequence bound ${bound} (got ${n})`);
-        }
-        w.u32(n);
+        const p = prim(f);
+        const def = f.defaultValue === undefined ? zeroLiteral(p) : K(coerce(p, f.defaultValue, f.name));
+        rd.push(`${alignExpr("o", p.size)} const ${fv} = ${readExpr(p, "o")}; o += ${p.size};`);
+        wr.push(
+          `x = v[${key}]; if (x === undefined) x = ${def};`,
+          `if (w.off + ${p.size * 2} > w.cap) w.grow(${p.size * 2}); o = w.off; ${alignExpr("o", p.size)}`,
+          `w.dv.set${p.dv}(o, ${coerceExpr(p, "x", f.name)}, true); w.off = o + ${p.size};`,
+        );
+        cr.push(`${key}: ${def}`);
       }
-      if (n === 0) return;
-      if (typed && ArrayBuffer.isView(arr) && arr instanceof typed) {
-        w.align(prim!.size);
-        const src = arr as unknown as Uint8Array;
-        w.ensure(src.byteLength);
-        w.buf.set(new Uint8Array(src.buffer, src.byteOffset, src.byteLength), w.off);
-        w.off += src.byteLength;
-        return;
-      }
-      for (let i = 0; i < n; i++) elWrite(w, arr[i]);
-    };
-
-    const def = (): unknown => {
-      if (fixed !== undefined) {
-        const items = Array.from({ length: fixed }, (_, i) => elDefault(dv === undefined ? undefined : i));
-        return typed ? typed.from(items as number[]) : items;
-      }
-      if (dv !== undefined) {
-        const items = (dv as unknown[]).map((_, i) => elDefault(i));
-        return typed ? typed.from(items as number[]) : items;
-      }
-      return typed ? new typed(0) : [];
-    };
-
-    return { read, write, def };
+    });
+    fns.push(
+      `function r${id}(r) { const dv = r.dv; let o = r.off, n;\n${rd.join("\n")}\nr.off = o; return { ${fields.map((f, i) => `${lit(f.name)}: f${i}`).join(", ")} }; }`,
+      `function w${id}(w, v) { if (v == null) v = EMPTY; let x, o;\n${wr.join("\n")}\n}`,
+      `function c${id}() { return { ${cr.join(", ")} }; }`,
+    );
   };
 
-  const root = struct(defs[0]!);
+  const prim = (f: MessageDefinitionField): Prim => {
+    const p = PRIMS[f.type];
+    if (!p) throw new TypeValidationError(`unsupported primitive type ${f.type}`);
+    return p;
+  };
+  const zeroLiteral = (p: Prim) => (p.kind === "bool" ? "false" : p.kind === "bigint" ? "0n" : "0");
+  const readExpr = (p: Prim, o: string) =>
+    p.kind === "bool" ? `dv.getUint8(${o}) !== 0` : p.size === 1 ? `dv.get${p.dv}(${o})` : `dv.get${p.dv}(${o}, true)`;
+  const coerceExpr = (p: Prim, x: string, name: string) =>
+    p.kind === "bool"
+      ? `(${x} ? 1 : 0)`
+      : p.kind === "bigint"
+        ? `(typeof ${x} === "bigint" ? ${x} : big(${x}, ${lit(name)}))`
+        : `(typeof ${x} === "number" ? ${x} : num(${x}, ${lit(name)}))`;
+  const stringWrite = (f: MessageDefinitionField, x: string) => {
+    const bound = f.upperBound;
+    return [
+      `if (typeof ${x} !== "string") throw new TypeValidationError(${lit(`field '${f.name}' expects a string, got `)} + typeof ${x});`,
+      bound !== undefined ? `if (${x}.length > ${bound}) throw new RangeValidationError(${lit(`field '${f.name}' exceeds string bound ${bound}`)});` : "",
+      f.type === "wstring" ? `w.wstring(${x});` : `w.string(${x});`,
+    ].join(" ");
+  };
+
+  const emitArray = (f: MessageDefinitionField): number => {
+    const a = arrayId++;
+    const name = f.name;
+    const fixed = f.arrayLength;
+    const bound = f.arrayUpperBound;
+    const p = !f.isComplex && !isString(f.type) ? prim(f) : undefined;
+    const typed = p?.typed;
+    const dflt = f.defaultValue as unknown[] | undefined;
+
+    // element templates
+    let readEl: string; // expression reading one element; may use r/dv/o
+    let writeLoop: string;
+    let createEl: string;
+    if (f.isComplex) {
+      const s = structId(f.type);
+      readEl = `r${s}(r)`;
+      writeLoop = `for (let i = 0; i < n; i++) w${s}(w, x[i]);`;
+      createEl = `c${s}()`;
+    } else if (!p) {
+      readEl = f.type === "wstring" ? "r.wstring()" : "r.string()";
+      writeLoop = `for (let i = 0; i < n; i++) { const e = x[i]; ${stringWrite(f, "e")} }`;
+      createEl = '""';
+    } else {
+      readEl = "";
+      writeLoop = [
+        `if (w.off + n * ${p.size} + ${p.size} > w.cap) w.grow(n * ${p.size} + ${p.size});`,
+        `let o = w.off; ${alignExpr("o", p.size)} const dv = w.dv;`,
+        `for (let i = 0; i < n; i++) { const e = x[i]; dv.set${p.dv}(o, ${coerceExpr(p, "e", name)}, true); o += ${p.size}; }`,
+        `w.off = o;`,
+      ].join("\n");
+      createEl = zeroLiteral(p);
+    }
+
+    // default value used when encoding a missing field (never handed out)
+    const defaults = dflt !== undefined ? dflt.map((v) => (p ? coerce(p, v, name) : v)) : undefined;
+    const encDefault =
+      defaults !== undefined
+        ? K(typed ? (globalThis as any)[typed].from(defaults) : defaults)
+        : fixed !== undefined
+          ? K(typed ? new (globalThis as any)[typed](fixed) : Array.from({ length: fixed }, () => (p ? coerce(p, 0, name) : f.isComplex ? undefined : "")))
+          : K(typed ? new (globalThis as any)[typed](0) : []);
+
+    const count = fixed !== undefined ? `const n = ${fixed};` : `${alignExpr("o", 4)} const n = r.dv.getUint32(o, true); o += 4;`;
+    let read: string;
+    if (typed) {
+      read = `${count} if (n === 0) { r.off = o; return new ${typed}(0); } ${alignExpr("o", p!.size)} const a = r.typed(${typed}, o, n, ${p!.size}); r.off = o + n * ${p!.size}; return a;`;
+    } else if (p) {
+      read = `${count} const a = new Array(n); if (n === 0) { r.off = o; return a; } ${alignExpr("o", p.size)} const dv = r.dv; for (let i = 0; i < n; i++) { a[i] = ${readExpr(p, "o")}; o += ${p.size}; } r.off = o; return a;`;
+    } else {
+      read = `${count} r.off = o; const a = new Array(n); for (let i = 0; i < n; i++) a[i] = ${readEl}; return a;`;
+    }
+    fns.push(`function ra${a}(r) { let o = r.off; ${read} }`);
+
+    const lengthCheck =
+      fixed !== undefined
+        ? `if (n !== ${fixed}) throw new RangeValidationError(${lit(`field '${name}' expects exactly ${fixed} elements, got `)} + n);`
+        : `${bound !== undefined ? `if (n > ${bound}) throw new RangeValidationError(${lit(`field '${name}' exceeds sequence bound ${bound} (got `)} + n + ")");` : ""} w.u32(n);`;
+    const fastTyped = typed
+      ? `if (x instanceof ${typed}) { const bl = x.byteLength; if (w.off + bl + ${p!.size} > w.cap) w.grow(bl + ${p!.size}); let o = w.off; ${alignExpr("o", p!.size)} w.buf.set(new Uint8Array(x.buffer, x.byteOffset, bl), o); w.off = o + bl; return; }`
+      : "";
+    fns.push(
+      `function wa${a}(w, x) {
+        if (x === undefined) x = ${encDefault};
+        if (x === null || typeof x !== "object" || typeof x.length !== "number") throw new TypeValidationError(${lit(`field '${name}' expects an array`)});
+        const n = x.length; ${lengthCheck}
+        if (n === 0) return;
+        ${fastTyped}
+        ${writeLoop}
+      }`,
+    );
+
+    let create: string;
+    if (defaults !== undefined) {
+      create = typed ? `return ${typed}.from(${K(defaults)});` : `return ${K(defaults)}.slice();`;
+    } else if (fixed !== undefined) {
+      create = typed ? `return new ${typed}(${fixed});` : `const a = new Array(${fixed}); for (let i = 0; i < ${fixed}; i++) a[i] = ${createEl}; return a;`;
+    } else {
+      create = typed ? `return new ${typed}(0);` : "return [];";
+    }
+    fns.push(`function ca${a}() { ${create} }`);
+    return a;
+  };
+
+  const rootDef = defs[0]!;
+  const root = structIds.size;
+  structIds.set(rootDef.name ?? "", root);
+  emitStruct(root, rootDef);
+  const src = `"use strict";\n${fns.join("\n")}\nreturn { read: r${root}, write: w${root}, create: c${root} };`;
+  const compiled = new Function("K", "EMPTY", "num", "big", "TypeValidationError", "RangeValidationError", src)(
+    consts,
+    Object.freeze({}),
+    num,
+    big,
+    TypeValidationError,
+    RangeValidationError,
+  ) as { read: (r: Reader) => any; write: (w: Writer, v: unknown) => void; create: () => any };
+
+  // initial encode buffer size follows the last encoded message (+12.5%)
+  let sizeHint = 256;
   return {
     encode(msg) {
-      const w = new Writer();
-      root.write(w, msg ?? {});
+      const w = new Writer(sizeHint);
+      compiled.write(w, msg ?? {});
+      sizeHint = Math.max(64, w.off + (w.off >> 3) + 16);
       return w.finish();
     },
-    decode(bytes) {
+    decode(bytes, options) {
       if (bytes.length < HEADER) throw new RangeValidationError("CDR buffer too short");
       if (bytes[1] !== 1) throw new TypeValidationError(`unsupported CDR encapsulation 0x${bytes[0]}${bytes[1]}`);
-      return root.read(new Reader(bytes));
+      return compiled.read(new Reader(bytes, options?.zeroCopy === true));
     },
-    create: () => root.create(),
+    create: () => compiled.create(),
   };
 }
