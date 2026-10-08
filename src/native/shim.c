@@ -515,6 +515,31 @@ int rb_logging_set_level(const char* name, int level) {
   return 0;
 }
 
+// Child loggers of a node logger publish to /rosout once registered as
+// subloggers (Iron+). Returns 1 if registered, 0 if not applicable.
+int rb_logging_add_sublogger(const char* parent, const char* sub) {
+#if defined(RB_DISTRO_HUMBLE)
+  (void)parent, (void)sub;
+  return 0;
+#else
+  if (!rcl_logging_rosout_enabled()) return 0;
+  rcl_ret_t ret = rcl_logging_rosout_add_sublogger(parent, sub);
+  if (ret != RCL_RET_OK) {
+    rcl_reset_error();  // e.g. the parent is not a node logger
+    return 0;
+  }
+  return 1;
+#endif
+}
+
+void rb_logging_remove_sublogger(const char* parent, const char* sub) {
+#if !defined(RB_DISTRO_HUMBLE)
+  if (rcl_logging_rosout_remove_sublogger(parent, sub) != RCL_RET_OK) rcl_reset_error();
+#else
+  (void)parent, (void)sub;
+#endif
+}
+
 // The logger's own level (0 = unset), as the logger services report it.
 int rb_logging_get_level(const char* name) {
   int level = rcutils_logging_get_logger_level(name);
@@ -1247,6 +1272,7 @@ enum {
   RB_F_TYPE_DESCRIPTION = 4,
   RB_F_MATCHED_EVENTS = 8,
   RB_F_LOGGER_SERVICE = 16,  // rcl_interfaces/srv/{Get,Set}LoggerLevels exist (Iron+)
+  RB_F_ROSOUT_SUBLOGGERS = 32,
 };
 
 int rb_features(void) {
@@ -1254,7 +1280,7 @@ int rb_features(void) {
   return 0;
 #else
   return RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS |
-         RB_F_LOGGER_SERVICE;
+         RB_F_LOGGER_SERVICE | RB_F_ROSOUT_SUBLOGGERS;
 #endif
 }
 

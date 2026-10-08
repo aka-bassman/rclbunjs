@@ -142,6 +142,29 @@ describe("logger service and rosout QoS", () => {
     node.destroySubscription(sub);
   });
 
+  test.skipIf(!features.rosoutSubloggers)("child loggers publish to /rosout and are released with their node", async () => {
+    const n = rclbun.createNode("sublogger_node");
+    const child = n.getLogger().getChild("worker");
+    const grandchild = child.getChild("io");
+    const names = new Set<string>();
+    const sub = node.createSubscription("rcl_interfaces/msg/Log", "/rosout", { qos: QoS.profileRosoutDefault }, (m: any) => names.add(m.name));
+    const ok = await until(() => {
+      child.info("from child");
+      grandchild.info("from grandchild");
+      return names.has("sublogger_node.worker") && names.has("sublogger_node.worker.io");
+    });
+    expect(ok).toBe(true);
+    grandchild.destroy();
+    n.destroy();
+    // the node's rosout publisher is gone; logging through the child must not touch it
+    child.info("after node destroy");
+    child.destroy();
+    const again = rclbun.createNode("sublogger_node");
+    again.getLogger().getChild("worker").info("recreated");
+    again.destroy();
+    node.destroySubscription(sub);
+  });
+
   test("rosoutQos is applied to the node's /rosout publisher", async () => {
     const qos = new QoS(rclbun.HistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST, 42, rclbun.ReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_RELIABLE, rclbun.DurabilityPolicy.RMW_QOS_POLICY_DURABILITY_VOLATILE);
     const n = rclbun.createNode("rosout_qos_node", "", undefined, { rosoutQos: qos });

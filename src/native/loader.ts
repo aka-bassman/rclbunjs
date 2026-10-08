@@ -43,6 +43,8 @@ export const symbols = {
   rb_logging_set_level: { returns: I32, args: [P, I32] },
   rb_logging_get_effective_level: { returns: I32, args: [P] },
   rb_logging_get_level: { returns: I32, args: [P] },
+  rb_logging_add_sublogger: { returns: I32, args: [P, P] },
+  rb_logging_remove_sublogger: { returns: VOID, args: [P, P] },
   rb_logging_is_enabled_for: { returns: I32, args: [P, I32] },
 
   rb_pub_init: { returns: P, args: [P, P, P, P] },
@@ -195,5 +197,6 @@ export const features = {
   typeDescriptionService: (featureBits & 4) !== 0,
   matchedEvents: (featureBits & 8) !== 0,
   loggerService: (featureBits & 16) !== 0,
+  rosoutSubloggers: (featureBits & 32) !== 0,
 };
 export type { Pointer };

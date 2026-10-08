@@ -504,6 +504,7 @@ export class Node {
     }
     this.#typeDescription?._fini();
     this.#typeDescription = undefined;
+    Logging._releaseSubloggers(this.#logger.name);
     this.#destroyed = true;
     lib.rb_node_fini(this.handle);
     this.context.removeNode(this);

@@ -1,7 +1,7 @@
 // Logging over rcutils (output goes to console, /rosout and the log file like rclcpp/rclpy).
 import { lib } from "../native/loader.ts";
 import { cstr, lastError } from "../native/ffi.ts";
-import { OperationError } from "./errors.ts";
+import { OperationError, TypeValidationError } from "./errors.ts";
 
 export enum LoggingSeverity {
   UNSET = 0,
@@ -23,10 +23,14 @@ function caller(): { file: string; fn: string; line: number } {
   return m ? { fn: m[1] ?? "<anonymous>", file: m[2] ?? "", line: Number(m[3]) } : { fn: "", file: "", line: 0 };
 }
 
+// node logger name -> sublogger name -> active registrations (rcl refcounts them too)
+const subloggers = new Map<string, Map<string, number>>();
+
 export class Logging {
   static LoggingSeverity = LoggingSeverity;
   readonly name: string;
   #nameC: Uint8Array;
+  #sublogger: { parent: string; sub: string } | undefined;
 
   constructor(name: string) {
     this.name = name;
@@ -37,8 +41,44 @@ export class Logging {
     return new Logging(name);
   }
 
+  /**
+   * A child logger (`<name>.<child>`). Children of a node's logger also
+   * publish to /rosout (Iron and newer); call destroy() when done with one.
+   */
   getChild(name: string): Logging {
-    return new Logging(this.name ? `${this.name}.${name}` : name);
+    if (typeof name !== "string" || !name) throw new TypeValidationError("child logger name must be a non-empty string");
+    const child = new Logging(this.name ? `${this.name}.${name}` : name);
+    if (this.name && lib.rb_logging_add_sublogger(this.#nameC, cstr(name)) === 1) {
+      const subs = subloggers.get(this.name) ?? new Map<string, number>();
+      subs.set(name, (subs.get(name) ?? 0) + 1);
+      subloggers.set(this.name, subs);
+      child.#sublogger = { parent: this.name, sub: name };
+    }
+    return child;
+  }
+
+  /** Unregisters a child logger from /rosout (no-op for other loggers). */
+  destroy(): void {
+    const s = this.#sublogger;
+    if (!s) return;
+    this.#sublogger = undefined;
+    const subs = subloggers.get(s.parent);
+    const n = subs?.get(s.sub) ?? 0;
+    if (n === 0) return; // already released with its node
+    if (n === 1) subs!.delete(s.sub);
+    else subs!.set(s.sub, n - 1);
+    lib.rb_logging_remove_sublogger(cstr(s.parent), cstr(s.sub));
+  }
+
+  /**
+   * @internal rcl requires subloggers to be removed while the node's rosout
+   * publisher still exists, so a node releases its children before finishing.
+   */
+  static _releaseSubloggers(parent: string): void {
+    const subs = subloggers.get(parent);
+    if (!subs) return;
+    subloggers.delete(parent);
+    for (const [sub, n] of subs) for (let i = 0; i < n; i++) lib.rb_logging_remove_sublogger(cstr(parent), cstr(sub));
   }
 
   get LoggingSeverity() {

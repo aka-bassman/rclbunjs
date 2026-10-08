@@ -481,6 +481,7 @@ export class ActionServer<K extends KnownOr<ActionTypeName> = string, G = GoalOf
     if (this.#destroyed) return;
     this.#destroyed = true;
     if (this.#node.isDestroyed()) return;
+    this.#logger.destroy();
     for (const s of this.#services) this.#node.destroyService(s);
     this.#node.destroyPublisher(this.#feedbackPub);
     this.#node.destroyPublisher(this.#statusPub);

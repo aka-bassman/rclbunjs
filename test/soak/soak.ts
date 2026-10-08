@@ -169,8 +169,14 @@ async function churnLoop() {
         const n = rclbun.createNode(`soak_tmp_${i % 3}`);
         n.spin();
         n.createSubscription("std_msgs/msg/String", "soak/tmp", () => {});
+        const log = n.getLogger().getChild("worker");
+        log.info("temporary node");
+        // action servers on a node that is destroyed without destroying them first
+        if (i % 100 === 0) new rclbun.ActionServer(n, FIB, "soak/tmp_fib", async (gh: any) => (gh.succeed(), { sequence: [] }));
         await Bun.sleep(10);
         n.destroy();
+        log.info("after node destroy"); // must not reach the destroyed rosout publisher
+        if (i % 40 === 0) log.destroy();
       }
       stats.churn++;
     } catch (e) {
