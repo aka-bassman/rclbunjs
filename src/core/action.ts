@@ -72,13 +72,18 @@ export interface ActionQoS {
   statusSubQosProfile?: QoS | string;
 }
 
-const names = (action: string) => ({
-  sendGoal: `${action}/_action/send_goal`,
-  cancelGoal: `${action}/_action/cancel_goal`,
-  getResult: `${action}/_action/get_result`,
-  feedback: `${action}/_action/feedback`,
-  status: `${action}/_action/status`,
-});
+// Like rcl_action: the action name is expanded and remapped first, then the
+// /_action/* entity names are derived from the result.
+const names = (node: Node, actionName: string) => {
+  const action = node.resolveTopicName(actionName);
+  return {
+    sendGoal: `${action}/_action/send_goal`,
+    cancelGoal: `${action}/_action/cancel_goal`,
+    getResult: `${action}/_action/get_result`,
+    feedback: `${action}/_action/feedback`,
+    status: `${action}/_action/status`,
+  };
+};
 
 // ============================================================================
 // client
@@ -135,7 +140,7 @@ export class ActionClient<K extends KnownOr<ActionTypeName> = string, G = GoalOf
     this.#node = node;
     this.typeClass = getActionType(typeClass);
     this.actionName = actionName;
-    const n = names(actionName);
+    const n = names(node, actionName);
     const at = this.typeClass;
     this.#sendGoal = node.createClient(at.sendGoal, n.sendGoal, { qos: options.goalServiceQosProfile ?? QoS.profileServicesDefault });
     this.#cancelGoal = node.createClient(getServiceType("action_msgs/srv/CancelGoal"), n.cancelGoal, {
@@ -323,7 +328,7 @@ export class ActionServer<K extends KnownOr<ActionTypeName> = string, G = GoalOf
     this.#cancelCb = cancelCallback ?? (() => CancelResponse.REJECT);
     this.#resultTimeoutMs = (options.resultTimeout ?? 900) * 1000;
     this.#logger = node.getLogger().getChild(`action.${actionName.replace(/\//g, ".")}`);
-    const n = names(actionName);
+    const n = names(node, actionName);
     const at = this.typeClass;
     this.#services.push(
       node.createService(at.sendGoal, n.sendGoal, { qos: options.goalServiceQosProfile ?? QoS.profileServicesDefault }, (req: any, res) => {

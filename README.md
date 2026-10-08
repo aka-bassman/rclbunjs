@@ -85,8 +85,7 @@ are inferred from the type name string.
 - Typing comes from generated declaration maps rather than generated JS classes. `rclbun.require(name)` returns a
   type descriptor (`encode`/`decode`/`create`) instead of a class.
 - Actions and lifecycle are implemented in TypeScript over plain services and topics. They are wire-compatible with
-  rcl_action and rcl_lifecycle. One difference: remapping rules apply to the underlying `/_action/*` service and
-  topic names, not to the action name itself.
+  rcl_action and rcl_lifecycle, including remapping of action names.
 - `int64` arrays decode to `bigint[]`. Other numeric arrays decode to TypedArrays.
 
 ## Development

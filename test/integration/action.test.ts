@@ -69,6 +69,29 @@ describe("actions (bun <-> bun)", () => {
     await gh.getResult();
     expect(gh.isCanceled()).toBe(true);
   });
+
+  test("remapping applies to the action name", async () => {
+    const srvNode = rclbun.createNode("remap_srv", "", undefined, undefined, ["--ros-args", "-r", "fib_local:=fib_remapped"]);
+    const cliNode = rclbun.createNode("remap_cli", "", undefined, undefined, ["--ros-args", "-r", "/fib_alias:=/fib_remapped"]);
+    srvNode.spin();
+    cliNode.spin();
+    const server = new rclbun.ActionServer(srvNode, FIB, "fib_local", async (gh) => {
+      gh.succeed();
+      return { sequence: [7] };
+    });
+    const client = new rclbun.ActionClient(cliNode, FIB, "/fib_alias");
+    expect(await client.waitForServer(5000)).toBe(true);
+    const gh = await client.sendGoal({ order: 1 });
+    expect(Array.from(((await gh.getResult()) as any).sequence)).toEqual([7]);
+    const names = rclbun.getActionNamesAndTypes(node).map((a) => a.name);
+    expect(names).toContain("/fib_remapped");
+    expect(names).not.toContain("/fib_local");
+    expect(names).not.toContain("/fib_alias");
+    client.destroy();
+    server.destroy();
+    srvNode.destroy();
+    cliNode.destroy();
+  });
 });
 
 describe("actions interop", () => {
