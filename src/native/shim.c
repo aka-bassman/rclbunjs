@@ -184,6 +184,31 @@ static void js_qos(const rmw_qos_profile_t* q) {
 
 static int g_logging_configured = 0;
 
+// Configures rcl logging (console, /rosout, log file) from a context's
+// arguments once per process; later calls are no-ops.
+int rb_logging_configure(void* ctx) {
+  if (g_logging_configured) return 0;
+  rcl_allocator_t alloc = rcl_get_default_allocator();
+  rcl_ret_t ret = rcl_logging_configure(&((rcl_context_t*)ctx)->global_arguments, &alloc);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_logging_configure", ret);
+    return -1;
+  }
+  g_logging_configured = 1;
+  return 0;
+}
+
+int rb_logging_fini(void) {
+  if (!g_logging_configured) return 0;
+  g_logging_configured = 0;
+  rcl_ret_t ret = rcl_logging_fini();
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_logging_fini", ret);
+    return -1;
+  }
+  return 0;
+}
+
 void* rb_context_init(int argc, const char** argv, int64_t domain_id) {
   rcl_allocator_t alloc = rcl_get_default_allocator();
   rcl_init_options_t opts = rcl_get_zero_initialized_init_options();
@@ -202,14 +227,7 @@ void* rb_context_init(int argc, const char** argv, int64_t domain_id) {
     free(ctx);
     return NULL;
   }
-  if (!g_logging_configured) {
-    ret = rcl_logging_configure(&ctx->global_arguments, &alloc);
-    if (ret != RCL_RET_OK) {
-      rcl_reset_error();
-    } else {
-      g_logging_configured = 1;
-    }
-  }
+  if (rb_logging_configure(ctx) != 0) rcl_reset_error();
   return ctx;
 }
 

@@ -332,7 +332,12 @@ function run(obj: unknown, mt: MessageType, options: MessageValidationOptions): 
     checkRequired: options.checkRequired ?? false,
     issues: [],
   };
-  if (obj === null || typeof obj !== "object" || Array.isArray(obj) || ArrayBuffer.isView(obj)) {
+  const t = typeof obj;
+  const fields = mt.definitions[0]!.definitions.filter((f) => !f.isConstant);
+  if ((t === "string" || t === "number" || t === "boolean" || t === "bigint") && fields.length === 1 && fields[0]!.name === "data") {
+    // rclnodejs: a bare value stands for the single `data` field
+    checkMessage({ data: obj }, mt.definitions[0]!, "", c);
+  } else if (obj === null || t !== "object" || Array.isArray(obj) || ArrayBuffer.isView(obj)) {
     c.issues.push({ field: "(root)", ...mismatch("object", obj) });
   } else {
     checkMessage(obj, mt.definitions[0]!, "", c);

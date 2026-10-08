@@ -56,6 +56,10 @@ export class Context {
     return this.isInitialized();
   }
 
+  get isOk(): boolean {
+    return this.isValid();
+  }
+
   isShutdown(): boolean {
     return this.#shutdown || (this.handle !== null && lib.rb_context_is_valid(this.handle) !== 1);
   }

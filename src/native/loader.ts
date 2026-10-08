@@ -43,6 +43,8 @@ export const symbols = {
   rb_logging_set_level: { returns: I32, args: [P, I32] },
   rb_logging_get_effective_level: { returns: I32, args: [P] },
   rb_logging_get_level: { returns: I32, args: [P] },
+  rb_logging_configure: { returns: I32, args: [P] },
+  rb_logging_fini: { returns: I32, args: [] },
   rb_logging_add_sublogger: { returns: I32, args: [P, P] },
   rb_logging_remove_sublogger: { returns: VOID, args: [P, P] },
   rb_logging_is_enabled_for: { returns: I32, args: [P, I32] },

@@ -1,4 +1,7 @@
 // Logging over rcutils (output goes to console, /rosout and the log file like rclcpp/rclpy).
+import type { Pointer } from "bun:ffi";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { lib } from "../native/loader.ts";
 import { cstr, lastError } from "../native/ffi.ts";
 import { OperationError, TypeValidationError } from "./errors.ts";
@@ -39,6 +42,25 @@ export class Logging {
 
   static getLogger(name: string): Logging {
     return new Logging(name);
+  }
+
+  /** Configures rcl logging from a context's arguments (done by init() already). */
+  static configure(context: { handle: Pointer | null }): void {
+    if (!context.handle) throw new OperationError("logging can only be configured from an initialized context");
+    if (lib.rb_logging_configure(context.handle) !== 0) throw new OperationError(`logging configure: ${lastError()}`);
+  }
+
+  /** Shuts down rcl logging (rosout and the log file); configure() re-enables it. */
+  static shutdown(): void {
+    if (lib.rb_logging_fini() !== 0) throw new OperationError(`logging shutdown: ${lastError()}`);
+  }
+
+  /** The directory for log files: $ROS_LOG_DIR, else $ROS_HOME/log, else ~/.ros/log (rcl_logging rules). */
+  static getLoggingDirectory(): string {
+    const expand = (p: string) => p.replace(/^~(?=$|\/)/, homedir());
+    if (process.env.ROS_LOG_DIR) return expand(process.env.ROS_LOG_DIR);
+    if (process.env.ROS_HOME) return join(expand(process.env.ROS_HOME), "log");
+    return join(homedir(), ".ros", "log");
   }
 
   /**

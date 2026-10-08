@@ -489,6 +489,16 @@ export class Node {
     this.#executor.spinOnce(BigInt(Math.max(0, Math.round(timeout))) * 1_000_000n);
   }
 
+  /** rclnodejs alias of spin() */
+  startSpinning(timeout?: number): void {
+    this.spin(timeout);
+  }
+
+  /** rclnodejs alias of stop() */
+  stopSpinning(): void {
+    this.stop();
+  }
+
   stop(): void {
     this.#executor.stop();
   }
@@ -599,6 +609,10 @@ export class Node {
   hasParameterDescriptor(name: string): boolean { return this._parameters.hasParameterDescriptor(name); }
   getParameterDescriptor(name: string): ParameterDescriptor { return this._parameters.getParameterDescriptor(name); }
   getParameterDescriptors(names: string[] = []): ParameterDescriptor[] { return this._parameters.getParameterDescriptors(names); }
+  /** Types of the declared parameters among `names` (undeclared names are skipped). */
+  getParameterTypes(names: string[] = []): ParameterType[] {
+    return names.filter((n) => this.hasParameterDescriptor(n)).map((n) => this.getParameterDescriptor(n).type);
+  }
   setParameter(p: Parameter) { return this._parameters.setParameter(p); }
   setParameters(ps: Parameter[]) { return this._parameters.setParameters(ps); }
   setParametersAtomically(ps: Parameter[]) { return this._parameters.setParametersAtomically(ps); }

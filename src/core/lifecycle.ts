@@ -113,9 +113,9 @@ export class LifecyclePublisher<T = any> extends Publisher<T> {
   onActivate(): void { this.activate(); }
   onDeactivate(): void { this.deactivate(); }
 
-  override publish(msg: Parameters<Publisher<T>["publish"]>[0]): void {
+  override publish(msg: Parameters<Publisher<T>["publish"]>[0], options?: { validate?: boolean }): void {
     if (!this.#active) return;
-    super.publish(msg);
+    super.publish(msg, options);
   }
 }
 

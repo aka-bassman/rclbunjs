@@ -6,7 +6,8 @@ import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
 import { AbortError, TimeoutError } from "./errors.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
-import type { MessageInput } from "../types.ts";
+import type { MessageArg } from "../types.ts";
+import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
 import type { Clock } from "./clock.ts";
 import { configureIntrospection, type ServiceIntrospectionStates } from "./service.ts";
 
@@ -24,6 +25,8 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
   readonly loggerName: string;
   readonly #pending = new Map<bigint, Pending>();
   readonly #qos: QoS;
+  #validate: boolean;
+  #validationOptions: MessageValidationOptions;
 
   /** @internal */
   constructor(nodeHandle: Pointer, loggerName: string, srvType: ServiceType, serviceName: string, options: EntityOptions) {
@@ -43,6 +46,21 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
     this.typeClass = srvType;
     this.loggerName = loggerName;
     this.#qos = qos;
+    this.#validate = options.validateRequests === true;
+    this.#validationOptions = options.validationOptions ?? { strict: true, checkTypes: true };
+  }
+
+  get willValidateRequest(): boolean {
+    return this.#validate;
+  }
+
+  set willValidateRequest(value: boolean) {
+    this.#validate = value;
+  }
+
+  /** Merges options into the validation options used for requests. */
+  setValidation(options: MessageValidationOptions): void {
+    if (options && Object.keys(options).length > 0) this.#validationOptions = { ...this.#validationOptions, ...options };
   }
 
   get qos(): QoS {
@@ -68,8 +86,9 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
     );
   }
 
-  #send(request: MessageInput<Req>, pending: Pending): bigint {
+  #send(request: MessageArg<Req>, pending: Pending, validate: boolean | undefined): bigint {
     this.assertAlive();
+    if (validate ?? this.#validate) assertValidMessage(request, this.typeClass.request, this.#validationOptions);
     const bytes = this.typeClass.request.encode(request);
     const seq = checkRc(lib.rb_client_send(this.handle, bytes, bytes.length), `send request to ${this.serviceName}`);
     this.#pending.set(seq, pending);
@@ -77,16 +96,16 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
   }
 
   /** Sends a request; `callback` receives the response once the node spins. */
-  sendRequest(request: MessageInput<Req>, callback: (response: Resp) => void): void {
-    this.#send(request, { resolve: callback, reject: (e) => queueMicrotask(() => { throw e; }) });
+  sendRequest(request: MessageArg<Req>, callback: (response: Resp) => void, options: { validate?: boolean } = {}): void {
+    this.#send(request, { resolve: callback, reject: (e) => queueMicrotask(() => { throw e; }) }, options.validate);
   }
 
   /** Sends a request and resolves with the response (node must be spinning). */
-  sendRequestAsync(request: MessageInput<Req>, options: { timeout?: number; signal?: AbortSignal } = {}): Promise<Resp> {
+  sendRequestAsync(request: MessageArg<Req>, options: { timeout?: number; signal?: AbortSignal; validate?: boolean } = {}): Promise<Resp> {
     return new Promise<Resp>((resolve, reject) => {
       if (options.signal?.aborted) return reject(new AbortError("request aborted"));
       const p: Pending = { resolve, reject };
-      const seq = this.#send(request, p);
+      const seq = this.#send(request, p, options.validate);
       let timer: ReturnType<typeof setTimeout> | undefined;
       const onAbort = () => {
         p.cleanup?.();

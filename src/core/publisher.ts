@@ -4,13 +4,16 @@ import type { MessageType } from "../interfaces/registry.ts";
 import { Entity, type EntityOptions } from "./entity.ts";
 import { QoS } from "./qos.ts";
 import type { Pointer } from "bun:ffi";
-import type { MessageInput } from "../types.ts";
+import type { MessageArg } from "../types.ts";
+import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
 import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
 
 export class Publisher<T = any> extends Entity {
   readonly typeClass: MessageType;
   readonly loggerName: string;
   readonly #qos: QoS;
+  #validate: boolean;
+  #validationOptions: MessageValidationOptions;
   /** @internal */
   readonly _events: QoSEvent[];
 
@@ -22,6 +25,8 @@ export class Publisher<T = any> extends Entity {
     this.typeClass = msgType;
     this.loggerName = loggerName;
     this.#qos = qos;
+    this.#validate = options.validateMessages === true;
+    this.#validationOptions = options.validationOptions ?? { strict: true, checkTypes: true };
     this._events = createEvents(h, false, eventCallbacks);
   }
 
@@ -33,11 +38,33 @@ export class Publisher<T = any> extends Entity {
     return String(lib.rb_pub_topic(this.handle));
   }
 
-  /** Publishes a message object, or raw CDR bytes (Uint8Array/Buffer). */
-  publish(msg: MessageInput<T> | Uint8Array): void {
+  /**
+   * Publishes a message object (or a bare value for single-`data` messages),
+   * or raw CDR bytes (Uint8Array/Buffer). `validate` overrides validateMessages.
+   */
+  publish(msg: MessageArg<T> | Uint8Array, options: { validate?: boolean } = {}): void {
     this.assertAlive();
-    const bytes = msg instanceof Uint8Array ? msg : this.typeClass.encode(msg);
+    let bytes: Uint8Array;
+    if (msg instanceof Uint8Array) {
+      bytes = msg;
+    } else {
+      if (options.validate ?? this.#validate) assertValidMessage(msg, this.typeClass, this.#validationOptions);
+      bytes = this.typeClass.encode(msg);
+    }
     checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), `publish on ${this.topic}`);
+  }
+
+  get willValidateMessage(): boolean {
+    return this.#validate;
+  }
+
+  set willValidateMessage(value: boolean) {
+    this.#validate = value;
+  }
+
+  /** Merges options into the validation options used by publish(). */
+  setValidation(options: MessageValidationOptions): void {
+    if (options && Object.keys(options).length > 0) this.#validationOptions = { ...this.#validationOptions, ...options };
   }
 
   get subscriptionCount(): number {

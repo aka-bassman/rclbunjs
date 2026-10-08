@@ -254,3 +254,42 @@ describe("QoS overriding options", () => {
     n.destroy();
   });
 });
+
+describe("rclnodejs shorthands and validation hooks", () => {
+  test("publish a bare value for single-data messages", async () => {
+    const got: string[] = [];
+    node.createSubscription("std_msgs/msg/String", "bare_topic", (m: any) => got.push(m.data));
+    const pub = node.createPublisher("std_msgs/msg/String", "bare_topic");
+    await until(() => pub.subscriptionCount > 0);
+    pub.publish("hello bare");
+    expect(await until(() => got.includes("hello bare"))).toBe(true);
+    expect(() => node.createPublisher("geometry_msgs/msg/Twist", "bare_twist").publish(1 as any)).toThrow(rclbun.TypeValidationError);
+  });
+
+  test("validateMessages / validateRequests", async () => {
+    const pub = node.createPublisher("std_msgs/msg/String", "validated", { validateMessages: true });
+    expect(pub.willValidateMessage).toBe(true);
+    expect(() => pub.publish({ data: 5 } as any)).toThrow(rclbun.MessageValidationError);
+    expect(() => pub.publish({ data: "ok", extra: 1 } as any)).toThrow(rclbun.MessageValidationError); // strict by default
+    pub.setValidation({ strict: false });
+    pub.publish({ data: "ok", extra: 1 } as any);
+    // validate: false skips validation; the encoder still rejects the value, with its own error
+    expect(() => pub.publish({ data: 5 } as any, { validate: false })).toThrow(rclbun.TypeValidationError);
+    expect(() => pub.publish({ data: 5 } as any, { validate: false })).not.toThrow(rclbun.MessageValidationError);
+    pub.willValidateMessage = false;
+    expect(pub.willValidateMessage).toBe(false);
+
+    node.createService("example_interfaces/srv/AddTwoInts", "validated_add", (r: any) => ({ sum: r.a + r.b }));
+    const cli = node.createClient("example_interfaces/srv/AddTwoInts", "validated_add", { validateRequests: true });
+    await cli.waitForService(5000);
+    await expect(cli.sendRequestAsync({ a: "x" } as any, { timeout: 2000 })).rejects.toBeInstanceOf(rclbun.MessageValidationError);
+    expect(((await cli.sendRequestAsync({ a: 1n, b: 2n }, { timeout: 5000 })) as any).sum).toBe(3n);
+  });
+
+  test("node, context and logging helpers", () => {
+    expect(node.getParameterTypes(["use_sim_time", "nope"])).toEqual([rclbun.ParameterType.PARAMETER_BOOL]);
+    expect(rclbun.Context.defaultContext().isOk).toBe(true);
+    expect(rclbun.Logging.getLoggingDirectory()).toBe(process.env.ROS_LOG_DIR ?? `${process.env.HOME}/.ros/log`);
+    expect(typeof node.startSpinning).toBe("function");
+  });
+});

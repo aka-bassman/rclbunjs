@@ -370,7 +370,7 @@ export function buildCodec(defs: MessageDefinition[]): Codec {
   const root = structIds.size;
   structIds.set(rootDef.name ?? "", root);
   emitStruct(root, rootDef);
-  const src = `"use strict";\n${fns.join("\n")}\nreturn { read: r${root}, write: w${root}, create: c${root} };`;
+  const src = `"use strict";\n${fns.join("\n")}\nreturn { read: r${root}, write: w${root}, create: c${root} };\n//# sourceURL=rclbunjs-codec:${rootDef.name ?? "message"}`;
   const compiled = new Function("K", "EMPTY", "num", "big", "TypeValidationError", "RangeValidationError", src)(
     consts,
     Object.freeze({}),
@@ -380,12 +380,23 @@ export function buildCodec(defs: MessageDefinition[]): Codec {
     RangeValidationError,
   ) as { read: (r: Reader) => any; write: (w: Writer, v: unknown) => void; create: () => any };
 
+  // Like rclnodejs, a bare string/number/boolean/bigint is the `data` field
+  // (publisher.publish("hello") for std_msgs/msg/String).
+  const hasData = rootDef.definitions.some((f) => f.name === "data" && !f.isConstant);
+  const wrap = (msg: unknown): unknown => {
+    if (msg === null || msg === undefined) return {};
+    const t = typeof msg;
+    if (t === "object") return msg;
+    if (hasData && (t === "string" || t === "number" || t === "boolean" || t === "bigint")) return { data: msg };
+    throw new TypeValidationError(`${rootDef.name ?? "message"} expects an object, got ${t}`);
+  };
+
   // initial encode buffer size follows the last encoded message (+12.5%)
   let sizeHint = 256;
   return {
     encode(msg) {
       const w = new Writer(sizeHint);
-      compiled.write(w, msg ?? {});
+      compiled.write(w, wrap(msg));
       sizeHint = Math.max(64, w.off + (w.off >> 3) + 16);
       return w.finish();
     },

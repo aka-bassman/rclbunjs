@@ -368,8 +368,20 @@ describe("validateMessage", () => {
     expect(validateMessage({ data: 1 }, "std_msgs/msg/String", { checkTypes: false }).valid).toBe(true);
   });
 
+  test("bare values stand for a single data field", () => {
+    expect(validateMessage("hello", "std_msgs/msg/String").valid).toBe(true);
+    expect(validateMessage(true, "std_msgs/msg/Bool").valid).toBe(true);
+    expect(validateMessage(5n, "std_msgs/msg/Int64").valid).toBe(true);
+    const r = validateMessage(123, "std_msgs/msg/String");
+    expect(r.valid).toBe(false);
+    expect(r.issues[0]).toMatchObject({ field: "data", problem: P.TYPE_MISMATCH });
+    expect(validateMessage(300, "std_msgs/msg/UInt8").issues[0]).toMatchObject({ field: "data", problem: P.OUT_OF_RANGE });
+    // not a single-`data` message
+    expect(validateMessage(1, "geometry_msgs/msg/Twist").issues[0]).toMatchObject({ field: "(root)", problem: P.TYPE_MISMATCH });
+  });
+
   test("non-object messages", () => {
-    for (const v of [null, undefined, 1, "hello", true, [1], new Uint8Array(1)]) {
+    for (const v of [null, undefined, [1], new Uint8Array(1)]) {
       const r = validateMessage(v, "std_msgs/msg/String");
       expect(r.valid).toBe(false);
       expect(r.issues).toHaveLength(1);

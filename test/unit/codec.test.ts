@@ -157,3 +157,15 @@ describe("codec options and buffers", () => {
     expect(() => scan.decode(sb.subarray(0, sb.length - 40))).toThrow();
   });
 });
+
+describe("bare values (rclnodejs publish('hello'))", () => {
+  test("are encoded as the data field", () => {
+    expect(getMessageType("std_msgs/msg/String").decode(getMessageType("std_msgs/msg/String").encode("hello"))).toEqual({ data: "hello" });
+    expect(getMessageType("std_msgs/msg/Float64").decode(getMessageType("std_msgs/msg/Float64").encode(3.14))).toEqual({ data: 3.14 });
+    expect(getMessageType("std_msgs/msg/Bool").decode(getMessageType("std_msgs/msg/Bool").encode(true))).toEqual({ data: true });
+    expect(getMessageType("std_msgs/msg/Int64").decode(getMessageType("std_msgs/msg/Int64").encode(7n))).toEqual({ data: 7n });
+  });
+  test("are rejected for messages without a data field", () => {
+    expect(() => getMessageType("geometry_msgs/msg/Twist").encode(1)).toThrow();
+  });
+});

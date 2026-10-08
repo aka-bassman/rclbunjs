@@ -57,3 +57,11 @@ import rclbunDefault from "rclbunjs";
 rclbunDefault.createNode("n").createPublisher("std_msgs/msg/String", "t").publish({ data: "x" });
 // @ts-expect-error data must be a string
 rclbunDefault.createNode("n").createPublisher("std_msgs/msg/String", "t").publish({ data: 1 });
+
+// rclnodejs shorthand: a bare value for single-`data` messages
+node.createPublisher("std_msgs/msg/String", "s").publish("hello");
+node.createPublisher("std_msgs/msg/Float64", "f").publish(3.14, { validate: true });
+// @ts-expect-error Twist has no data field
+node.createPublisher("geometry_msgs/msg/Twist", "t2").publish("hello");
+// @ts-expect-error data is a string
+node.createPublisher("std_msgs/msg/String", "s").publish(1);

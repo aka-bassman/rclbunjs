@@ -17,6 +17,12 @@ export type ResultOf<T> = T extends keyof ActionTypeMap ? (ActionTypeMap[T] exte
 export type FeedbackOf<T> = T extends keyof ActionTypeMap ? (ActionTypeMap[T] extends { Feedback: infer R } ? R : any) : any;
 
 /** Message input: every field optional (missing fields get their default values). */
+/** A bare value accepted for messages with a primitive `data` field (rclnodejs: `publish("hello")`). */
+export type DataShorthand<T> = T extends { data: infer D } ? (D extends bigint | number | string | boolean ? D : never) : never;
+
+/** What publish() / sendRequest() accept for a message of type T. */
+export type MessageArg<T> = MessageInput<T> | DataShorthand<T>;
+
 export type MessageInput<T> = T extends bigint | number | string | boolean
   ? T
   : T extends ArrayLike<infer E> & object
