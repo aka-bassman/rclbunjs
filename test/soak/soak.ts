@@ -12,6 +12,8 @@ import * as rclbun from "../../src/index.ts";
 const MINUTES = Number(process.env.SOAK_MINUTES ?? 60);
 const SAMPLE_SEC = Number(process.env.SOAK_SAMPLE_SEC ?? 30);
 const MAX_SLOPE = Number(process.env.SOAK_MAX_MB_PER_HOUR ?? 5);
+// SOAK_CHURN=0 skips entity/node churn, to tell middleware discovery state apart from other growth
+const CHURN = process.env.SOAK_CHURN !== "0";
 const FIB = "example_interfaces/action/Fibonacci";
 
 await rclbun.init();
@@ -191,7 +193,7 @@ async function churnLoop() {
 }
 
 let running = true;
-const loops = [rpcLoop(), churnLoop()];
+const loops = CHURN ? [rpcLoop(), churnLoop()] : [rpcLoop()];
 const t0 = performance.now();
 const samples: { t: number; rss: number; heap: number }[] = [];
 const mb = (b: number) => Math.round((b / 1048576) * 10) / 10;
@@ -220,6 +222,7 @@ function slope(key: "rss" | "heap"): number {
 const summary = {
   minutes: MINUTES,
   rmw: node.getRMWImplementationIdentifier(),
+  churnEnabled: CHURN,
   distro: process.env.ROS_DISTRO,
   rssMB: { first: samples[0]?.rss, last: samples.at(-1)?.rss, slopePerHour: slope("rss") },
   heapMB: { first: samples[0]?.heap, last: samples.at(-1)?.heap, slopePerHour: slope("heap") },
