@@ -94,6 +94,9 @@ new rclbun.ActionServer(
   undefined,
   undefined,
   () => rclbun.CancelResponse.ACCEPT,
+  // finished goals are kept for resultTimeout and listed in every status
+  // message; the 15 min default would dominate memory at this goal rate
+  { resultTimeout: 10 },
 );
 const fib = new rclbun.ActionClient(node, FIB, "soak/fib");
 

@@ -306,6 +306,7 @@ export class ActionServer<K extends KnownOr<ActionTypeName> = string, G = GoalOf
   #feedbackPub: Publisher;
   #statusPub: Publisher;
   #resultTimeoutMs: number;
+  #expiry = new Set<ReturnType<typeof setTimeout>>();
   #destroyed = false;
   #logger: Logging;
 
@@ -402,11 +403,14 @@ export class ActionServer<K extends KnownOr<ActionTypeName> = string, G = GoalOf
     gh._result = result ?? this.typeClass.result.create();
     for (const w of gh._waiters) w.send({ status: gh.status, result: gh._result });
     gh._waiters = [];
+    // keep the result for resultTimeout (rcl_action default: 15 min), then forget the goal
     const t = setTimeout(() => {
+      this.#expiry.delete(t);
       this.#goals.delete(key(gh.goalId));
       this.#publishStatus();
     }, this.#resultTimeoutMs);
     (t as unknown as { unref?: () => void }).unref?.();
+    this.#expiry.add(t);
   }
 
   /** @internal */
@@ -480,6 +484,9 @@ export class ActionServer<K extends KnownOr<ActionTypeName> = string, G = GoalOf
   destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
+    for (const t of this.#expiry) clearTimeout(t);
+    this.#expiry.clear();
+    this.#goals.clear();
     if (this.#node.isDestroyed()) return;
     this.#logger.destroy();
     for (const s of this.#services) this.#node.destroyService(s);
