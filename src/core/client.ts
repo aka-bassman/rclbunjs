@@ -1,0 +1,139 @@
+import { ptr, toArrayBuffer, type Pointer } from "bun:ffi";
+import { lib } from "../native/loader.ts";
+import { check, checkRc, cstr } from "../native/ffi.ts";
+import type { ServiceType } from "../interfaces/registry.ts";
+import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
+import { AbortError, TimeoutError } from "./errors.ts";
+import type { Waitable } from "./executor.ts";
+import { QoS } from "./qos.ts";
+import type { MessageInput } from "../types.ts";
+
+const SEQ = new BigInt64Array(1);
+const OUT = new BigUint64Array(1);
+
+interface Pending {
+  resolve: (v: any) => void;
+  reject: (e: unknown) => void;
+  cleanup?: () => void;
+}
+
+export class Client<Req = any, Resp = any> extends Entity implements Waitable {
+  readonly typeClass: ServiceType;
+  readonly loggerName: string;
+  readonly #pending = new Map<bigint, Pending>();
+  readonly #qos: QoS;
+
+  /** @internal */
+  constructor(nodeHandle: Pointer, loggerName: string, srvType: ServiceType, serviceName: string, options: EntityOptions) {
+    const qos = QoS.from(options.qos, QoS.profileServicesDefault);
+    const h = check(
+      lib.rb_client_init(
+        nodeHandle,
+        srvType.typeSupport(),
+        cstr(serviceName),
+        qos.toNative(),
+        srvType.request.typeSupport(),
+        srvType.response.typeSupport(),
+      ),
+      `create client '${serviceName}'`,
+    );
+    super(h, options);
+    this.typeClass = srvType;
+    this.loggerName = loggerName;
+    this.#qos = qos;
+  }
+
+  get qos(): QoS {
+    return this.#qos;
+  }
+
+  get serviceName(): string {
+    return String(lib.rb_client_service_name(this.handle));
+  }
+
+  #send(request: MessageInput<Req>, pending: Pending): bigint {
+    this.assertAlive();
+    const bytes = this.typeClass.request.encode(request);
+    const seq = checkRc(lib.rb_client_send(this.handle, bytes, bytes.length), `send request to ${this.serviceName}`);
+    this.#pending.set(seq, pending);
+    return seq;
+  }
+
+  /** Sends a request; `callback` receives the response once the node spins. */
+  sendRequest(request: MessageInput<Req>, callback: (response: Resp) => void): void {
+    this.#send(request, { resolve: callback, reject: (e) => queueMicrotask(() => { throw e; }) });
+  }
+
+  /** Sends a request and resolves with the response (node must be spinning). */
+  sendRequestAsync(request: MessageInput<Req>, options: { timeout?: number; signal?: AbortSignal } = {}): Promise<Resp> {
+    return new Promise<Resp>((resolve, reject) => {
+      if (options.signal?.aborted) return reject(new AbortError("request aborted"));
+      const p: Pending = { resolve, reject };
+      const seq = this.#send(request, p);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const onAbort = () => {
+        p.cleanup?.();
+        this.#pending.delete(seq);
+        reject(new AbortError("request aborted"));
+      };
+      if (options.timeout !== undefined) {
+        timer = setTimeout(() => {
+          p.cleanup?.();
+          this.#pending.delete(seq);
+          reject(new TimeoutError(`service ${this.serviceName} did not respond within ${options.timeout} ms`));
+        }, options.timeout);
+      }
+      options.signal?.addEventListener("abort", onAbort, { once: true });
+      p.cleanup = () => {
+        if (timer) clearTimeout(timer);
+        options.signal?.removeEventListener("abort", onAbort);
+      };
+    });
+  }
+
+  isServiceServerAvailable(): boolean {
+    return checkRc(lib.rb_client_server_available(this.handle), "service availability") === 1;
+  }
+
+  /** Polls until a server is available. Resolves false on timeout (ms); no timeout waits forever. */
+  async waitForService(timeout?: number): Promise<boolean> {
+    const deadline = timeout === undefined ? Infinity : Date.now() + timeout;
+    let delay = 10;
+    for (;;) {
+      if (this.isDestroyed()) return false;
+      if (this.isServiceServerAvailable()) return true;
+      const left = deadline - Date.now();
+      if (left <= 0) return false;
+      await Bun.sleep(Math.min(delay, left));
+      delay = Math.min(delay * 2, 1000);
+    }
+  }
+
+  /** @internal */
+  execute(): void {
+    for (;;) {
+      if (this.isDestroyed()) return;
+      const n = Number(checkRc(lib.rb_client_take(this.handle, ptr(SEQ), ptr(OUT)), `take response on ${this.serviceName}`));
+      if (n === 0) return;
+      const view = new Uint8Array(toArrayBuffer(Number(OUT[0]) as Pointer, 0, n));
+      const p = this.#pending.get(SEQ[0]!);
+      if (!p) continue; // timed out / aborted
+      this.#pending.delete(SEQ[0]!);
+      p.cleanup?.();
+      try {
+        p.resolve(convertForDelivery(this.typeClass.response.decode(view), this.options));
+      } catch (e) {
+        p.reject(e);
+      }
+    }
+  }
+
+  /** @internal */
+  _fini(): void {
+    if (this.isDestroyed()) return;
+    this.markDestroyed();
+    for (const p of this.#pending.values()) p.cleanup?.();
+    this.#pending.clear();
+    lib.rb_client_fini(this.handle);
+  }
+}

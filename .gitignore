@@ -1,0 +1,7 @@
+node_modules/
+build/
+*.log
+# reference clone and scratch files (see local/PLAN.md, local/PROGRESS.md)
+local/rclnodejs/
+local/scratch/
+.claude/

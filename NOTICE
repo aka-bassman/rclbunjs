@@ -1,0 +1,11 @@
+rclbunjs
+Copyright 2026 The rclbunjs authors
+
+This product's public API and several behaviours (parameter handling, action
+server/client semantics, lifecycle node API, QoS profiles, error classes) are
+modelled on rclnodejs (https://github.com/RobotWebTools/rclnodejs),
+Copyright (c) 2017 Intel Corporation and The Robot Web Tools Contributors,
+licensed under the Apache License, Version 2.0.
+
+The default lifecycle state machine and action protocol follow ROS 2
+rcl_lifecycle / rcl_action (https://github.com/ros2/rcl), Apache License 2.0.

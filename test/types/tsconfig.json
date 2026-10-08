@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "rclbunjs": [
+        "../../src/index.ts"
+      ]
+    },
+    "noUnusedLocals": false
+  },
+  "include": [
+    "usage.ts",
+    "interfaces.generated.d.ts"
+  ],
+  "exclude": []
+}

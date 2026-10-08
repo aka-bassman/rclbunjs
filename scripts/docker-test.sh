@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Run integration tests inside the ROS 2 dev container.
+#   scripts/docker-test.sh                 -> bun test test/integration
+#   scripts/docker-test.sh bun run x.ts    -> arbitrary command
+set -euo pipefail
+ROS_DISTRO="${ROS_DISTRO:-jazzy}"
+IMAGE="rclbunjs-dev:${ROS_DISTRO}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -t "$IMAGE" --build-arg ROS_DISTRO="$ROS_DISTRO" "$ROOT/docker"
+fi
+CMD=("$@")
+[ ${#CMD[@]} -eq 0 ] && CMD=(bun test test/integration)
+exec docker run --rm --network none \
+  -e ROS_DOMAIN_ID="$((RANDOM % 100 + 1))" -e RCLBUN_DEBUG="${RCLBUN_DEBUG:-}" \
+  ${RMW_IMPLEMENTATION:+-e RMW_IMPLEMENTATION="$RMW_IMPLEMENTATION"} \
+  -v "$ROOT:/app" -w /app "$IMAGE" \
+  bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && $(printf '%q ' "${CMD[@]}")"

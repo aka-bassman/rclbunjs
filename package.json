@@ -1,0 +1,45 @@
+{
+  "name": "rclbunjs",
+  "version": "0.1.0",
+  "description": "Bun-native ROS 2 client library (bun:ffi over rcl)",
+  "type": "module",
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "files": [
+    "src",
+    "bin",
+    "NOTICE",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:unit": "bun test test/unit",
+    "test:docker": "scripts/docker-test.sh",
+    "build:native": "scripts/build-native.sh",
+    "test:types": "tsc --noEmit -p test/types",
+    "test:integration": "scripts/docker-test.sh bun test test/integration"
+  },
+  "dependencies": {
+    "@foxglove/ros2idl-parser": "0.3.6",
+    "@foxglove/rosmsg": "5.0.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^7.0.2"
+  },
+  "bin": {
+    "rclbunjs-typegen": "bin/rclbunjs-typegen.ts"
+  }
+}
