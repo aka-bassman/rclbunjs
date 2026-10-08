@@ -30,7 +30,7 @@ export const symbols = {
   rb_validate_topic_name: { returns: CSTR, args: [P] },
   rb_validate_full_topic_name: { returns: CSTR, args: [P] },
 
-  rb_node_init: { returns: P, args: [P, P, P, I32, I32, I32, P] },
+  rb_node_init: { returns: P, args: [P, P, P, I32, I32, P, I32, P] },
   rb_node_fini: { returns: I32, args: [P] },
   rb_node_name: { returns: CSTR, args: [P] },
   rb_node_namespace: { returns: CSTR, args: [P] },
@@ -42,6 +42,7 @@ export const symbols = {
   rb_log: { returns: I32, args: [P, I32, P, P, I64, P] },
   rb_logging_set_level: { returns: I32, args: [P, I32] },
   rb_logging_get_effective_level: { returns: I32, args: [P] },
+  rb_logging_get_level: { returns: I32, args: [P] },
   rb_logging_is_enabled_for: { returns: I32, args: [P, I32] },
 
   rb_pub_init: { returns: P, args: [P, P, P, P] },

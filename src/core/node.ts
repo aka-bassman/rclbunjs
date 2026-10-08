@@ -26,6 +26,7 @@ import { Publisher } from "./publisher.ts";
 import { QoS } from "./qos.ts";
 import { ServiceResponse, Service, type ServiceRequestHandler } from "./service.ts";
 import { Subscription, type SubscriptionCallback } from "./subscription.ts";
+import { ObservableSubscription } from "./observable_subscription.ts";
 import { Time } from "./time.ts";
 import { GuardCondition, Rate, Timer, type TimerInfo } from "./timer.ts";
 import { Parameter, ParameterDescriptor, ParameterType } from "./parameter.ts";
@@ -46,6 +47,8 @@ export interface NodeOptionsInit {
   rosoutQos?: QoS | string;
   /** Serve ~/get_type_description (Jazzy and newer). Default true. */
   startTypeDescriptionService?: boolean;
+  /** Serve ~/get_logger_levels and ~/set_logger_levels. Default false. */
+  enableLoggerService?: boolean;
 }
 
 export class NodeOptions {
@@ -55,6 +58,7 @@ export class NodeOptions {
   enableRosout = true;
   rosoutQos: QoS | string = QoS.profileRosoutDefault;
   startTypeDescriptionService = true;
+  enableLoggerService = false;
 
   constructor(init: NodeOptionsInit = {}) {
     Object.assign(this, init);
@@ -123,7 +127,16 @@ export class Node {
     if (nameErr) throw new NameValidationError(`invalid node name '${name}': ${nameErr}`);
     const a = cstrArray(args.length && args[0] !== "--ros-args" ? ["--ros-args", ...args] : args);
     this.handle = check(
-      lib.rb_node_init(context.handle, cstr(name), cstr(namespace), useGlobalArguments ? 1 : 0, this.#options.enableRosout ? 1 : 0, a.argc, a.argv),
+      lib.rb_node_init(
+        context.handle,
+        cstr(name),
+        cstr(namespace),
+        useGlobalArguments ? 1 : 0,
+        this.#options.enableRosout ? 1 : 0,
+        QoS.from(this.#options.rosoutQos, QoS.profileRosoutDefault).toNative(),
+        a.argc,
+        a.argv,
+      ),
       "rcl_node_init",
     );
     void a.keep;
@@ -137,6 +150,25 @@ export class Node {
     this._parameters.init();
     this._timeSource.init();
     if (features.typeDescriptionService) this.#initTypeDescriptionService();
+    if (this.#options.enableLoggerService) this.#startLoggerService();
+  }
+
+  // rcl_interfaces logger services, with rclcpp semantics: get reports each
+  // logger's own level (0 when unset), set reports per-logger results.
+  #startLoggerService(): void {
+    this.createService("rcl_interfaces/srv/GetLoggerLevels", "~/get_logger_levels", (req: { names: string[] }) => ({
+      levels: req.names.map((name) => ({ name, level: Logging.getLogger(name).loggerLevel })),
+    }));
+    this.createService("rcl_interfaces/srv/SetLoggerLevels", "~/set_logger_levels", (req: { levels: { name: string; level: number }[] }) => ({
+      results: req.levels.map(({ name, level }) => {
+        try {
+          Logging.getLogger(name).setLoggerLevel(level);
+          return { successful: true, reason: "" };
+        } catch (e) {
+          return { successful: false, reason: (e as Error).message };
+        }
+      }),
+    }));
   }
 
   // Like rclcpp: the read-only `start_type_description_service` parameter
@@ -270,6 +302,19 @@ export class Node {
     this.#subscriptions.add(s);
     this.#added();
     return s;
+  }
+
+  /** A subscription whose messages are delivered through an Observable (RxJS when installed). */
+  createObservableSubscription<K extends KnownOr<MessageTypeName>, T = MessageOf<K>>(
+    typeClass: K | MessageType | Exclude<TypeName, string>,
+    topic: string,
+    options?: EntityOptions,
+    eventCallbacks?: EventCallbacks,
+  ): ObservableSubscription<T> {
+    let observable: ObservableSubscription<T> | undefined;
+    const sub = this.createSubscription<K, T>(typeClass, topic, options, (msg: T) => observable?._emit(msg), eventCallbacks);
+    observable = new ObservableSubscription<T>(sub);
+    return observable;
   }
 
   createClient<K extends KnownOr<ServiceTypeName>, Req = RequestOf<K>, Resp = ResponseOf<K>>(

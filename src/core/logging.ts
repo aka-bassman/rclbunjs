@@ -1,6 +1,7 @@
 // Logging over rcutils (output goes to console, /rosout and the log file like rclcpp/rclpy).
 import { lib } from "../native/loader.ts";
-import { cstr } from "../native/ffi.ts";
+import { cstr, lastError } from "../native/ffi.ts";
+import { OperationError } from "./errors.ts";
 
 export enum LoggingSeverity {
   UNSET = 0,
@@ -45,7 +46,14 @@ export class Logging {
   }
 
   setLoggerLevel(level: LoggingSeverity): void {
-    lib.rb_logging_set_level(this.#nameC, level);
+    if (lib.rb_logging_set_level(this.#nameC, level) !== 0) {
+      throw new OperationError(`cannot set level ${level} for logger '${this.name}': ${lastError()}`);
+    }
+  }
+
+  /** The level set on this logger itself (UNSET if it inherits one). */
+  get loggerLevel(): LoggingSeverity {
+    return lib.rb_logging_get_level(this.#nameC);
   }
 
   get loggerEffectiveLevel(): LoggingSeverity {

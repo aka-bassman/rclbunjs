@@ -35,8 +35,17 @@
     "@foxglove/ros2idl-parser": "0.3.6",
     "@foxglove/rosmsg": "5.0.5"
   },
+  "peerDependencies": {
+    "rxjs": "^7.8.0"
+  },
+  "peerDependenciesMeta": {
+    "rxjs": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@types/bun": "^1.4.2",
+    "rxjs": "7.8.1",
     "typescript": "^7.0.2"
   },
   "bin": {

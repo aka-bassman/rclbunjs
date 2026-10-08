@@ -25,6 +25,7 @@
 #include <rcl/event.h>
 #include <rcl/graph.h>
 #include <rcl/logging.h>
+#include <rcl/logging_rosout.h>
 #include <rcl/remap.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
@@ -309,13 +310,15 @@ const char* rb_validate_full_topic_name(const char* name) {
 // ---------------------------------------------------------------------------
 // node
 
+// rosout_qos: packed QoS (see rb_apply_qos) or NULL for the rcl default.
 void* rb_node_init(void* ctx, const char* name, const char* ns, int use_global_args,
-                   int enable_rosout, int argc, const char** argv) {
+                   int enable_rosout, const int64_t* rosout_qos, int argc, const char** argv) {
   rcl_node_t* n = malloc(sizeof(*n));
   *n = rcl_get_zero_initialized_node();
   rcl_node_options_t o = rcl_node_get_default_options();
   o.use_global_arguments = use_global_args != 0;
   o.enable_rosout = enable_rosout != 0;
+  if (rosout_qos) rb_apply_qos(&o.rosout_qos, rosout_qos);
   if (argc > 0) {
     rcl_ret_t pr = rcl_parse_arguments(argc, argv, o.allocator, &o.arguments);
     if (pr != RCL_RET_OK) {
@@ -331,10 +334,28 @@ void* rb_node_init(void* ctx, const char* name, const char* ns, int use_global_a
     free(n);
     return NULL;
   }
+#if !defined(RB_DISTRO_HUMBLE)
+  // Since Iron the client library creates the node's /rosout publisher (rclcpp
+  // does this in NodeBase); Humble's rcl_node_init still does it itself.
+  if (enable_rosout && rcl_logging_rosout_enabled()) {
+    ret = rcl_logging_rosout_init_publisher_for_node(n);
+    if (ret != RCL_RET_OK) {
+      rb_take_rcl_error("rcl_logging_rosout_init_publisher_for_node", ret);
+      rcl_node_fini(n);
+      free(n);
+      return NULL;
+    }
+  }
+#endif
   return n;
 }
 
 int rb_node_fini(void* node) {
+#if !defined(RB_DISTRO_HUMBLE)
+  if (rcl_logging_rosout_enabled() && rcl_node_get_options((rcl_node_t*)node)->enable_rosout) {
+    if (rcl_logging_rosout_fini_publisher_for_node((rcl_node_t*)node) != RCL_RET_OK) rcl_reset_error();
+  }
+#endif
   rcl_ret_t ret = rcl_node_fini((rcl_node_t*)node);
   free(node);
   if (ret != RCL_RET_OK) {
@@ -486,7 +507,19 @@ int rb_log(const char* name, int severity, const char* file, const char* func, i
 }
 
 int rb_logging_set_level(const char* name, int level) {
-  return rcutils_logging_set_logger_level(name, level) == RCUTILS_RET_OK ? 0 : -1;
+  rcutils_ret_t ret = rcutils_logging_set_logger_level(name, level);
+  if (ret != RCUTILS_RET_OK) {
+    rb_take_rcl_error("rcutils_logging_set_logger_level", ret);
+    return -1;
+  }
+  return 0;
+}
+
+// The logger's own level (0 = unset), as the logger services report it.
+int rb_logging_get_level(const char* name) {
+  int level = rcutils_logging_get_logger_level(name);
+  if (level < 0) rcutils_reset_error();
+  return level < 0 ? 0 : level;
 }
 
 int rb_logging_get_effective_level(const char* name) {
