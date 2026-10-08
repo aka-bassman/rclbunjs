@@ -1,5 +1,5 @@
 import { ptr, toArrayBuffer, type Pointer } from "bun:ffi";
-import { lib } from "../native/loader.ts";
+import { features, lib } from "../native/loader.ts";
 import { check, checkRc, cstr, lastError } from "../native/ffi.ts";
 import type { ServiceType } from "../interfaces/registry.ts";
 import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
@@ -8,9 +8,38 @@ import type { Waitable } from "./executor.ts";
 import { Logging } from "./logging.ts";
 import { QoS } from "./qos.ts";
 import type { MessageInput } from "../types.ts";
+import type { Clock } from "./clock.ts";
 
 const OUT = new BigUint64Array(1);
 const HDR = new BigUint64Array(1);
+
+/** What service introspection publishes on `<service>/_service_event`. */
+export enum ServiceIntrospectionStates {
+  OFF = 0,
+  METADATA = 1,
+  CONTENTS = 2,
+}
+
+/** @internal shared by Service and Client */
+export function configureIntrospection(
+  configure: (clock: Pointer, ts: Pointer, qos: BigInt64Array, state: number) => number,
+  srvType: ServiceType,
+  clock: Clock,
+  qos: QoS | string,
+  state: ServiceIntrospectionStates,
+): void {
+  if (!features.serviceIntrospection) {
+    console.warn("Service introspection is not supported by this version of ROS 2");
+    return;
+  }
+  const q = QoS.from(qos, QoS.profileSystemDefault);
+  if (configure(clock.handle, srvType.typeSupport(), q.toNative(), state) !== 0) {
+    throw new NativeError(`configure service introspection: ${lastError()}`);
+  }
+}
+
+// Frees the request header of a ServiceResponse that was never sent.
+const unanswered = new FinalizationRegistry<Pointer>((h) => lib.rb_free(h));
 
 /** Handed to the request handler; send() replies to that request. */
 export class ServiceResponse<Resp = any> {
@@ -22,6 +51,7 @@ export class ServiceResponse<Resp = any> {
     this.#service = service;
     this.#header = header;
     this.template = service.typeClass.response.create();
+    unanswered.register(this, header, this);
   }
 
   get service(): Service {
@@ -36,6 +66,7 @@ export class ServiceResponse<Resp = any> {
     const h = this.#header;
     if (h === null) throw new Error("response already sent");
     this.#header = null;
+    unanswered.unregister(this);
     this.#service._reply(h, response);
   }
 }
@@ -89,6 +120,21 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
 
   getOptions(): EntityOptions {
     return this.options;
+  }
+
+  /**
+   * Publishes request/response events on `<service>/_service_event`
+   * (Iron and newer; ignored with a warning on Humble).
+   */
+  configureIntrospection(clock: Clock, qos: QoS | string, introspectionState: ServiceIntrospectionStates): void {
+    this.assertAlive();
+    configureIntrospection(
+      (c, ts, q, st) => lib.rb_service_configure_introspection(this.handle, c, ts, q, st),
+      this.typeClass,
+      clock,
+      qos,
+      introspectionState,
+    );
   }
 
   /** @internal */

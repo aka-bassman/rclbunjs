@@ -85,6 +85,12 @@ export const symbols = {
   rb_service_take: { returns: I64, args: [P, P, P] },
   rb_service_send: { returns: I32, args: [P, P, P, U64] },
   rb_service_name: { returns: CSTR, args: [P] },
+  rb_service_configure_introspection: { returns: I32, args: [P, P, P, P, I32] },
+  rb_client_configure_introspection: { returns: I32, args: [P, P, P, P, I32] },
+  rb_type_description_service_init: { returns: P, args: [P, P, P] },
+  rb_type_description_service_handle: { returns: I32, args: [P] },
+  rb_message_type_hash: { returns: CSTR, args: [P] },
+  rb_features: { returns: I32, args: [] },
 
   rb_clock_init: { returns: P, args: [I32] },
   rb_clock_fini: { returns: I32, args: [P] },
@@ -179,4 +185,13 @@ function loadNative() {
 const native = loadNative();
 export const lib = native.symbols;
 export type NativeLib = typeof lib;
+
+/** Optional rcl features compiled into the shim (see rb_features in shim.c). */
+const featureBits = lib.rb_features();
+export const features = {
+  timerCallInfo: (featureBits & 1) !== 0,
+  serviceIntrospection: (featureBits & 2) !== 0,
+  typeDescriptionService: (featureBits & 4) !== 0,
+  matchedEvents: (featureBits & 8) !== 0,
+};
 export type { Pointer };

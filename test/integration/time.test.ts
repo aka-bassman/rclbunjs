@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as rclbun from "../../src/index.ts";
 import { ClockChange, Duration, ROSClock, Time, ClockType } from "../../src/index.ts";
+import { features } from "../../src/native/loader.ts";
 
 let node: rclbun.Node;
 beforeAll(async () => {
@@ -80,8 +81,14 @@ describe("timer", () => {
       expect(typeof i.expectedCallTime).toBe("bigint");
       expect(i.actualCallTime).toBeGreaterThanOrEqual(i.expectedCallTime);
     }
-    // expected call times advance by exactly one period
-    expect(infos[2]!.expectedCallTime - infos[1]!.expectedCallTime).toBe(20_000_000n);
+    const step = infos[2]!.expectedCallTime - infos[1]!.expectedCallTime;
+    if (features.timerCallInfo) {
+      // rcl_timer_call_with_info: expected call times advance by exactly one period
+      expect(step).toBe(20_000_000n);
+    } else {
+      // Humble: derived from two clock reads
+      expect(step > 19_000_000n && step < 21_000_000n).toBe(true);
+    }
   });
 
   test("on-reset callback reports pending and new resets", () => {

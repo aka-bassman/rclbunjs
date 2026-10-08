@@ -1094,6 +1094,136 @@ const char* rb_service_name(void* sp) {
 void rb_free(void* p) { free(p); }
 
 // ---------------------------------------------------------------------------
+// service introspection and ~/get_type_description (not on Humble)
+
+int rb_service_configure_introspection(void* sp, void* clock, const void* srv_ts, const int64_t* qos, int state) {
+#if defined(RB_DISTRO_HUMBLE)
+  (void)sp, (void)clock, (void)srv_ts, (void)qos, (void)state;
+  rb_set_error("service introspection is not available on Humble");
+  return -1;
+#else
+  rb_service_t* s = sp;
+  rcl_publisher_options_t o = rcl_publisher_get_default_options();
+  rb_apply_qos(&o.qos, qos);
+  rcl_ret_t ret = rcl_service_configure_service_introspection(&s->service, s->node, (rcl_clock_t*)clock, srv_ts, o,
+                                                             (rcl_service_introspection_state_t)state);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_service_configure_service_introspection", ret);
+    return -1;
+  }
+  return 0;
+#endif
+}
+
+int rb_client_configure_introspection(void* cp, void* clock, const void* srv_ts, const int64_t* qos, int state) {
+#if defined(RB_DISTRO_HUMBLE)
+  (void)cp, (void)clock, (void)srv_ts, (void)qos, (void)state;
+  rb_set_error("service introspection is not available on Humble");
+  return -1;
+#else
+  rb_client_t* c = cp;
+  rcl_publisher_options_t o = rcl_publisher_get_default_options();
+  rb_apply_qos(&o.qos, qos);
+  rcl_ret_t ret = rcl_client_configure_service_introspection(&c->client, c->node, (rcl_clock_t*)clock, srv_ts, o,
+                                                            (rcl_service_introspection_state_t)state);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_client_configure_service_introspection", ret);
+    return -1;
+  }
+  return 0;
+#endif
+}
+
+// The ~/get_type_description service is created by rcl and answered from the
+// node's type cache; it is returned as an rb_service_t so rb_service_fini and
+// the executor treat it like any other service.
+void* rb_type_description_service_init(void* node, const void* req_ts, const void* resp_ts) {
+#if defined(RB_DISTRO_HUMBLE)
+  (void)node, (void)req_ts, (void)resp_ts;
+  rb_set_error("the type description service is not available on Humble");
+  return NULL;
+#else
+  rb_service_t* s = calloc(1, sizeof(*s));
+  s->service = rcl_get_zero_initialized_service();
+  s->node = node;
+  if (rb_cmsg_init(&s->req, req_ts) != 0 || rb_cmsg_init(&s->resp, resp_ts) != 0) {
+    free(s);
+    return NULL;
+  }
+  rcl_ret_t ret = rcl_node_type_description_service_init(&s->service, node);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_node_type_description_service_init", ret);
+    rb_cmsg_fini(&s->req);
+    rb_cmsg_fini(&s->resp);
+    free(s);
+    return NULL;
+  }
+  return s;
+#endif
+}
+
+// Takes and answers one request: 1 if handled, 0 if none was pending, -1 on error.
+int rb_type_description_service_handle(void* sp) {
+#if defined(RB_DISTRO_HUMBLE)
+  (void)sp;
+  return -1;
+#else
+  rb_service_t* s = sp;
+  rmw_service_info_t info;
+  rcl_ret_t ret = rcl_take_request_with_info(&s->service, &info, s->req.msg);
+  if (ret == RCL_RET_SERVICE_TAKE_FAILED) return 0;
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_take_request", ret);
+    return -1;
+  }
+  s->resp.members->fini_function(s->resp.msg);
+  memset(s->resp.msg, 0, s->resp.members->size_of_);
+  s->resp.members->init_function(s->resp.msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
+  rcl_node_type_description_service_handle_request(s->node, &info.request_id, s->req.msg, s->resp.msg);
+  ret = rcl_send_response(&s->service, &info.request_id, s->resp.msg);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_send_response", ret);
+    return -1;
+  }
+  return 1;
+#endif
+}
+
+// Writes the RIHS type hash of a message type support ("RIHS01_<hex>") or "".
+const char* rb_message_type_hash(const void* ts) {
+  js_reset();
+#if !defined(RB_DISTRO_HUMBLE)
+  const rosidl_message_type_support_t* t = ts;
+  if (t && t->get_type_hash_func) {
+    char* str = NULL;
+    if (rosidl_stringify_type_hash(t->get_type_hash_func(t), rcutils_get_default_allocator(), &str) == RCUTILS_RET_OK) {
+      js_lit(str);
+      free(str);
+    }
+  }
+#else
+  (void)ts;
+#endif
+  return g_json.buf;
+}
+
+// Bit flags for optional rcl features compiled into this shim.
+enum {
+  RB_F_TIMER_CALL_INFO = 1,
+  RB_F_SERVICE_INTROSPECTION = 2,
+  RB_F_TYPE_DESCRIPTION = 4,
+  RB_F_MATCHED_EVENTS = 8,
+};
+
+int rb_features(void) {
+#if defined(RB_DISTRO_HUMBLE)
+  return 0;
+#else
+  return RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS;
+#endif
+}
+
+// ---------------------------------------------------------------------------
 // clock
 
 void* rb_clock_init(int type) {
@@ -1688,6 +1818,15 @@ const char* rb_graph_endpoint_info(void* node, int kind, const char* topic, int 
     }
     js_lit("],\"qos\":");
     js_qos(&ep->qos_profile);
+#if !defined(RB_DISTRO_HUMBLE)
+    js_lit(",\"typeHash\":[");
+    js_int(ep->topic_type_hash.version);
+    for (size_t h = 0; h < ROSIDL_TYPE_HASH_SIZE; h++) {
+      js_lit(",");
+      js_int(ep->topic_type_hash.value[h]);
+    }
+    js_lit("]");
+#endif
     js_lit("}");
   }
   js_lit("]");

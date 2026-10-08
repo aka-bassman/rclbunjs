@@ -39,14 +39,15 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 |---|---|
 | Context/Node | `init(argv)` with `--ros-args` (remapping, `-p`, `--params-file`), namespaces, domain id, node args |
 | Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, typed arrays / `plain` / `json` modes |
-| Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers) |
+| Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers); service introspection via `configureIntrospection` (Jazzy+) |
 | Actions | `ActionClient` / `ActionServer` (feedback, cancel, result, goal accept/reject), wire-compatible with rclcpp/rclpy |
 | Parameters | declare/get/set/undeclare, descriptors (read-only, ranges), on/pre/post-set callbacks, CLI and YAML overrides, `/parameter_events`, the standard parameter services, `ParameterClient`, `ParameterEventHandler`, `ParameterWatcher` |
 | Time | `Clock`, `ROSClock`, `Time`, `Duration`, `TimeSource` (`use_sim_time` + `/clock`), clock jump callbacks, `sleepUntil`/`sleepFor`, timers with `TimerInfo` and on-reset callbacks, `Rate` |
 | Lifecycle | `LifecycleNode`, the standard state machine and services, `~/transition_event`, lifecycle publishers |
 | QoS events | deadline, liveliness, incompatible QoS, incompatible type, matched, message lost |
 | Content filter | subscription content filters (Fast DDS) |
-| Graph | topic/service/node listings, publisher/subscription counts, endpoint info with QoS |
+| Graph | topic/service/node listings, publisher/subscription counts, endpoint info with QoS and type hash |
+| Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout`, log files), logger levels |
 
 ## Messages

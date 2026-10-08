@@ -1,6 +1,6 @@
 // Node: entity factory, graph introspection, spinning, parameters.
 import type { Pointer } from "bun:ffi";
-import { lib } from "../native/loader.ts";
+import { features, lib } from "../native/loader.ts";
 import { check, checkRc, cstr, cstrArray, json } from "../native/ffi.ts";
 import {
   getMessageType,
@@ -28,11 +28,12 @@ import { ServiceResponse, Service, type ServiceRequestHandler } from "./service.
 import { Subscription, type SubscriptionCallback } from "./subscription.ts";
 import { Time } from "./time.ts";
 import { GuardCondition, Rate, Timer, type TimerInfo } from "./timer.ts";
-import type { Parameter, ParameterDescriptor } from "./parameter.ts";
+import { Parameter, ParameterDescriptor, ParameterType } from "./parameter.ts";
 import { ParameterManager } from "./parameter_manager.ts";
 import { ParameterClient } from "./parameter_client.ts";
 import { ParameterEventHandler, ParameterWatcher } from "./parameter_event_handler.ts";
 import { TimeSource } from "./time_source.ts";
+import { TypeDescriptionService } from "./type_description_service.ts";
 import type { KnownOr, MessageOf, MessageTypeName, RequestOf, ResponseOf, ServiceTypeName } from "../types.ts";
 
 void ServiceResponse;
@@ -43,6 +44,8 @@ export interface NodeOptionsInit {
   automaticallyDeclareParametersFromOverrides?: boolean;
   enableRosout?: boolean;
   rosoutQos?: QoS | string;
+  /** Serve ~/get_type_description (Jazzy and newer). Default true. */
+  startTypeDescriptionService?: boolean;
 }
 
 export class NodeOptions {
@@ -51,6 +54,7 @@ export class NodeOptions {
   automaticallyDeclareParametersFromOverrides = false;
   enableRosout = true;
   rosoutQos: QoS | string = QoS.profileRosoutDefault;
+  startTypeDescriptionService = true;
 
   constructor(init: NodeOptionsInit = {}) {
     Object.assign(this, init);
@@ -73,6 +77,8 @@ export interface TopicEndpointInfo {
   endpoint_type: number;
   endpoint_gid: number[];
   qos_profile: QoS;
+  /** RIHS type hash (absent on Humble) */
+  topic_type_hash?: { version: number; value: Buffer };
 }
 
 type AnyEntity = Publisher | Subscription | Client | Service | Timer | GuardCondition;
@@ -93,6 +99,7 @@ export class Node {
   #services = new Set<Service>();
   #timers = new Set<Timer>();
   #guards = new Set<GuardCondition>();
+  #typeDescription: TypeDescriptionService | undefined;
   /** Extra waitables registered by higher-level constructs (e.g. actions). */
   #waitables = new Set<{ sets(): Partial<WaitableSets> }>();
   /** @internal */
@@ -129,6 +136,22 @@ export class Node {
     this._timeSource.attachClock(this.#clock);
     this._parameters.init();
     this._timeSource.init();
+    if (features.typeDescriptionService) this.#initTypeDescriptionService();
+  }
+
+  // Like rclcpp: the read-only `start_type_description_service` parameter
+  // (default true, overridable from the command line) gates the service.
+  #initTypeDescriptionService(): void {
+    const name = "start_type_description_service";
+    if (!this.hasParameter(name)) {
+      this.declareParameter(
+        new Parameter(name, ParameterType.PARAMETER_BOOL, true),
+        new ParameterDescriptor(name, ParameterType.PARAMETER_BOOL, "If enabled, start the ~/get_type_description service.", true),
+      );
+    }
+    if (!this.#options.startTypeDescriptionService || this.getParameter(name).value !== true) return;
+    this.#typeDescription = new TypeDescriptionService(this.handle);
+    this.#added();
   }
 
   static getDefaultOptions(): EntityOptions & { enableTypedArray: boolean; isRaw: boolean; qos: string } {
@@ -381,7 +404,7 @@ export class Node {
       guards: [...this.#guards],
       timers: [...this.#timers],
       clients: [...this.#clients],
-      services: [...this.#services],
+      services: this.#typeDescription ? [...this.#services, this.#typeDescription] : [...this.#services],
       events: [...this.#publishers, ...this.#subscriptions].flatMap((e) => e._events),
     };
     for (const w of this.#waitables) {
@@ -422,6 +445,8 @@ export class Node {
       for (const e of set) e._fini();
       set.clear();
     }
+    this.#typeDescription?._fini();
+    this.#typeDescription = undefined;
     this.#destroyed = true;
     lib.rb_node_fini(this.handle);
     this.context.removeNode(this);
@@ -487,6 +512,7 @@ export class Node {
       endpoint_type: e.endpointType,
       endpoint_gid: e.gid,
       qos_profile: QoS.fromJSON(e.qos),
+      ...(e.typeHash ? { topic_type_hash: { version: e.typeHash[0], value: Buffer.from(e.typeHash.slice(1)) } } : {}),
     }));
   }
 

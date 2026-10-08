@@ -156,10 +156,29 @@ function loadService(pkg: string, name: string): void {
   if (definitionCache.has(`${pkg}/srv/${name}_Request`)) return;
   const src = readInterface(pkg, "srv", name);
   if (!src) throw new InterfaceNotFoundError(`service definition not found: ${pkg}/srv/${name}`);
-  if (src.format === "idl") return loadIdl(pkg, "srv", name, src.text);
+  if (src.format === "idl") {
+    loadIdl(pkg, "srv", name, src.text);
+    return addServiceEvent(pkg, name);
+  }
   const [req = "", resp = ""] = splitSections(src.text);
   definitionCache.set(`${pkg}/srv/${name}_Request`, parseSection(req, pkg, `${pkg}/srv/${name}_Request`));
   definitionCache.set(`${pkg}/srv/${name}_Response`, parseSection(resp, pkg, `${pkg}/srv/${name}_Response`));
+  addServiceEvent(pkg, name);
+}
+
+// <Service>_Event, published on <service>/_service_event by service
+// introspection (rosidl generates it for every service since Iron).
+function addServiceEvent(pkg: string, name: string): void {
+  const base = `${pkg}/srv/${name}`;
+  if (definitionCache.has(`${base}_Event`)) return;
+  definitionCache.set(`${base}_Event`, {
+    name: `${base}_Event`,
+    definitions: [
+      { type: "service_msgs/msg/ServiceEventInfo", name: "info", isComplex: true, isArray: false },
+      { type: `${base}_Request`, name: "request", isComplex: true, isArray: true, arrayUpperBound: 1 },
+      { type: `${base}_Response`, name: "response", isComplex: true, isArray: true, arrayUpperBound: 1 },
+    ],
+  });
 }
 
 function loadAction(pkg: string, name: string): void {

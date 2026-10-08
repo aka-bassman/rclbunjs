@@ -7,6 +7,8 @@ import { AbortError, TimeoutError } from "./errors.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
 import type { MessageInput } from "../types.ts";
+import type { Clock } from "./clock.ts";
+import { configureIntrospection, type ServiceIntrospectionStates } from "./service.ts";
 
 const SEQ = new BigInt64Array(1);
 const OUT = new BigUint64Array(1);
@@ -49,6 +51,21 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
 
   get serviceName(): string {
     return String(lib.rb_client_service_name(this.handle));
+  }
+
+  /**
+   * Publishes request/response events on `<service>/_service_event`
+   * (Iron and newer; ignored with a warning on Humble).
+   */
+  configureIntrospection(clock: Clock, qos: QoS | string, introspectionState: ServiceIntrospectionStates): void {
+    this.assertAlive();
+    configureIntrospection(
+      (c, ts, q, st) => lib.rb_client_configure_introspection(this.handle, c, ts, q, st),
+      this.typeClass,
+      clock,
+      qos,
+      introspectionState,
+    );
   }
 
   #send(request: MessageInput<Req>, pending: Pending): bigint {
