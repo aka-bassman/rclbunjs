@@ -9,10 +9,13 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   docker build -t "$IMAGE" --build-arg ROS_DISTRO="$ROS_DISTRO" "$ROOT/docker"
 fi
+# pass RCLBUN_* and SOAK_* settings through to the container
+PASS=()
+while IFS='=' read -r k _; do PASS+=(-e "$k"); done < <(env | grep -E '^(RCLBUN|SOAK)_[A-Z0-9_]*=' || true)
 CMD=("$@")
 [ ${#CMD[@]} -eq 0 ] && CMD=(bun test test/integration)
 exec docker run --rm --network none \
-  -e ROS_DOMAIN_ID="$((RANDOM % 100 + 1))" -e RCLBUN_DEBUG="${RCLBUN_DEBUG:-}" \
+  -e ROS_DOMAIN_ID="$((RANDOM % 100 + 1))" ${PASS[@]+"${PASS[@]}"} \
   ${RMW_IMPLEMENTATION:+-e RMW_IMPLEMENTATION="$RMW_IMPLEMENTATION"} \
   -v "$ROOT:/app" -w /app "$IMAGE" \
   bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && $(printf '%q ' "${CMD[@]}")"
