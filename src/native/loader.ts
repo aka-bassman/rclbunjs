@@ -194,5 +194,6 @@ export const features = {
   serviceIntrospection: (featureBits & 2) !== 0,
   typeDescriptionService: (featureBits & 4) !== 0,
   matchedEvents: (featureBits & 8) !== 0,
+  loggerService: (featureBits & 16) !== 0,
 };
 export type { Pointer };

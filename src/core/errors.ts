@@ -40,7 +40,31 @@ function sub(code: string, base: typeof RclNodeError = RclNodeError) {
 export class ValidationError extends sub("VALIDATION_ERROR") {}
 export class TypeValidationError extends sub("INVALID_TYPE", ValidationError) {}
 export class RangeValidationError extends sub("OUT_OF_RANGE", ValidationError) {}
-export class MessageValidationError extends sub("MESSAGE_VALIDATION_ERROR", ValidationError) {}
+/** Raised by assertValidMessage; carries the individual issues (rclnodejs shape). */
+export class MessageValidationError extends ValidationError {
+  readonly messageType: string;
+  readonly issues: { field: string; problem: string }[];
+
+  constructor(messageType: string, issues: { field: string; problem: string }[], options: RclErrorOptions = {}) {
+    super(`Invalid message for '${messageType}': ${issues.map((i) => `${i.field}: ${i.problem}`).join(", ")}`, {
+      code: "MESSAGE_VALIDATION_ERROR",
+      entityType: "message",
+      entityName: messageType,
+      details: { messageType, issues },
+      ...options,
+    });
+    this.messageType = messageType;
+    this.issues = issues;
+  }
+
+  getIssuesByType(problem: string): { field: string; problem: string }[] {
+    return this.issues.filter((i) => i.problem === problem);
+  }
+
+  hasFieldIssue(field: string): boolean {
+    return this.issues.some((i) => i.field === field);
+  }
+}
 export class NameValidationError extends sub("INVALID_NAME", ValidationError) {}
 export class OperationError extends sub("OPERATION_ERROR") {}
 export class TimeoutError extends sub("TIMEOUT", OperationError) {}

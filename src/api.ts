@@ -72,6 +72,24 @@ export function createLifecycleNode(
 export { ObservableSubscription } from "./core/observable_subscription.ts";
 export type { ObservableLike, Observer, Unsubscribable } from "./core/observable_subscription.ts";
 export { validator } from "./core/validator.ts";
+export {
+  ValidationProblem,
+  getMessageSchema,
+  getFieldNames,
+  getFieldType,
+  validateMessage,
+  assertValidMessage,
+  createMessageValidator,
+} from "./core/message_validation.ts";
+export type {
+  MessageSchema,
+  MessageField,
+  MessageFieldType,
+  MessageValidationOptions,
+  MessageValidationIssue,
+  MessageValidationResult,
+  MessageValidator,
+} from "./core/message_validation.ts";
 export { DistroUtils, RMWUtils } from "./core/distro.ts";
 export { getActionNamesAndTypes, getActionClientNamesAndTypesByNode, getActionServerNamesAndTypesByNode } from "./core/action_graph.ts";
 export { Logging as logging } from "./core/logging.ts";

@@ -47,7 +47,8 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | QoS events | deadline, liveliness, incompatible QoS, incompatible type, matched, message lost |
 | Content filter | subscription content filters (Fast DDS) |
 | Graph | topic/service/node/action listings (also per node), publisher/subscription counts, endpoint info with QoS and type hash |
-| Utilities | `validator` (topic/node/namespace names), `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
+| Validation | `validateMessage` / `assertValidMessage` / `createMessageValidator`, `getMessageSchema`, `getFieldNames`, `getFieldType`; `validator` for topic/node/namespace names |
+| Utilities | `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
 | Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout` with configurable `rosoutQos`, log files), logger levels, `~/get_logger_levels` / `~/set_logger_levels` (`enableLoggerService`) |
 

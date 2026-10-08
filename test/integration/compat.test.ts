@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { filter, firstValueFrom, map, take, toArray } from "rxjs";
 import rclbunDefault, * as rclbun from "../../src/index.ts";
-import { LoggingSeverity, QoS } from "../../src/index.ts";
+import { LoggingSeverity, QoS, features } from "../../src/index.ts";
 
 let node: rclbun.Node;
 beforeAll(async () => {
@@ -103,7 +103,7 @@ describe("ObservableSubscription", () => {
 });
 
 describe("logger service and rosout QoS", () => {
-  test("~/get_logger_levels and ~/set_logger_levels", async () => {
+  test.skipIf(!features.loggerService)("~/get_logger_levels and ~/set_logger_levels", async () => {
     const n = rclbun.createNode("logger_svc", "", undefined, { enableLoggerService: true });
     n.spin();
     const get = node.createClient("rcl_interfaces/srv/GetLoggerLevels", "/logger_svc/get_logger_levels");

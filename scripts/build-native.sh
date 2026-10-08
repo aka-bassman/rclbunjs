@@ -4,12 +4,14 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ROS_PREFIX="${ROS_PREFIX:-/opt/ros/${ROS_DISTRO:?source your ROS 2 setup first}}"
+# Teardown calls ignore rcl return codes on purpose, hence -Wno-unused-result.
 # root include dir + nested package dirs only (flat dirs would shadow system headers)
 INC=("-I$ROS_PREFIX/include")
 for d in "$ROS_PREFIX"/include/*; do [ -d "$d/$(basename "$d")" ] && INC+=("-I$d"); done
 mkdir -p "$ROOT/build"
 DISTRO_DEF="-DRB_DISTRO_$(echo "${ROS_DISTRO:-}" | tr '[:lower:]' '[:upper:]')"
-${CC:-cc} -O2 -fPIC -shared "$DISTRO_DEF" -Wall -Wno-unused-function -o "$ROOT/build/librclbunjs_shim.so" "$ROOT/src/native/shim.c" \
+${CC:-cc} -O2 -fPIC -shared "$DISTRO_DEF" -Wall -Wno-unused-function -Wno-unused-result -o "$ROOT/build/librclbunjs_shim.so" "$ROOT/src/native/shim.c" \
   "${INC[@]}" -L"$ROS_PREFIX/lib" -Wl,-rpath,"$ROS_PREFIX/lib" \
-  -lrcl -lrcutils -lrmw -lrmw_implementation -lrcl_yaml_param_parser -lrosidl_runtime_c -lpthread
+  -lrcl -lrcutils -lrmw -lrmw_implementation -lrcl_yaml_param_parser -lrosidl_runtime_c \
+  -lrosidl_typesupport_introspection_c -lpthread
 echo "built $ROOT/build/librclbunjs_shim.so"

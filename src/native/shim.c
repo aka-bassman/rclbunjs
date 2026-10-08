@@ -1246,13 +1246,15 @@ enum {
   RB_F_SERVICE_INTROSPECTION = 2,
   RB_F_TYPE_DESCRIPTION = 4,
   RB_F_MATCHED_EVENTS = 8,
+  RB_F_LOGGER_SERVICE = 16,  // rcl_interfaces/srv/{Get,Set}LoggerLevels exist (Iron+)
 };
 
 int rb_features(void) {
 #if defined(RB_DISTRO_HUMBLE)
   return 0;
 #else
-  return RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS;
+  return RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS |
+         RB_F_LOGGER_SERVICE;
 #endif
 }
 

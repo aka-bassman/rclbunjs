@@ -150,7 +150,10 @@ export class Node {
     this._parameters.init();
     this._timeSource.init();
     if (features.typeDescriptionService) this.#initTypeDescriptionService();
-    if (this.#options.enableLoggerService) this.#startLoggerService();
+    if (this.#options.enableLoggerService) {
+      if (features.loggerService) this.#startLoggerService();
+      else this.#logger.warn("enableLoggerService: the logger services need ROS 2 Iron or newer");
+    }
   }
 
   // rcl_interfaces logger services, with rclcpp semantics: get reports each
