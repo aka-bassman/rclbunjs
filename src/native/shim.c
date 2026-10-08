@@ -956,11 +956,18 @@ static void rb_cmsg_fini(rb_cmsg_t* m) {
   rmw_serialized_message_fini(&m->ser);
 }
 
-// CDR bytes -> m->msg
-static int rb_cmsg_from_cdr(rb_cmsg_t* m, uint8_t* data, size_t len) {
+// Returns m->msg to a freshly initialized state. Needed before every take into
+// the reused message: rmw_cyclonedds deserializes strings/sequences without
+// releasing what the previous take left there (Fast DDS reuses it).
+static void rb_cmsg_reset(rb_cmsg_t* m) {
   m->members->fini_function(m->msg);
   memset(m->msg, 0, m->members->size_of_);
   m->members->init_function(m->msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
+}
+
+// CDR bytes -> m->msg
+static int rb_cmsg_from_cdr(rb_cmsg_t* m, uint8_t* data, size_t len) {
+  rb_cmsg_reset(m);
   rmw_serialized_message_t in = {data, len, len, rcutils_get_default_allocator()};
   rmw_ret_t ret = rmw_deserialize(&in, m->ts, m->msg);
   if (ret != RMW_RET_OK) {
@@ -1060,6 +1067,7 @@ int64_t rb_client_send(void* cp, uint8_t* data, size_t len) {
 int64_t rb_client_take(void* cp, int64_t* seq_out, uint8_t** out) {
   rb_client_t* c = cp;
   rmw_service_info_t info;
+  rb_cmsg_reset(&c->resp);
   rcl_ret_t ret = rcl_take_response_with_info(&c->client, &info, c->resp.msg);
   if (ret == RCL_RET_CLIENT_TAKE_FAILED) return 0;
   if (ret != RCL_RET_OK) {
@@ -1135,6 +1143,7 @@ int rb_service_fini(void* sp) {
 int64_t rb_service_take(void* sp, void** header_out, uint8_t** out) {
   rb_service_t* s = sp;
   rmw_service_info_t info;
+  rb_cmsg_reset(&s->req);
   rcl_ret_t ret = rcl_take_request_with_info(&s->service, &info, s->req.msg);
   if (ret == RCL_RET_SERVICE_TAKE_FAILED) return 0;
   if (ret != RCL_RET_OK) {
@@ -1246,15 +1255,14 @@ int rb_type_description_service_handle(void* sp) {
 #else
   rb_service_t* s = sp;
   rmw_service_info_t info;
+  rb_cmsg_reset(&s->req);
   rcl_ret_t ret = rcl_take_request_with_info(&s->service, &info, s->req.msg);
   if (ret == RCL_RET_SERVICE_TAKE_FAILED) return 0;
   if (ret != RCL_RET_OK) {
     rb_take_rcl_error("rcl_take_request", ret);
     return -1;
   }
-  s->resp.members->fini_function(s->resp.msg);
-  memset(s->resp.msg, 0, s->resp.members->size_of_);
-  s->resp.members->init_function(s->resp.msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
+  rb_cmsg_reset(&s->resp);
   rcl_node_type_description_service_handle_request(s->node, &info.request_id, s->req.msg, s->resp.msg);
   ret = rcl_send_response(&s->service, &info.request_id, s->resp.msg);
   if (ret != RCL_RET_OK) {
