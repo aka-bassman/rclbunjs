@@ -42,7 +42,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers) |
 | Actions | `ActionClient` / `ActionServer` (feedback, cancel, result, goal accept/reject), wire-compatible with rclcpp/rclpy |
 | Parameters | declare/get/set/undeclare, descriptors (read-only, ranges), on/pre/post-set callbacks, CLI and YAML overrides, `/parameter_events`, the standard parameter services, `ParameterClient`, `ParameterEventHandler`, `ParameterWatcher` |
-| Time | `Clock`, `ROSClock`, `Time`, `Duration`, `TimeSource` (`use_sim_time` + `/clock`), timers, `Rate` |
+| Time | `Clock`, `ROSClock`, `Time`, `Duration`, `TimeSource` (`use_sim_time` + `/clock`), clock jump callbacks, `sleepUntil`/`sleepFor`, timers with `TimerInfo` and on-reset callbacks, `Rate` |
 | Lifecycle | `LifecycleNode`, the standard state machine and services, `~/transition_event`, lifecycle publishers |
 | QoS events | deadline, liveliness, incompatible QoS, incompatible type, matched, message lost |
 | Content filter | subscription content filters (Fast DDS) |

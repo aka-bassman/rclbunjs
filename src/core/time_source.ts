@@ -68,8 +68,8 @@ export class TimeSource {
   }
 
   #applyTo(c: ROSClock): void {
-    if (this.#active) c.rosTimeOverride = this.#last ?? new Time(0n, 0n, ClockType.ROS_TIME);
-    else c.isRosTimeActive = false;
+    c.isRosTimeActive = this.#active;
+    if (this.#active && this.#last) c.rosTimeOverride = this.#last;
   }
 
   #subscribe(): void {

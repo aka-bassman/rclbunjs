@@ -11,9 +11,14 @@ export interface TimerInfo {
   actualCallTime: bigint;
 }
 
+// out-parameter for rb_timer_call: [expected_call_time, actual_call_time]
+const callInfo = new BigInt64Array(2);
+
 export class Timer extends Entity implements Waitable {
   readonly clock: Clock;
   readonly #callback: (info?: TimerInfo) => void;
+  #onReset: ((resets: number) => void) | undefined;
+  #pendingResets = 0;
 
   /** @internal */
   constructor(contextHandle: Pointer, clock: Clock, period: bigint, callback: (info?: TimerInfo) => void, autostart: boolean) {
@@ -49,6 +54,35 @@ export class Timer extends Entity implements Waitable {
 
   reset(): void {
     lib.rb_timer_reset(this.handle);
+    if (this.#onReset) this.#onReset(1);
+    else this.#pendingResets++;
+  }
+
+  /**
+   * Calls `callback(n)` whenever the timer is reset. Resets that happened while
+   * no callback was set are reported at once (rcl_timer_set_on_reset_callback
+   * semantics).
+   */
+  setOnResetCallback(callback: (resets: number) => void): void {
+    this.#onReset = callback;
+    if (this.#pendingResets > 0) {
+      const n = this.#pendingResets;
+      this.#pendingResets = 0;
+      callback(n);
+    }
+  }
+
+  clearOnResetCallback(): void {
+    this.#onReset = undefined;
+  }
+
+  /**
+   * Records a call if the timer is ready and returns its expected and actual
+   * call times; undefined when the timer was not ready or is canceled.
+   */
+  callTimerWithInfo(): TimerInfo | undefined {
+    const rc = checkRc(lib.rb_timer_call(this.handle, callInfo), "timer call");
+    return rc === 1 ? { expectedCallTime: callInfo[0]!, actualCallTime: callInfo[1]! } : undefined;
   }
 
   timeSinceLastCall(): bigint {
@@ -68,11 +102,8 @@ export class Timer extends Entity implements Waitable {
   /** @internal */
   execute(): void {
     if (this.isDestroyed()) return;
-    const now = this.clock.now().nanoseconds;
-    const until = lib.rb_timer_time_until_next_call(this.handle);
-    if (checkRc(lib.rb_timer_call(this.handle), "timer call") === 1) {
-      this.#callback({ expectedCallTime: now + until, actualCallTime: now });
-    }
+    const info = this.callTimerWithInfo();
+    if (info) this.#callback(info);
   }
 
   /** @internal */

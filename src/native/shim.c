@@ -1125,12 +1125,20 @@ int64_t rb_clock_now(void* c) {
 
 int rb_clock_type(void* c) { return (int)((rcl_clock_t*)c)->type; }
 
-int rb_clock_set_ros_time_override(void* c, int enabled, int64_t t) {
+int rb_clock_enable_ros_time_override(void* c, int enabled) {
   rcl_clock_t* clk = c;
   rcl_ret_t ret = enabled ? rcl_enable_ros_time_override(clk) : rcl_disable_ros_time_override(clk);
-  if (ret == RCL_RET_OK && enabled) ret = rcl_set_ros_time_override(clk, t);
   if (ret != RCL_RET_OK) {
     rb_take_rcl_error("ros time override", ret);
+    return -1;
+  }
+  return 0;
+}
+
+int rb_clock_set_ros_time_override(void* c, int64_t t) {
+  rcl_ret_t ret = rcl_set_ros_time_override((rcl_clock_t*)c, t);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_set_ros_time_override", ret);
     return -1;
   }
   return 0;
@@ -1143,6 +1151,44 @@ int rb_clock_ros_time_override_enabled(void* c) {
     return -1;
   }
   return en ? 1 : 0;
+}
+
+// Clock jump callbacks. rcl runs them synchronously inside
+// rcl_{enable,disable,set}_ros_time_override, which only the JS thread calls,
+// so a single non-threadsafe JS handler receives every jump, keyed by an id
+// passed as user_data.
+
+typedef void (*rb_jump_handler_t)(int32_t id, int32_t before, int32_t change, int64_t delta);
+static rb_jump_handler_t g_jump_handler;
+
+void rb_set_jump_handler(void* h) { g_jump_handler = (rb_jump_handler_t)h; }
+
+static void rb_jump_trampoline(const rcl_time_jump_t* j, bool before, void* user) {
+  if (g_jump_handler) {
+    g_jump_handler((int32_t)(intptr_t)user, before ? 1 : 0, (int32_t)j->clock_change, j->delta.nanoseconds);
+  }
+}
+
+int rb_clock_add_jump_callback(void* c, int32_t id, int on_change, int64_t min_forward, int64_t min_backward) {
+  rcl_jump_threshold_t th;
+  th.on_clock_change = on_change != 0;
+  th.min_forward.nanoseconds = min_forward;
+  th.min_backward.nanoseconds = min_backward;
+  rcl_ret_t ret = rcl_clock_add_jump_callback((rcl_clock_t*)c, th, rb_jump_trampoline, (void*)(intptr_t)id);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_clock_add_jump_callback", ret);
+    return -1;
+  }
+  return 0;
+}
+
+int rb_clock_remove_jump_callback(void* c, int32_t id) {
+  rcl_ret_t ret = rcl_clock_remove_jump_callback((rcl_clock_t*)c, rb_jump_trampoline, (void*)(intptr_t)id);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_clock_remove_jump_callback", ret);
+    return -1;
+  }
+  return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1178,8 +1224,10 @@ int rb_timer_fini(void* tp) {
 }
 
 // Returns 1 if the timer was ready and its "call" was recorded, 0 if not ready
-// (or canceled), -1 on error.
-int rb_timer_call(void* tp) {
+// (or canceled), -1 on error. On 1, out[0] / out[1] receive the expected and
+// actual call times (Humble has no rcl_timer_call_with_info, so they are
+// derived from the clock there).
+int rb_timer_call(void* tp, int64_t* out) {
   rcl_timer_t* t = &((rb_timer_t*)tp)->timer;
   bool ready = false;
   if (rcl_timer_is_ready(t, &ready) != RCL_RET_OK) {
@@ -1187,7 +1235,21 @@ int rb_timer_call(void* tp) {
     return -1;
   }
   if (!ready) return 0;
+#if defined(RB_DISTRO_HUMBLE)
+  int64_t until = 0;
+  rcl_time_point_value_t now = 0;
+  rcl_clock_t* clock = NULL;
+  (void)rcl_timer_get_time_until_next_call(t, &until);
+  if (rcl_timer_clock(t, &clock) == RCL_RET_OK) (void)rcl_clock_get_now(clock, &now);
   rcl_ret_t ret = rcl_timer_call(t);
+  out[0] = now + until;
+  out[1] = now;
+#else
+  rcl_timer_call_info_t info;
+  rcl_ret_t ret = rcl_timer_call_with_info(t, &info);
+  out[0] = info.expected_call_time;
+  out[1] = info.actual_call_time;
+#endif
   if (ret == RCL_RET_TIMER_CANCELED) return 0;
   if (ret != RCL_RET_OK) {
     rb_take_rcl_error("rcl_timer_call", ret);
