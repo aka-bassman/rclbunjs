@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
@@ -1755,15 +1756,51 @@ static void rb_exec_record(rb_exec_t* e) {
   for (size_t i = 0; i < e->counts[RB_K_EVENT]; i++) e->ready[off++] = e->ws.events[i] != NULL;
 }
 
+// RCLBUN_EXEC_STATS=1: every 5 s, print to stderr how often this thread woke up
+// and which kinds of entities were ready (diagnoses busy wake-ups and stalls).
+static void rb_exec_stats(rb_exec_t* e, uint64_t* waits, uint64_t* kinds, struct timespec* last) {
+  struct timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  if (now.tv_sec - last->tv_sec < 5) return;
+  fprintf(stderr, "[rclbunjs exec %p] waits=%llu ready: sub=%llu guard=%llu timer=%llu client=%llu service=%llu event=%llu none=%llu\n",
+          (void*)e, (unsigned long long)*waits, (unsigned long long)kinds[0], (unsigned long long)kinds[1],
+          (unsigned long long)kinds[2], (unsigned long long)kinds[3], (unsigned long long)kinds[4],
+          (unsigned long long)kinds[5], (unsigned long long)kinds[6]);
+  *waits = 0;
+  memset(kinds, 0, sizeof(uint64_t) * 7);
+  *last = now;
+}
+
+static void rb_exec_count(rb_exec_t* e, uint64_t* kinds) {
+  size_t off = 0;
+  int any = 0;
+  for (int k = 0; k < RB_K_COUNT; k++) {
+    for (size_t i = 0; i < e->counts[k]; i++) {
+      if (e->ready[off++]) {
+        kinds[k]++;
+        any = 1;
+      }
+    }
+  }
+  if (!any) kinds[6]++;
+}
+
 static void* rb_exec_loop(void* arg) {
   rb_exec_t* e = arg;
+  const char* sv = getenv("RCLBUN_EXEC_STATS");
+  int stats = sv && sv[0] == '1';
+  uint64_t waits = 0, kinds[7] = {0};
+  struct timespec last;
+  clock_gettime(CLOCK_MONOTONIC, &last);
   for (;;) {
     sem_wait(&e->go);
     if (e->stop) break;
     rcl_ret_t ret = rcl_wait(&e->ws, e->timeout);
     int32_t code = 0;
+    if (stats) waits++;
     if (ret == RCL_RET_OK) {
       rb_exec_record(e);
+      if (stats) rb_exec_count(e, kinds);
     } else if (ret == RCL_RET_TIMEOUT) {
       code = 1;
     } else {
@@ -1776,6 +1813,7 @@ static void* rb_exec_loop(void* arg) {
     pthread_cond_broadcast(&e->cv);
     pthread_mutex_unlock(&e->mu);
     if (e->stop) break;
+    if (stats) rb_exec_stats(e, &waits, kinds, &last);
     e->cb(code);
   }
   return NULL;
