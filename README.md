@@ -49,7 +49,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Graph | topic/service/node/action listings (also per node), publisher/subscription/client/service counts, topic endpoint info with QoS and type hash; service endpoint info and action client/server counts (Lyrical+); action endpoint info (Rolling) |
 | Validation | `validateMessage` / `assertValidMessage` / `createMessageValidator`, `getMessageSchema`, `getFieldNames`, `getFieldType`; `validator` for topic/node/namespace names |
 | Utilities | `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
-| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire (the same as with rclpy) and content filters are not available |
+| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire and content filters are not available; rmw_zenoh also gets slower with every entity created and destroyed in a process (about +4 ms per create/destroy cycle per 1000 cycles, the same with rclpy) and keeps a service request until it is answered |
 | Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout` with configurable `rosoutQos`, log files), logger levels, `~/get_logger_levels` / `~/set_logger_levels` (`enableLoggerService`) |
 
@@ -105,13 +105,15 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
 - Released views are detached, so a view used after its callback throws instead of reading memory that
   went back to the middleware.
 
-`benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes. Median round trips on
-arm64 Docker:
+`benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes (median round trip, and
+the receiver's time from take to ack in parentheses):
 
 | | CDR path | loaned publish, view receive | loaned on both sides |
 |---|---|---|---|
-| Fast DDS | 1189 µs | 391 µs | 350 µs (7 µs in the receiver) |
-| Cyclone DDS (no loans) | 1144 µs | 470 µs | — |
+| Fast DDS, arm64 (Docker Desktop) | 1189 µs (83 µs) | 391 µs (29 µs) | 350 µs (7 µs) |
+| Fast DDS, x86_64 (Ryzen 7 5700U) | 2395 µs (550 µs) | 1106 µs (201 µs) | 766 µs (25 µs) |
+| Cyclone DDS (no loans), arm64 | 1144 µs (62 µs) | 470 µs (27 µs) | — |
+| Cyclone DDS (no loans), x86_64 | 2352 µs (334 µs) | 1770 µs (178 µs) | — |
 
 ## Typed messages
 
