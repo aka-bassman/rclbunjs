@@ -14,8 +14,13 @@ PASS=()
 while IFS='=' read -r k _; do PASS+=(-e "$k"); done < <(env | grep -E '^(RCLBUN|SOAK)_[A-Z0-9_]*=' || true)
 CMD=("$@")
 [ ${#CMD[@]} -eq 0 ] && CMD=(bun test test/integration)
+# rmw_zenoh_cpp needs a router; start one in the container
+PRE=""
+if [ "${RMW_IMPLEMENTATION:-}" = rmw_zenoh_cpp ]; then
+  PRE="(/opt/ros/${ROS_DISTRO}/lib/rmw_zenoh_cpp/rmw_zenohd >/tmp/rmw_zenohd.log 2>&1 &) && sleep 1 && "
+fi
 exec docker run --rm --network none \
   -e ROS_DOMAIN_ID="$((RANDOM % 100 + 1))" ${PASS[@]+"${PASS[@]}"} \
   ${RMW_IMPLEMENTATION:+-e RMW_IMPLEMENTATION="$RMW_IMPLEMENTATION"} \
   -v "$ROOT:/app" -w /app "$IMAGE" \
-  bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && $(printf '%q ' "${CMD[@]}")"
+  bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && ${PRE}$(printf '%q ' "${CMD[@]}")"

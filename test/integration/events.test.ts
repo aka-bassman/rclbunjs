@@ -16,6 +16,10 @@ const until = async (cond: () => boolean, ms = 5000) => {
   return cond();
 };
 
+// rmw_zenoh_cpp accepts incompatible-QoS and deadline handlers but never fires
+// them (rclpy gets none either), so those two tests are skipped there.
+const zenoh = process.env.RMW_IMPLEMENTATION === "rmw_zenoh_cpp";
+
 describe("QoS events", () => {
   // matched events were added in Iron
   test.skipIf(process.env.ROS_DISTRO === "humble")("matched events on publisher and subscription", async () => {
@@ -26,7 +30,7 @@ describe("QoS events", () => {
     expect(await until(() => pubMatched?.current_count === 1 && subMatched?.current_count === 1)).toBe(true);
   });
 
-  test("incompatible QoS is reported", async () => {
+  test.skipIf(zenoh)("incompatible QoS is reported", async () => {
     let offered: any;
     let requested: any;
     const be = new QoS(H.RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10, R.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
@@ -37,7 +41,7 @@ describe("QoS events", () => {
     expect(requested.last_policy_kind).toBeGreaterThan(0);
   });
 
-  test("deadline missed", async () => {
+  test.skipIf(zenoh)("deadline missed", async () => {
     let missed: any;
     const q = new QoS(H.RMW_QOS_POLICY_HISTORY_KEEP_LAST, 10, R.RMW_QOS_POLICY_RELIABILITY_RELIABLE);
     q.deadline = 50_000_000n;

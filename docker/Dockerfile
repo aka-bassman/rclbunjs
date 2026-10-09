@@ -7,5 +7,6 @@ ARG ROS_DISTRO
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-${ROS_DISTRO}-test-msgs ros-${ROS_DISTRO}-example-interfaces ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    && (apt-get install -y --no-install-recommends ros-${ROS_DISTRO}-rmw-zenoh-cpp || echo "rmw_zenoh_cpp not available for ${ROS_DISTRO}") \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
