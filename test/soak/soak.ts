@@ -14,6 +14,9 @@ const SAMPLE_SEC = Number(process.env.SOAK_SAMPLE_SEC ?? 30);
 const MAX_SLOPE = Number(process.env.SOAK_MAX_MB_PER_HOUR ?? 5);
 // SOAK_CHURN=0 skips entity/node churn, to tell middleware discovery state apart from other growth
 const CHURN = process.env.SOAK_CHURN !== "0";
+// SOAK_UNANSWERED=0 skips requests that are never answered: rmw_zenoh keeps each one
+// (about 10 KB) until the service responds or is destroyed
+const UNANSWERED = process.env.SOAK_UNANSWERED !== "0";
 const FIB = "example_interfaces/action/Fibonacci";
 
 await rclbun.init();
@@ -122,7 +125,7 @@ async function rpcLoop() {
       if (r.sum !== BigInt(i) + 1n) throw new Error(`bad sum ${r.sum}`);
       await addAsync.sendRequestAsync({ a: 3n, b: 4n }, { timeout: 5000 });
       stats.calls += 2;
-      if (i % 10 === 0) {
+      if (UNANSWERED && i % 10 === 0) {
         await ignore.sendRequestAsync({}, { timeout: 20 }).catch((e) => {
           if (!(e instanceof rclbun.TimeoutError)) throw e;
           stats.unanswered++;
@@ -223,6 +226,7 @@ const summary = {
   minutes: MINUTES,
   rmw: node.getRMWImplementationIdentifier(),
   churnEnabled: CHURN,
+  unansweredEnabled: UNANSWERED,
   distro: process.env.ROS_DISTRO,
   rssMB: { first: samples[0]?.rss, last: samples.at(-1)?.rss, slopePerHour: slope("rss") },
   heapMB: { first: samples[0]?.heap, last: samples.at(-1)?.heap, slopePerHour: slope("heap") },
