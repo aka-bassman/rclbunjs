@@ -86,6 +86,70 @@ export interface TopicEndpointInfo {
   topic_type_hash?: { version: number; value: Buffer };
 }
 
+/**
+ * A service client or server in the graph (Lyrical+). DDS middlewares report two
+ * endpoints per service (request and response topics), zenoh reports one.
+ */
+export interface ServiceEndpointInfo {
+  node_name: string;
+  node_namespace: string;
+  service_type: string;
+  service_type_hash: { version: number; value: Buffer };
+  endpoint_type: number;
+  endpoint_count: number;
+  endpoint_gids: number[][];
+  qos_profiles: QoS[];
+}
+
+function toTopicEndpoint(e: any): TopicEndpointInfo {
+  return {
+    node_name: e.nodeName,
+    node_namespace: e.nodeNamespace,
+    topic_type: e.topicType,
+    endpoint_type: e.endpointType,
+    endpoint_gid: e.gid,
+    qos_profile: QoS.fromJSON(e.qos),
+    ...(e.typeHash ? { topic_type_hash: { version: e.typeHash[0], value: Buffer.from(e.typeHash.slice(1)) } } : {}),
+  };
+}
+
+function toServiceEndpoint(e: any): ServiceEndpointInfo {
+  return {
+    node_name: e.nodeName,
+    node_namespace: e.nodeNamespace,
+    service_type: e.serviceType,
+    service_type_hash: { version: e.typeHash[0], value: Buffer.from(e.typeHash.slice(1)) },
+    endpoint_type: e.endpointType,
+    endpoint_count: e.gids.length,
+    endpoint_gids: e.gids,
+    qos_profiles: e.qos.map((q: any) => QoS.fromJSON(q)),
+  };
+}
+
+/** One action client or server: the endpoints of its three services and two topics (Rolling). */
+export class ActionEndpointInfo {
+  readonly goalServiceInfo: ServiceEndpointInfo;
+  readonly cancelServiceInfo: ServiceEndpointInfo;
+  readonly resultServiceInfo: ServiceEndpointInfo;
+  readonly feedbackTopicInfo: TopicEndpointInfo;
+  readonly statusTopicInfo: TopicEndpointInfo;
+
+  /** @internal */
+  constructor(raw: any) {
+    this.goalServiceInfo = toServiceEndpoint(raw.goal);
+    this.cancelServiceInfo = toServiceEndpoint(raw.cancel);
+    this.resultServiceInfo = toServiceEndpoint(raw.result);
+    this.feedbackTopicInfo = toTopicEndpoint(raw.feedback);
+    this.statusTopicInfo = toTopicEndpoint(raw.status);
+  }
+
+  get nodeName(): string { return this.goalServiceInfo.node_name; }
+  get nodeNamespace(): string { return this.goalServiceInfo.node_namespace; }
+  /** e.g. `example_interfaces/action/Fibonacci` */
+  get actionType(): string { return this.goalServiceInfo.service_type.replace(/_SendGoal$/, ""); }
+  get endpointType(): number { return this.goalServiceInfo.endpoint_type; }
+}
+
 type AnyEntity = Publisher | Subscription | Client | Service | Timer | GuardCondition;
 
 export class Node {
@@ -571,17 +635,62 @@ export class Node {
   countClients(service: string): number { return this.#count(2, this.resolveServiceName(service)); }
   countServices(service: string): number { return this.#count(3, this.resolveServiceName(service)); }
 
+  // Like rclnodejs, the queries below that need a newer distro warn and return null.
+  #unsupported(what: string, distro: string): null {
+    this.#logger.warn(`${what} needs ROS 2 ${distro} or newer`);
+    return null;
+  }
+
+  /** Number of action clients on `actionName` (Lyrical+; null on older distros). */
+  countActionClients(actionName: string): number | null {
+    if (!features.serviceEndpointInfo) return this.#unsupported("countActionClients", "Lyrical");
+    return this.#count(4, this.resolveTopicName(actionName));
+  }
+
+  /** Number of action servers on `actionName` (Lyrical+; null on older distros). */
+  countActionServers(actionName: string): number | null {
+    if (!features.serviceEndpointInfo) return this.#unsupported("countActionServers", "Lyrical");
+    return this.#count(5, this.resolveTopicName(actionName));
+  }
+
   #endpoints(kind: number, topic: string, noDemangle: boolean): TopicEndpointInfo[] {
     const raw = json<any[]>(lib.rb_graph_endpoint_info(this.handle, kind, cstr(this.resolveTopicName(topic)), noDemangle ? 1 : 0), "endpoint info");
-    return raw.map((e) => ({
-      node_name: e.nodeName,
-      node_namespace: e.nodeNamespace,
-      topic_type: e.topicType,
-      endpoint_type: e.endpointType,
-      endpoint_gid: e.gid,
-      qos_profile: QoS.fromJSON(e.qos),
-      ...(e.typeHash ? { topic_type_hash: { version: e.typeHash[0], value: Buffer.from(e.typeHash.slice(1)) } } : {}),
-    }));
+    return raw.map(toTopicEndpoint);
+  }
+
+  #serviceEndpoints(kind: number, service: string, noDemangle: boolean): ServiceEndpointInfo[] {
+    const name = noDemangle ? service : this.resolveServiceName(service);
+    const raw = json<any[]>(lib.rb_graph_service_endpoint_info(this.handle, kind, cstr(name), noDemangle ? 1 : 0), "service endpoint info");
+    return raw.map(toServiceEndpoint);
+  }
+
+  #actionEndpoints(kind: number, actionName: string): ActionEndpointInfo[] {
+    const raw = json<any[]>(lib.rb_graph_action_endpoint_info(this.handle, kind, cstr(this.resolveTopicName(actionName))), "action endpoint info");
+    return raw.map((e) => new ActionEndpointInfo(e));
+  }
+
+  /** Clients of a service with their endpoint info (Lyrical+; null on older distros). */
+  getClientsInfoByService(service: string, noDemangle = false): ServiceEndpointInfo[] | null {
+    if (!features.serviceEndpointInfo) return this.#unsupported("getClientsInfoByService", "Lyrical");
+    return this.#serviceEndpoints(0, service, noDemangle);
+  }
+
+  /** Servers of a service with their endpoint info (Lyrical+; null on older distros). */
+  getServersInfoByService(service: string, noDemangle = false): ServiceEndpointInfo[] | null {
+    if (!features.serviceEndpointInfo) return this.#unsupported("getServersInfoByService", "Lyrical");
+    return this.#serviceEndpoints(1, service, noDemangle);
+  }
+
+  /** Action clients with the endpoint info of their services and topics (Rolling; null on older distros). */
+  getActionClientsInfoByAction(actionName: string): ActionEndpointInfo[] | null {
+    if (!features.actionEndpointInfo) return this.#unsupported("getActionClientsInfoByAction", "Rolling");
+    return this.#actionEndpoints(0, actionName);
+  }
+
+  /** Action servers with the endpoint info of their services and topics (Rolling; null on older distros). */
+  getActionServersInfoByAction(actionName: string): ActionEndpointInfo[] | null {
+    if (!features.actionEndpointInfo) return this.#unsupported("getActionServersInfoByAction", "Rolling");
+    return this.#actionEndpoints(1, actionName);
   }
 
   getPublishersInfoByTopic(topic: string, noDemangle = false): TopicEndpointInfo[] {

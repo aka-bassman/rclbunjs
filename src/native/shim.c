@@ -10,7 +10,8 @@
 //
 // Distro differences are selected with RB_DISTRO_<NAME> (defined by the loader
 // from $ROS_DISTRO): Humble lacks rcl_timer_init2 and the matched /
-// incompatible-type QoS events.
+// incompatible-type QoS events. APIs newer than Kilted are selected by rcl
+// version instead, since Rolling moves ahead of the latest release.
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -29,6 +30,7 @@
 #include <rcl/remap.h>
 #include <rcl/time.h>
 #include <rcl/validate_topic_name.h>
+#include <rcl/version.h>
 #include <rcl_yaml_param_parser/parser.h>
 #include <rcutils/logging.h>
 #include <rmw/rmw.h>
@@ -39,6 +41,16 @@
 #include <rosidl_runtime_c/message_type_support_struct.h>
 #include <rosidl_typesupport_introspection_c/identifier.h>
 #include <rosidl_typesupport_introspection_c/message_introspection.h>
+
+#define RB_RCL_AT_LEAST(major, minor) \
+  (RCL_VERSION_MAJOR > (major) || (RCL_VERSION_MAJOR == (major) && RCL_VERSION_MINOR >= (minor)))
+// Lyrical (rcl 10.4): service endpoint info, action client/server counts.
+// Rolling (rcl 10.5): action endpoint info.
+#define RB_HAS_SERVICE_ENDPOINT_INFO RB_RCL_AT_LEAST(10, 4)
+#define RB_HAS_ACTION_ENDPOINT_INFO RB_RCL_AT_LEAST(10, 5)
+#if RB_HAS_SERVICE_ENDPOINT_INFO
+#include <rcl_action/graph.h>
+#endif
 
 // ---------------------------------------------------------------------------
 // errors
@@ -1299,15 +1311,23 @@ enum {
   RB_F_MATCHED_EVENTS = 8,
   RB_F_LOGGER_SERVICE = 16,  // rcl_interfaces/srv/{Get,Set}LoggerLevels exist (Iron+)
   RB_F_ROSOUT_SUBLOGGERS = 32,
+  RB_F_SERVICE_ENDPOINT_INFO = 64,  // service endpoint info + action counts (Lyrical+)
+  RB_F_ACTION_ENDPOINT_INFO = 128,  // Rolling
 };
 
 int rb_features(void) {
-#if defined(RB_DISTRO_HUMBLE)
-  return 0;
-#else
-  return RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS |
-         RB_F_LOGGER_SERVICE | RB_F_ROSOUT_SUBLOGGERS;
+  int f = 0;
+#if !defined(RB_DISTRO_HUMBLE)
+  f |= RB_F_TIMER_CALL_INFO | RB_F_SERVICE_INTROSPECTION | RB_F_TYPE_DESCRIPTION | RB_F_MATCHED_EVENTS |
+       RB_F_LOGGER_SERVICE | RB_F_ROSOUT_SUBLOGGERS;
 #endif
+#if RB_HAS_SERVICE_ENDPOINT_INFO
+  f |= RB_F_SERVICE_ENDPOINT_INFO;
+#endif
+#if RB_HAS_ACTION_ENDPOINT_INFO
+  f |= RB_F_ACTION_ENDPOINT_INFO;
+#endif
+  return f;
 }
 
 // ---------------------------------------------------------------------------
@@ -1851,7 +1871,8 @@ const char* rb_graph_node_names(void* node, int with_enclaves) {
   return g_json.buf;
 }
 
-// kind: 0 publishers, 1 subscribers, 2 clients(service), 3 servers(service)
+// kind: 0 publishers, 1 subscribers, 2 clients(service), 3 servers(service),
+//       4 action clients, 5 action servers
 int64_t rb_graph_count(void* node, int kind, const char* name) {
   size_t n = 0;
   rcl_ret_t ret = RCL_RET_ERROR;
@@ -1867,12 +1888,62 @@ int64_t rb_graph_count(void* node, int kind, const char* name) {
       rb_set_error("counting service clients/servers is not available on Humble");
       return -1;
 #endif
+#if RB_HAS_SERVICE_ENDPOINT_INFO
+    case 4: ret = rcl_action_count_clients(node, name, &n); break;
+    case 5: ret = rcl_action_count_servers(node, name, &n); break;
+#else
+    case 4:
+    case 5:
+      rb_set_error("counting action clients/servers needs ROS 2 Lyrical or newer");
+      return -1;
+#endif
   }
   if (ret != RCL_RET_OK) {
     rb_take_rcl_error("rcl_count", ret);
     return -1;
   }
   return (int64_t)n;
+}
+
+static void js_gid(const uint8_t* gid) {
+  js_lit("[");
+  for (size_t g = 0; g < RMW_GID_STORAGE_SIZE; g++) {
+    if (g) js_lit(",");
+    js_int(gid[g]);
+  }
+  js_lit("]");
+}
+
+#if !defined(RB_DISTRO_HUMBLE)
+static void js_type_hash(const rosidl_type_hash_t* h) {
+  js_lit("[");
+  js_int(h->version);
+  for (size_t i = 0; i < ROSIDL_TYPE_HASH_SIZE; i++) {
+    js_lit(",");
+    js_int(h->value[i]);
+  }
+  js_lit("]");
+}
+#endif
+
+static void js_topic_endpoint(const rmw_topic_endpoint_info_t* ep) {
+  js_lit("{\"nodeName\":");
+  js_str(ep->node_name);
+  js_lit(",\"nodeNamespace\":");
+  js_str(ep->node_namespace);
+  js_lit(",\"topicType\":");
+  js_str(ep->topic_type);
+  js_lit(",\"endpointType\":");
+  js_int(ep->endpoint_type);
+  js_lit(",\"gid\":");
+  js_gid(ep->endpoint_gid);
+  js_lit(",\"qos\":");
+  js_qos(&ep->qos_profile);
+#if !defined(RB_DISTRO_HUMBLE)
+  js_lit(",\"typeHash\":");
+  js_type_hash(&ep->topic_type_hash);
+#endif
+  js_lit("}");
 }
 
 // kind: 0 publishers, 1 subscriptions
@@ -1888,37 +1959,105 @@ const char* rb_graph_endpoint_info(void* node, int kind, const char* topic, int 
   js_reset();
   js_lit("[");
   for (size_t i = 0; i < arr.size; i++) {
-    rmw_topic_endpoint_info_t* ep = &arr.info_array[i];
     if (i) js_lit(",");
-    js_lit("{\"nodeName\":");
-    js_str(ep->node_name);
-    js_lit(",\"nodeNamespace\":");
-    js_str(ep->node_namespace);
-    js_lit(",\"topicType\":");
-    js_str(ep->topic_type);
-    js_lit(",\"endpointType\":");
-    js_int(ep->endpoint_type);
-    js_lit(",\"gid\":[");
-    for (size_t g = 0; g < RMW_GID_STORAGE_SIZE; g++) {
-      if (g) js_lit(",");
-      js_int(ep->endpoint_gid[g]);
-    }
-    js_lit("],\"qos\":");
-    js_qos(&ep->qos_profile);
-#if !defined(RB_DISTRO_HUMBLE)
-    js_lit(",\"typeHash\":[");
-    js_int(ep->topic_type_hash.version);
-    for (size_t h = 0; h < ROSIDL_TYPE_HASH_SIZE; h++) {
-      js_lit(",");
-      js_int(ep->topic_type_hash.value[h]);
-    }
-    js_lit("]");
-#endif
-    js_lit("}");
+    js_topic_endpoint(&arr.info_array[i]);
   }
   js_lit("]");
   rmw_topic_endpoint_info_array_fini(&arr, &alloc);
   return g_json.buf;
+}
+
+#if RB_HAS_SERVICE_ENDPOINT_INFO
+// endpoint_count is 2 for DDS (request reader/response writer or the reverse)
+// and 1 for middlewares with native services (zenoh)
+static void js_service_endpoint(const rmw_service_endpoint_info_t* ep) {
+  js_lit("{\"nodeName\":");
+  js_str(ep->node_name);
+  js_lit(",\"nodeNamespace\":");
+  js_str(ep->node_namespace);
+  js_lit(",\"serviceType\":");
+  js_str(ep->service_type);
+  js_lit(",\"typeHash\":");
+  js_type_hash(&ep->service_type_hash);
+  js_lit(",\"endpointType\":");
+  js_int(ep->endpoint_type);
+  js_lit(",\"gids\":[");
+  for (size_t i = 0; i < ep->endpoint_count; i++) {
+    if (i) js_lit(",");
+    js_gid(ep->endpoint_gids[i]);
+  }
+  js_lit("],\"qos\":[");
+  for (size_t i = 0; i < ep->endpoint_count; i++) {
+    if (i) js_lit(",");
+    js_qos(&ep->qos_profiles[i]);
+  }
+  js_lit("]}");
+}
+#endif
+
+// kind: 0 clients, 1 servers
+const char* rb_graph_service_endpoint_info(void* node, int kind, const char* service, int no_mangle) {
+#if RB_HAS_SERVICE_ENDPOINT_INFO
+  rcl_allocator_t alloc = rcl_get_default_allocator();
+  rcl_service_endpoint_info_array_t arr = rcl_get_zero_initialized_service_endpoint_info_array();
+  rcl_ret_t ret = kind == 0 ? rcl_get_clients_info_by_service(node, &alloc, service, no_mangle != 0, &arr)
+                            : rcl_get_servers_info_by_service(node, &alloc, service, no_mangle != 0, &arr);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_get_*_info_by_service", ret);
+    return NULL;
+  }
+  js_reset();
+  js_lit("[");
+  for (size_t i = 0; i < arr.size; i++) {
+    if (i) js_lit(",");
+    js_service_endpoint(&arr.info_array[i]);
+  }
+  js_lit("]");
+  rcl_service_endpoint_info_array_fini(&arr, &alloc);
+  return g_json.buf;
+#else
+  (void)node, (void)kind, (void)service, (void)no_mangle;
+  rb_set_error("service endpoint info needs ROS 2 Lyrical or newer");
+  return NULL;
+#endif
+}
+
+// kind: 0 action clients, 1 action servers
+const char* rb_graph_action_endpoint_info(void* node, int kind, const char* action) {
+#if RB_HAS_ACTION_ENDPOINT_INFO
+  rcl_allocator_t alloc = rcl_get_default_allocator();
+  rcl_action_endpoint_info_array_t arr = rcl_action_get_zero_initialized_endpoint_info_array();
+  rcl_ret_t ret = kind == 0 ? rcl_action_get_clients_info_by_action(node, &alloc, action, &arr)
+                            : rcl_action_get_servers_info_by_action(node, &alloc, action, &arr);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_action_get_*_info_by_action", ret);
+    return NULL;
+  }
+  js_reset();
+  js_lit("[");
+  for (size_t i = 0; i < arr.size; i++) {
+    const rcl_action_endpoint_info_t* a = &arr.info_array[i];
+    if (i) js_lit(",");
+    js_lit("{\"goal\":");
+    js_service_endpoint(&a->goal_service_info);
+    js_lit(",\"cancel\":");
+    js_service_endpoint(&a->cancel_service_info);
+    js_lit(",\"result\":");
+    js_service_endpoint(&a->result_service_info);
+    js_lit(",\"feedback\":");
+    js_topic_endpoint(&a->feedback_topic_info);
+    js_lit(",\"status\":");
+    js_topic_endpoint(&a->status_topic_info);
+    js_lit("}");
+  }
+  js_lit("]");
+  rcl_action_endpoint_info_array_fini(&arr, &alloc);
+  return g_json.buf;
+#else
+  (void)node, (void)kind, (void)action;
+  rb_set_error("action endpoint info needs ROS 2 Rolling");
+  return NULL;
+#endif
 }
 
 // ---------------------------------------------------------------------------

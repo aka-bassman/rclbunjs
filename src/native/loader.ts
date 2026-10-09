@@ -136,10 +136,13 @@ export const symbols = {
   rb_graph_node_names: { returns: CSTR, args: [P, I32] },
   rb_graph_count: { returns: I64, args: [P, I32, P] },
   rb_graph_endpoint_info: { returns: CSTR, args: [P, I32, P, I32] },
+  rb_graph_service_endpoint_info: { returns: CSTR, args: [P, I32, P, I32] },
+  rb_graph_action_endpoint_info: { returns: CSTR, args: [P, I32, P] },
 } as const;
 
 const LIBS = [
   "rcl",
+  "rcl_action",
   "rcutils",
   "rmw",
   "rmw_implementation",
@@ -200,5 +203,9 @@ export const features = {
   matchedEvents: (featureBits & 8) !== 0,
   loggerService: (featureBits & 16) !== 0,
   rosoutSubloggers: (featureBits & 32) !== 0,
+  /** `getClientsInfoByService` / `getServersInfoByService`, `countActionClients` / `countActionServers` (Lyrical+) */
+  serviceEndpointInfo: (featureBits & 64) !== 0,
+  /** `getActionClientsInfoByAction` / `getActionServersInfoByAction` (Rolling) */
+  actionEndpointInfo: (featureBits & 128) !== 0,
 };
 export type { Pointer };

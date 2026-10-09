@@ -12,6 +12,6 @@ mkdir -p "$ROOT/build"
 DISTRO_DEF="-DRB_DISTRO_$(echo "${ROS_DISTRO:-}" | tr '[:lower:]' '[:upper:]')"
 ${CC:-cc} -O2 -fPIC -shared "$DISTRO_DEF" -Wall -Wno-unused-function -Wno-unused-result -o "$ROOT/build/librclbunjs_shim.so" "$ROOT/src/native/shim.c" \
   "${INC[@]}" -L"$ROS_PREFIX/lib" -Wl,-rpath,"$ROS_PREFIX/lib" \
-  -lrcl -lrcutils -lrmw -lrmw_implementation -lrcl_yaml_param_parser -lrosidl_runtime_c \
+  -lrcl -lrcl_action -lrcutils -lrmw -lrmw_implementation -lrcl_yaml_param_parser -lrosidl_runtime_c \
   -lrosidl_typesupport_introspection_c -lpthread
 echo "built $ROOT/build/librclbunjs_shim.so"

@@ -21,7 +21,8 @@ import { spawn, type ChildProcess } from "node:child_process";
 
 export { Context } from "./core/context.ts";
 export { Node, NodeOptions } from "./core/node.ts";
-export type { NamesAndTypes, TopicEndpointInfo, NodeOptionsInit } from "./core/node.ts";
+export type { NamesAndTypes, TopicEndpointInfo, ServiceEndpointInfo, NodeOptionsInit } from "./core/node.ts";
+export { ActionEndpointInfo } from "./core/node.ts";
 export { Publisher } from "./core/publisher.ts";
 export { Subscription, MessageInfo } from "./core/subscription.ts";
 export type { ContentFilter, SubscriptionCallback } from "./core/subscription.ts";

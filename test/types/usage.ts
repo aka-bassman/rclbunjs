@@ -65,3 +65,14 @@ node.createPublisher("std_msgs/msg/Float64", "f").publish(3.14, { validate: true
 node.createPublisher("geometry_msgs/msg/Twist", "t2").publish("hello");
 // @ts-expect-error data is a string
 node.createPublisher("std_msgs/msg/String", "s").publish(1);
+
+// graph queries of newer distros return null where unsupported
+const servers: rclbun.ServiceEndpointInfo[] | null = node.getServersInfoByService("add2");
+const qos0: rclbun.QoS | undefined = servers?.[0]?.qos_profiles[0];
+void qos0;
+const actionCount: number | null = node.countActionServers("fib");
+void actionCount;
+const actionInfo: rclbun.ActionEndpointInfo | undefined = node.getActionServersInfoByAction("fib")?.[0];
+const actionType: string | undefined = actionInfo?.actionType;
+void actionType;
+if (rclbun.features.actionEndpointInfo) void actionInfo?.feedbackTopicInfo.topic_type;
