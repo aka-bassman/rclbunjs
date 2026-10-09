@@ -13,6 +13,8 @@ import { configureIntrospection, type ServiceIntrospectionStates } from "./servi
 
 const SEQ = new BigInt64Array(1);
 const OUT = new BigUint64Array(1);
+// Responses taken per wake-up before yielding back to the event loop.
+const MAX_TAKE = 256;
 
 interface Pending {
   resolve: (v: any) => void;
@@ -147,7 +149,8 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
 
   /** @internal */
   execute(): void {
-    for (;;) {
+    // bounded like subscriptions: the wait set wakes us again if more are ready
+    for (let i = 0; i < MAX_TAKE; i++) {
       if (this.isDestroyed()) return;
       const n = Number(checkRc(lib.rb_client_take(this.handle, ptr(SEQ), ptr(OUT)), `take response on ${this.serviceName}`));
       if (n === 0) return;

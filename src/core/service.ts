@@ -12,6 +12,8 @@ import type { Clock } from "./clock.ts";
 
 const OUT = new BigUint64Array(1);
 const HDR = new BigUint64Array(1);
+// Requests taken per wake-up before yielding back to the event loop.
+const MAX_TAKE = 256;
 
 /** What service introspection publishes on `<service>/_service_event`. */
 export enum ServiceIntrospectionStates {
@@ -157,7 +159,8 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
 
   /** @internal */
   execute(): void {
-    for (;;) {
+    // bounded like subscriptions: the wait set wakes us again if more are ready
+    for (let i = 0; i < MAX_TAKE; i++) {
       if (this.isDestroyed()) return;
       const n = Number(checkRc(lib.rb_service_take(this.handle, ptr(HDR), ptr(OUT)), `take request on ${this.serviceName}`));
       if (n === 0) return;
