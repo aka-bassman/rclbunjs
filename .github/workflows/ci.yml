@@ -33,13 +33,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [humble, jazzy, kilted]
+        distro: [humble, jazzy, kilted, lyrical, rolling]
         arch: [x64, arm64]
         rmw: [rmw_fastrtps_cpp]
         include:
           - distro: jazzy
             arch: x64
             rmw: rmw_cyclonedds_cpp
+          # docker-test.sh starts the zenoh router in the container
+          - distro: jazzy
+            arch: x64
+            rmw: rmw_zenoh_cpp
+          - distro: lyrical
+            arch: x64
+            rmw: rmw_zenoh_cpp
     env:
       ROS_DISTRO: ${{ matrix.distro }}
       RMW_IMPLEMENTATION: ${{ matrix.rmw }}

@@ -10,8 +10,8 @@ A ROS 2 client library for [Bun](https://bun.sh), written in TypeScript on top o
 - Messages cross the FFI boundary as CDR bytes, handled by a built-in codec. Topics use
   `rcl_publish/take_serialized_message`; services use an `rmw_serialize/deserialize` bridge.
 
-Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on ROS 2 Humble, Jazzy
-(Fast DDS and Cyclone DDS) and Kilted on arm64; x86_64 has been tested under emulation.
+Status: early but functional. Interop with rclpy and the `ros2` CLI is tested on ROS 2 Humble, Jazzy, Kilted,
+Lyrical and Rolling, with Fast DDS, Cyclone DDS and Zenoh (`rmw_zenoh_cpp`), on x86_64 and arm64.
 
 ## Requirements
 
@@ -46,9 +46,10 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Lifecycle | `LifecycleNode`, the standard state machine and services, `~/transition_event`, lifecycle publishers |
 | QoS events | deadline, liveliness, incompatible QoS, incompatible type, matched, message lost |
 | Content filter | subscription content filters (Fast DDS) |
-| Graph | topic/service/node/action listings (also per node), publisher/subscription counts, endpoint info with QoS and type hash |
+| Graph | topic/service/node/action listings (also per node), publisher/subscription/client/service counts, topic endpoint info with QoS and type hash; service endpoint info and action client/server counts (Lyrical+); action endpoint info (Rolling) |
 | Validation | `validateMessage` / `assertValidMessage` / `createMessageValidator`, `getMessageSchema`, `getFieldNames`, `getFieldType`; `validator` for topic/node/namespace names |
 | Utilities | `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
+| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire (the same as with rclpy) and content filters are not available |
 | Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout` with configurable `rosoutQos`, log files), logger levels, `~/get_logger_levels` / `~/set_logger_levels` (`enableLoggerService`) |
 
@@ -104,16 +105,17 @@ bun install
 bun test test/unit                 # codec & logic tests, no ROS needed
 scripts/docker-test.sh             # integration tests in a ROS 2 container (rclpy/ros2 CLI interop)
 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh
-ROS_DISTRO=humble scripts/docker-test.sh
+RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh       # starts rmw_zenohd in the container
+ROS_DISTRO=humble scripts/docker-test.sh                       # humble, jazzy, kilted, lyrical, rolling
 bunx tsc --noEmit && bunx tsc --noEmit -p test/types
 SOAK_MINUTES=60 scripts/docker-test.sh bun test/soak/soak.ts   # long-running stability / memory trend
 ```
 
 `test/interop/gen_golden.py` regenerates the CDR golden vectors with rclpy.
 
-CI (`.github/workflows/ci.yml`) runs the unit tests and type checks, then the integration suite for Humble, Jazzy
-and Kilted on x64 and arm64 (plus Jazzy with Cyclone DDS), both with the runtime-compiled shim and with the
-prebuilt one.
+CI (`.github/workflows/ci.yml`) runs the unit tests and type checks, then the integration suite for Humble, Jazzy,
+Kilted, Lyrical and Rolling on x64 and arm64 (plus Jazzy with Cyclone DDS, and Jazzy and Lyrical with Zenoh), both
+with the runtime-compiled shim and with the prebuilt one.
 
 ## License
 
