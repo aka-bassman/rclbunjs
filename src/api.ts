@@ -1,6 +1,6 @@
 // rclbunjs public API (shaped after rclnodejs); re-exported by index.ts.
 export type * from "./types.ts";
-import type { KnownOr, MessageOf, MessageTypeName } from "./types.ts";
+import type { ActionTypeName, ConstantsOf, KnownOr, MessageOf, MessageTypeName, ServiceTypeName } from "./types.ts";
 import { Context } from "./core/context.ts";
 import { Node, NodeOptions, type NodeOptionsInit } from "./core/node.ts";
 import { AbortError, TimeoutError, TypeValidationError } from "./core/errors.ts";
@@ -13,6 +13,9 @@ import {
   getMessageType,
   getServiceType,
   interfaceKind,
+  type ActionType,
+  type MessageType,
+  type ServiceType,
   type TypeName,
 } from "./interfaces/registry.ts";
 import { listInterfacePackages, listInterfaces } from "./interfaces/discovery.ts";
@@ -210,8 +213,35 @@ export function waitForMessage<K extends KnownOr<MessageTypeName>, T = MessageOf
   });
 }
 
-/** Interface description for a type name (message, service or action). */
-export function require(name: TypeName) {
+/** A message type descriptor whose constants are also typed properties (`GoalStatus.STATUS_SUCCEEDED`). */
+export type TypedMessageType<K> = MessageType & ConstantsOf<K> & { readonly constants: ConstantsOf<K> };
+
+/**
+ * Interface description for a type name (message, service or action). As in
+ * rclnodejs, message constants are properties of the result:
+ * `rclbun.require("action_msgs/msg/GoalStatus").STATUS_SUCCEEDED`.
+ */
+export function require<K extends MessageTypeName>(name: K): TypedMessageType<K>;
+export function require<K extends ServiceTypeName>(
+  name: K,
+): ServiceType & {
+  readonly request: TypedMessageType<`${K}_Request`>;
+  readonly response: TypedMessageType<`${K}_Response`>;
+  readonly Request: TypedMessageType<`${K}_Request`>;
+  readonly Response: TypedMessageType<`${K}_Response`>;
+};
+export function require<K extends ActionTypeName>(
+  name: K,
+): ActionType & {
+  readonly goal: TypedMessageType<`${K}_Goal`>;
+  readonly result: TypedMessageType<`${K}_Result`>;
+  readonly feedback: TypedMessageType<`${K}_Feedback`>;
+  readonly Goal: TypedMessageType<`${K}_Goal`>;
+  readonly Result: TypedMessageType<`${K}_Result`>;
+  readonly Feedback: TypedMessageType<`${K}_Feedback`>;
+};
+export function require(name: TypeName): (MessageType | ServiceType | ActionType) & { readonly [constant: string]: any };
+export function require(name: TypeName): MessageType | ServiceType | ActionType {
   const kind = interfaceKind(name);
   if (kind === "srv") return getServiceType(name);
   if (kind === "action") return getActionType(name);

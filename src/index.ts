@@ -10,6 +10,9 @@ export interface ServiceTypeMap {}
 /** Action types by name: { Goal, Result, Feedback }. */
 // biome-ignore lint/suspicious/noEmptyInterface: augmented by generated declarations
 export interface ActionTypeMap {}
+/** Constants of message structs by name (literal types); filled in by `bunx rclbunjs-typegen`. */
+// biome-ignore lint/suspicious/noEmptyInterface: augmented by generated declarations
+export interface MessageConstantsMap {}
 export * from "./api.ts";
 
 // Default export: the whole API object, so `import rclbun from "rclbunjs"`

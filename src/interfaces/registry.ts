@@ -75,6 +75,7 @@ export interface MessageType {
   readonly kind: InterfaceKind;
   readonly shortName: string; // e.g. 'String', 'AddTwoInts_Request'
   readonly definitions: MessageDefinition[];
+  /** Constants of the message; each one is also a property of this object (rclnodejs style). */
   readonly constants: Record<string, unknown>;
   encode(msg: unknown): Uint8Array;
   decode(bytes: Uint8Array, options?: DecodeOptions): any;
@@ -89,6 +90,9 @@ export interface ServiceType {
   readonly shortName: string;
   readonly request: MessageType;
   readonly response: MessageType;
+  /** Same as request / response (rclnodejs names). */
+  readonly Request: MessageType;
+  readonly Response: MessageType;
   typeSupport(): Pointer;
 }
 
@@ -99,6 +103,10 @@ export interface ActionType {
   readonly goal: MessageType;
   readonly result: MessageType;
   readonly feedback: MessageType;
+  /** Same as goal / result / feedback (rclnodejs names). */
+  readonly Goal: MessageType;
+  readonly Result: MessageType;
+  readonly Feedback: MessageType;
   readonly sendGoalRequest: MessageType;
   readonly sendGoalResponse: MessageType;
   readonly getResultRequest: MessageType;
@@ -234,7 +242,9 @@ function makeMessageType(full: string, typeSupport: () => Pointer): MessageType 
   const constants: Record<string, unknown> = {};
   for (const f of defs[0]!.definitions) if (f.isConstant) constants[f.name] = f.value;
   let ts: Pointer | undefined;
+  // constant names are upper case, so they cannot clash with the members below
   return {
+    ...constants,
     name: full,
     pkg,
     kind,
@@ -268,12 +278,16 @@ export function getServiceType(t: TypeName): ServiceType {
   if (!st) {
     loadService(p.pkg, p.name);
     let ts: Pointer | undefined;
+    const request = getMessageType(`${full}_Request`);
+    const response = getMessageType(`${full}_Response`);
     st = {
       name: full,
       pkg: p.pkg,
       shortName: p.name,
-      request: getMessageType(`${full}_Request`),
-      response: getMessageType(`${full}_Response`),
+      request,
+      response,
+      Request: request,
+      Response: response,
       typeSupport: () => (ts ??= serviceTypeSupport(p.pkg, "srv", p.name)),
     };
     serviceCache.set(full, st);
@@ -291,12 +305,16 @@ export function getActionType(t: TypeName): ActionType {
     const m = (s: string) => getMessageType(`${full}_${s}`);
     const svc = (s: string): ServiceType => {
       let ts: Pointer | undefined;
+      const request = m(`${s}_Request`);
+      const response = m(`${s}_Response`);
       return {
         name: `${full}_${s}`,
         pkg: p.pkg,
         shortName: `${p.name}_${s}`,
-        request: m(`${s}_Request`),
-        response: m(`${s}_Response`),
+        request,
+        response,
+        Request: request,
+        Response: response,
         typeSupport: () => (ts ??= serviceTypeSupport(p.pkg, "action", `${p.name}_${s}`)),
       };
     };
@@ -308,6 +326,9 @@ export function getActionType(t: TypeName): ActionType {
       goal: m("Goal"),
       result: m("Result"),
       feedback: m("Feedback"),
+      Goal: m("Goal"),
+      Result: m("Result"),
+      Feedback: m("Feedback"),
       sendGoalRequest: m("SendGoal_Request"),
       sendGoalResponse: m("SendGoal_Response"),
       getResultRequest: m("GetResult_Request"),

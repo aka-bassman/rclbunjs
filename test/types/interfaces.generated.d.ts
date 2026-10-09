@@ -2,354 +2,809 @@
 import "rclbunjs";
 
 declare module "rclbunjs" {
-  /** action_msgs/msg/GoalInfo */
+  /** `action_msgs/msg/GoalInfo` */
   interface action_msgs__msg__GoalInfo {
+    /** Goal ID */
     goal_id: unique_identifier_msgs__msg__UUID;
+    /** Time when the goal was accepted */
     stamp: builtin_interfaces__msg__Time;
   }
-  /** action_msgs/msg/GoalStatus */
+  /**
+   * An action goal can be in one of these states after it is accepted by an action
+   * server.
+   *
+   * For more information, see http://design.ros2.org/articles/actions.html
+   *
+   * `action_msgs/msg/GoalStatus`
+   */
   interface action_msgs__msg__GoalStatus {
+    /** Goal info (contains ID and timestamp). */
     goal_info: action_msgs__msg__GoalInfo;
+    /** Action goal state-machine status. */
     status: number;
   }
-  /** constants of action_msgs/msg/GoalStatus */
+  /** Constants of `action_msgs/msg/GoalStatus` (also properties of `require("action_msgs/msg/GoalStatus")`). */
   interface action_msgs__msg__GoalStatus__Constants {
+    /** Indicates status has not been properly set. */
     readonly STATUS_UNKNOWN: 0;
+    /** The goal has been accepted and is awaiting execution. */
     readonly STATUS_ACCEPTED: 1;
+    /** The goal is currently being executed by the action server. */
     readonly STATUS_EXECUTING: 2;
+    /**
+     * The client has requested that the goal be canceled and the action server has
+     * accepted the cancel request.
+     */
     readonly STATUS_CANCELING: 3;
+    /** The goal was achieved successfully by the action server. */
     readonly STATUS_SUCCEEDED: 4;
+    /** The goal was canceled after an external request from an action client. */
     readonly STATUS_CANCELED: 5;
+    /** The goal was terminated by the action server without an external request. */
     readonly STATUS_ABORTED: 6;
   }
-  /** action_msgs/msg/GoalStatusArray */
+  /** `action_msgs/msg/GoalStatusArray` */
   interface action_msgs__msg__GoalStatusArray {
+    /** An array of goal statuses. */
     status_list: action_msgs__msg__GoalStatus[];
   }
-  /** action_msgs/srv/CancelGoal_Request */
+  /**
+   * Cancel one or more goals with the following policy:
+   *
+   * - If the goal ID is zero and timestamp is zero, cancel all goals.
+   * - If the goal ID is zero and timestamp is not zero, cancel all goals accepted
+   *   at or before the timestamp.
+   * - If the goal ID is not zero and timestamp is zero, cancel the goal with the
+   *   given ID regardless of the time it was accepted.
+   * - If the goal ID is not zero and timestamp is not zero, cancel the goal with
+   *   the given ID and all goals accepted at or before the timestamp.
+   *
+   * `action_msgs/srv/CancelGoal_Request`
+   */
   interface action_msgs__srv__CancelGoal_Request {
+    /** Goal info describing the goals to cancel, see above. */
     goal_info: action_msgs__msg__GoalInfo;
   }
-  /** action_msgs/srv/CancelGoal_Response */
+  /**
+   * Return codes.
+   *
+   * `action_msgs/srv/CancelGoal_Response`
+   */
   interface action_msgs__srv__CancelGoal_Response {
+    /** Return code, see above definitions. */
     return_code: number;
+    /** Goals that accepted the cancel request. */
     goals_canceling: action_msgs__msg__GoalInfo[];
   }
-  /** constants of action_msgs/srv/CancelGoal_Response */
+  /** Constants of `action_msgs/srv/CancelGoal_Response` (also properties of `require("action_msgs/srv/CancelGoal_Response")`). */
   interface action_msgs__srv__CancelGoal_Response__Constants {
+    /**
+     * Indicates the request was accepted without any errors.
+     *
+     * One or more goals have transitioned to the CANCELING state. The
+     * goals_canceling list is not empty.
+     */
     readonly ERROR_NONE: 0;
+    /**
+     * Indicates the request was rejected.
+     *
+     * No goals have transitioned to the CANCELING state. The goals_canceling list is
+     * empty.
+     */
     readonly ERROR_REJECTED: 1;
+    /**
+     * Indicates the requested goal ID does not exist.
+     *
+     * No goals have transitioned to the CANCELING state. The goals_canceling list is
+     * empty.
+     */
     readonly ERROR_UNKNOWN_GOAL_ID: 2;
+    /**
+     * Indicates the goal is not cancelable because it is already in a terminal state.
+     *
+     * No goals have transitioned to the CANCELING state. The goals_canceling list is
+     * empty.
+     */
     readonly ERROR_GOAL_TERMINATED: 3;
   }
-  /** actionlib_msgs/msg/GoalID */
+  /** `actionlib_msgs/msg/GoalID` */
   interface actionlib_msgs__msg__GoalID {
+    /**
+     * The stamp should store the time at which this goal was requested.
+     * It is used by an action server when it tries to preempt all
+     * goals that were requested before a certain time
+     */
     stamp: builtin_interfaces__msg__Time;
+    /**
+     * The id provides a way to associate feedback and
+     * result message with specific goal requests. The id
+     * specified must be unique.
+     */
     id: string;
   }
-  /** actionlib_msgs/msg/GoalStatus */
+  /** `actionlib_msgs/msg/GoalStatus` */
   interface actionlib_msgs__msg__GoalStatus {
     goal_id: actionlib_msgs__msg__GoalID;
     status: number;
+    /** Allow for the user to associate a string with GoalStatus for debugging. */
     text: string;
   }
-  /** constants of actionlib_msgs/msg/GoalStatus */
+  /** Constants of `actionlib_msgs/msg/GoalStatus` (also properties of `require("actionlib_msgs/msg/GoalStatus")`). */
   interface actionlib_msgs__msg__GoalStatus__Constants {
+    /** The goal has yet to be processed by the action server. */
     readonly PENDING: 0;
+    /** The goal is currently being processed by the action server. */
     readonly ACTIVE: 1;
+    /** The goal received a cancel request after it started executing */
     readonly PREEMPTED: 2;
+    /**
+     * and has since completed its execution (Terminal State).
+     * The goal was achieved successfully by the action server
+     */
     readonly SUCCEEDED: 3;
+    /**
+     * (Terminal State).
+     * The goal was aborted during execution by the action server due
+     */
     readonly ABORTED: 4;
+    /**
+     * to some failure (Terminal State).
+     * The goal was rejected by the action server without being processed,
+     */
     readonly REJECTED: 5;
+    /**
+     * because the goal was unattainable or invalid (Terminal State).
+     * The goal received a cancel request after it started executing
+     */
     readonly PREEMPTING: 6;
+    /**
+     * and has not yet completed execution.
+     * The goal received a cancel request before it started executing, but
+     */
     readonly RECALLING: 7;
+    /**
+     * the action server has not yet confirmed that the goal is canceled.
+     * The goal received a cancel request before it started executing
+     */
     readonly RECALLED: 8;
+    /**
+     * and was successfully cancelled (Terminal State).
+     * An action client can determine that a goal is LOST. This should not
+     */
     readonly LOST: 9;
   }
-  /** actionlib_msgs/msg/GoalStatusArray */
+  /** `actionlib_msgs/msg/GoalStatusArray` */
   interface actionlib_msgs__msg__GoalStatusArray {
+    /**
+     * Stores the statuses for goals that are currently being tracked
+     * by an action server
+     */
     header: std_msgs__msg__Header;
     status_list: actionlib_msgs__msg__GoalStatus[];
   }
-  /** builtin_interfaces/msg/Duration */
+  /**
+   * Duration defines a period between two time points.
+   * Messages of this datatype are of ROS Time following this design:
+   * https://design.ros2.org/articles/clock_and_time.html
+   *
+   * `builtin_interfaces/msg/Duration`
+   */
   interface builtin_interfaces__msg__Duration {
+    /** The seconds component, valid over all int32 values. */
     sec: number;
+    /**
+     * The nanoseconds component, valid in the range [0, 1e9), to be added to the seconds component.
+     * e.g.
+     * The duration -1.7 seconds is represented as {sec: -2, nanosec: 3e8}
+     * The duration 1.7 seconds is represented as {sec: 1, nanosec: 7e8}
+     */
     nanosec: number;
   }
-  /** builtin_interfaces/msg/Time */
+  /**
+   * This message communicates ROS Time defined here:
+   * https://design.ros2.org/articles/clock_and_time.html
+   *
+   * `builtin_interfaces/msg/Time`
+   */
   interface builtin_interfaces__msg__Time {
+    /** The seconds component, valid over all int32 values. */
     sec: number;
+    /**
+     * The nanoseconds component, valid in the range [0, 1e9), to be added to the seconds component.
+     * e.g.
+     * The time -1.7 seconds is represented as {sec: -2, nanosec: 3e8}
+     * The time 1.7 seconds is represented as {sec: 1, nanosec: 7e8}
+     */
     nanosec: number;
   }
-  /** composition_interfaces/srv/ListNodes_Request */
+  /** `composition_interfaces/srv/ListNodes_Request` */
   interface composition_interfaces__srv__ListNodes_Request {
   }
-  /** composition_interfaces/srv/ListNodes_Response */
+  /** `composition_interfaces/srv/ListNodes_Response` */
   interface composition_interfaces__srv__ListNodes_Response {
+    /** List of full node names including namespace. */
     full_node_names: string[];
+    /** corresponding unique ids (must have same length as full_node_names). */
     unique_ids: bigint[];
   }
-  /** composition_interfaces/srv/LoadNode_Request */
+  /** `composition_interfaces/srv/LoadNode_Request` */
   interface composition_interfaces__srv__LoadNode_Request {
+    /** The ROS package in which the composable node can be found. */
     package_name: string;
+    /** A plugin within the ROS package "package_name". */
     plugin_name: string;
+    /**
+     * The assigned name of the composable node. Leave empty to use the node's
+     * default name.
+     */
     node_name: string;
+    /**
+     * The assigned namespace of the composable node. Leave empty to use the node's
+     * default namespace.
+     */
     node_namespace: string;
+    /**
+     * The assigned log level of the composable node. Enum values are found in
+     * message rcl_interfaces/Log.
+     */
     log_level: number;
+    /**
+     * Remapping rules for this composable node.
+     *
+     * For more info about static_remapping rules and their syntax, see
+     * https://design.ros2.org/articles/static_remapping.html
+     * TODO(sloretz) rcl_interfaces message for remap rules?
+     */
     remap_rules: string[];
+    /** The Parameters of this composable node to set. */
     parameters: rcl_interfaces__msg__Parameter[];
+    /** key/value arguments that are specific to a type of container process. */
     extra_arguments: rcl_interfaces__msg__Parameter[];
   }
-  /** composition_interfaces/srv/LoadNode_Response */
+  /** `composition_interfaces/srv/LoadNode_Response` */
   interface composition_interfaces__srv__LoadNode_Response {
+    /** True if the node was successfully loaded. */
     success: boolean;
+    /** Human readable error message if success is false, else empty string. */
     error_message: string;
+    /** Name of the loaded composable node (including namespace). */
     full_node_name: string;
+    /** A unique identifier for the loaded node. */
     unique_id: bigint;
   }
-  /** composition_interfaces/srv/UnloadNode_Request */
+  /** `composition_interfaces/srv/UnloadNode_Request` */
   interface composition_interfaces__srv__UnloadNode_Request {
+    /** Container specific unique id of a loaded node. */
     unique_id: bigint;
   }
-  /** composition_interfaces/srv/UnloadNode_Response */
+  /** `composition_interfaces/srv/UnloadNode_Response` */
   interface composition_interfaces__srv__UnloadNode_Response {
+    /** True if the node existed and was unloaded. */
     success: boolean;
+    /** Human readable error message if success is false, else empty string. */
     error_message: string;
   }
-  /** diagnostic_msgs/msg/DiagnosticArray */
+  /** `diagnostic_msgs/msg/DiagnosticArray` */
   interface diagnostic_msgs__msg__DiagnosticArray {
+    /**
+     * This message is used to send diagnostic information about the state of the robot.
+     * for timestamp
+     */
     header: std_msgs__msg__Header;
+    /** an array of components being reported on */
     status: diagnostic_msgs__msg__DiagnosticStatus[];
   }
-  /** diagnostic_msgs/msg/DiagnosticStatus */
+  /**
+   * This message holds the status of an individual component of the robot.
+   *
+   * `diagnostic_msgs/msg/DiagnosticStatus`
+   */
   interface diagnostic_msgs__msg__DiagnosticStatus {
+    /** Level of operation enumerated above. */
     level: number;
+    /** A description of the test/component reporting. */
     name: string;
+    /** A description of the status. */
     message: string;
+    /** A hardware unique string. */
     hardware_id: string;
+    /** An array of values associated with the status. */
     values: diagnostic_msgs__msg__KeyValue[];
   }
-  /** constants of diagnostic_msgs/msg/DiagnosticStatus */
+  /** Constants of `diagnostic_msgs/msg/DiagnosticStatus` (also properties of `require("diagnostic_msgs/msg/DiagnosticStatus")`). */
   interface diagnostic_msgs__msg__DiagnosticStatus__Constants {
+    /** Possible levels of operations. */
     readonly OK: 0;
     readonly WARN: 1;
     readonly ERROR: 2;
     readonly STALE: 3;
   }
-  /** diagnostic_msgs/msg/KeyValue */
+  /** `diagnostic_msgs/msg/KeyValue` */
   interface diagnostic_msgs__msg__KeyValue {
+    /** What to label this value when viewing. */
     key: string;
+    /** A value to track over time. */
     value: string;
   }
-  /** diagnostic_msgs/srv/AddDiagnostics_Request */
+  /**
+   * This service is used as part of the process for loading analyzers at runtime,
+   * and should be used by a loader script or program, not as a standalone service.
+   * Information about dynamic addition of analyzers can be found at
+   * http://wiki.ros.org/diagnostics/Tutorials/Adding%20Analyzers%20at%20Runtime
+   *
+   * `diagnostic_msgs/srv/AddDiagnostics_Request`
+   */
   interface diagnostic_msgs__srv__AddDiagnostics_Request {
+    /**
+     * The load_namespace parameter defines the namespace where parameters for the
+     * initialization of analyzers in the diagnostic aggregator have been loaded. The
+     * value should be a global name (i.e. /my/name/space), not a relative
+     * (my/name/space) or private (~my/name/space) name. Analyzers will not be added
+     * if a non-global name is used. The call will also fail if the namespace
+     * contains parameters that follow a namespace structure that does not conform to
+     * that expected by the analyzer definitions. See
+     * http://wiki.ros.org/diagnostics/Tutorials/Configuring%20Diagnostic%20Aggregators
+     * and http://wiki.ros.org/diagnostics/Tutorials/Using%20the%20GenericAnalyzer
+     * for examples of the structure of yaml files which are expected to have been
+     * loaded into the namespace.
+     */
     load_namespace: string;
   }
-  /** diagnostic_msgs/srv/AddDiagnostics_Response */
+  /** `diagnostic_msgs/srv/AddDiagnostics_Response` */
   interface diagnostic_msgs__srv__AddDiagnostics_Response {
+    /**
+     * True if diagnostic aggregator was updated with new diagnostics, False
+     * otherwise. A false return value means that either there is a bond in the
+     * aggregator which already used the requested namespace, or the initialization
+     * of analyzers failed.
+     */
     success: boolean;
+    /** Message with additional information about the success or failure */
     message: string;
   }
-  /** diagnostic_msgs/srv/SelfTest_Request */
+  /** `diagnostic_msgs/srv/SelfTest_Request` */
   interface diagnostic_msgs__srv__SelfTest_Request {
   }
-  /** diagnostic_msgs/srv/SelfTest_Response */
+  /** `diagnostic_msgs/srv/SelfTest_Response` */
   interface diagnostic_msgs__srv__SelfTest_Response {
     id: string;
     passed: number;
     status: diagnostic_msgs__msg__DiagnosticStatus[];
   }
-  /** example_interfaces/action/Fibonacci_Feedback */
+  /** `example_interfaces/action/Fibonacci_Feedback` */
   interface example_interfaces__action__Fibonacci_Feedback {
+    /** Feedback */
     sequence: Int32Array | number[];
   }
-  /** example_interfaces/action/Fibonacci_Goal */
+  /** `example_interfaces/action/Fibonacci_Goal` */
   interface example_interfaces__action__Fibonacci_Goal {
+    /** Goal */
     order: number;
   }
-  /** example_interfaces/action/Fibonacci_Result */
+  /** `example_interfaces/action/Fibonacci_Result` */
   interface example_interfaces__action__Fibonacci_Result {
+    /** Result */
     sequence: Int32Array | number[];
   }
-  /** example_interfaces/msg/Bool */
+  /** `example_interfaces/msg/Bool` */
   interface example_interfaces__msg__Bool {
+    /**
+     * This is an example message of using a primitive datatype, bool.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: boolean;
   }
-  /** example_interfaces/msg/Byte */
+  /** `example_interfaces/msg/Byte` */
   interface example_interfaces__msg__Byte {
+    /**
+     * This is an example message of using a primitive datatype, byte.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/ByteMultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/ByteMultiArray`
+   */
   interface example_interfaces__msg__ByteMultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint8Array | number[];
   }
-  /** example_interfaces/msg/Char */
+  /** `example_interfaces/msg/Char` */
   interface example_interfaces__msg__Char {
+    /**
+     * This is an example message of using a primitive datatype, char.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Empty */
+  /**
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   *
+   * `example_interfaces/msg/Empty`
+   */
   interface example_interfaces__msg__Empty {
   }
-  /** example_interfaces/msg/Float32 */
+  /** `example_interfaces/msg/Float32` */
   interface example_interfaces__msg__Float32 {
+    /**
+     * This is an example message of using a primitive datatype, float32.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Float32MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Float32MultiArray`
+   */
   interface example_interfaces__msg__Float32MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Float32Array | number[];
   }
-  /** example_interfaces/msg/Float64 */
+  /** `example_interfaces/msg/Float64` */
   interface example_interfaces__msg__Float64 {
+    /**
+     * This is an example message of using a primitive datatype, float64.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Float64MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Float64MultiArray`
+   */
   interface example_interfaces__msg__Float64MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Float64Array | number[];
   }
-  /** example_interfaces/msg/Int16 */
+  /** `example_interfaces/msg/Int16` */
   interface example_interfaces__msg__Int16 {
+    /**
+     * This is an example message of using a primitive datatype, int16.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Int16MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Int16MultiArray`
+   */
   interface example_interfaces__msg__Int16MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Int16Array | number[];
   }
-  /** example_interfaces/msg/Int32 */
+  /** `example_interfaces/msg/Int32` */
   interface example_interfaces__msg__Int32 {
+    /**
+     * This is an example message of using a primitive datatype, int32.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Int32MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Int32MultiArray`
+   */
   interface example_interfaces__msg__Int32MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Int32Array | number[];
   }
-  /** example_interfaces/msg/Int64 */
+  /** `example_interfaces/msg/Int64` */
   interface example_interfaces__msg__Int64 {
+    /**
+     * This is an example message of using a primitive datatype, int64.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: bigint;
   }
-  /** example_interfaces/msg/Int64MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Int64MultiArray`
+   */
   interface example_interfaces__msg__Int64MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: bigint[];
   }
-  /** example_interfaces/msg/Int8 */
+  /** `example_interfaces/msg/Int8` */
   interface example_interfaces__msg__Int8 {
+    /**
+     * This is an example message of using a primitive datatype, in8.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/Int8MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/Int8MultiArray`
+   */
   interface example_interfaces__msg__Int8MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Int8Array | number[];
   }
-  /** example_interfaces/msg/MultiArrayDimension */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/MultiArrayDimension`
+   */
   interface example_interfaces__msg__MultiArrayDimension {
+    /** label of given dimension */
     label: string;
+    /** size of given dimension (in type units) */
     size: number;
+    /** stride of given dimension */
     stride: number;
   }
-  /** example_interfaces/msg/MultiArrayLayout */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/MultiArrayLayout`
+   */
   interface example_interfaces__msg__MultiArrayLayout {
+    /** Array of dimension properties */
     dim: example_interfaces__msg__MultiArrayDimension[];
+    /** padding bytes at front of data */
     data_offset: number;
   }
-  /** example_interfaces/msg/String */
+  /** `example_interfaces/msg/String` */
   interface example_interfaces__msg__String {
+    /**
+     * This is an example message of using a primitive datatype, string.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: string;
   }
-  /** example_interfaces/msg/UInt16 */
+  /** `example_interfaces/msg/UInt16` */
   interface example_interfaces__msg__UInt16 {
+    /**
+     * This is an example message of using a primitive datatype, uint16.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/UInt16MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/UInt16MultiArray`
+   */
   interface example_interfaces__msg__UInt16MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint16Array | number[];
   }
-  /** example_interfaces/msg/UInt32 */
+  /** `example_interfaces/msg/UInt32` */
   interface example_interfaces__msg__UInt32 {
+    /**
+     * This is an example message of using a primitive datatype, uint32.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/UInt32MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/UInt32MultiArray`
+   */
   interface example_interfaces__msg__UInt32MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint32Array | number[];
   }
-  /** example_interfaces/msg/UInt64 */
+  /** `example_interfaces/msg/UInt64` */
   interface example_interfaces__msg__UInt64 {
+    /**
+     * This is an example message of using a primitive datatype, unint64.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: bigint;
   }
-  /** example_interfaces/msg/UInt64MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/UInt64MultiArray`
+   */
   interface example_interfaces__msg__UInt64MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: bigint[];
   }
-  /** example_interfaces/msg/UInt8 */
+  /** `example_interfaces/msg/UInt8` */
   interface example_interfaces__msg__UInt8 {
+    /**
+     * This is an example message of using a primitive datatype, uint8.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: number;
   }
-  /** example_interfaces/msg/UInt8MultiArray */
+  /**
+   * This is an example of using complex datatypes.
+   * It is not recommended to use directly.
+   * To use a similar datastruct please define a custom message with appropriate semantic meaning.
+   *
+   * `example_interfaces/msg/UInt8MultiArray`
+   */
   interface example_interfaces__msg__UInt8MultiArray {
+    /** specification of data layout */
     layout: example_interfaces__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint8Array | number[];
   }
-  /** example_interfaces/msg/WString */
+  /** `example_interfaces/msg/WString` */
   interface example_interfaces__msg__WString {
+    /**
+     * This is an example message of using a primitive datatype, wstring.
+     * If you want to test with this that's fine, but if you are deploying
+     * it into a system you should create a semantically meaningful message type.
+     * If you want to embed it in another message, use the primitive data type instead.
+     */
     data: string;
   }
-  /** example_interfaces/srv/AddTwoInts_Request */
+  /** `example_interfaces/srv/AddTwoInts_Request` */
   interface example_interfaces__srv__AddTwoInts_Request {
     a: bigint;
     b: bigint;
   }
-  /** example_interfaces/srv/AddTwoInts_Response */
+  /** `example_interfaces/srv/AddTwoInts_Response` */
   interface example_interfaces__srv__AddTwoInts_Response {
     sum: bigint;
   }
-  /** example_interfaces/srv/SetBool_Request */
+  /**
+   * This is an example of a service to set a boolean value.
+   * This can be used for testing but a semantically meaningful
+   * one should be created to be built upon.
+   *
+   * `example_interfaces/srv/SetBool_Request`
+   */
   interface example_interfaces__srv__SetBool_Request {
+    /** e.g. for hardware enabling / disabling */
     data: boolean;
   }
-  /** example_interfaces/srv/SetBool_Response */
+  /** `example_interfaces/srv/SetBool_Response` */
   interface example_interfaces__srv__SetBool_Response {
+    /** indicate successful run of triggered service */
     success: boolean;
+    /** informational, e.g. for error messages */
     message: string;
   }
-  /** example_interfaces/srv/Trigger_Request */
+  /**
+   * An example of a trigger service.
+   * This can be used for testing but a semantically meaningful
+   * one should be created to be built upon.
+   *
+   * `example_interfaces/srv/Trigger_Request`
+   */
   interface example_interfaces__srv__Trigger_Request {
   }
-  /** example_interfaces/srv/Trigger_Response */
+  /** `example_interfaces/srv/Trigger_Response` */
   interface example_interfaces__srv__Trigger_Response {
+    /** indicate successful run of triggered service */
     success: boolean;
+    /** informational, e.g. for error messages. */
     message: string;
   }
-  /** geometry_msgs/msg/Accel */
+  /** `geometry_msgs/msg/Accel` */
   interface geometry_msgs__msg__Accel {
+    /** This expresses acceleration in free space broken into its linear and angular parts. */
     linear: geometry_msgs__msg__Vector3;
     angular: geometry_msgs__msg__Vector3;
   }
-  /** geometry_msgs/msg/AccelStamped */
+  /** `geometry_msgs/msg/AccelStamped` */
   interface geometry_msgs__msg__AccelStamped {
+    /** An accel with reference coordinate frame and timestamp */
     header: std_msgs__msg__Header;
     accel: geometry_msgs__msg__Accel;
   }
-  /** geometry_msgs/msg/AccelWithCovariance */
+  /**
+   * This expresses acceleration in free space with uncertainty.
+   *
+   * `geometry_msgs/msg/AccelWithCovariance`
+   */
   interface geometry_msgs__msg__AccelWithCovariance {
     accel: geometry_msgs__msg__Accel;
+    /**
+     * Row-major representation of the 6x6 covariance matrix
+     * The orientation parameters use a fixed-axis representation.
+     * In order, the parameters are:
+     * (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+     *
+     * Fixed length: 36.
+     */
     covariance: Float64Array | number[];
   }
-  /** geometry_msgs/msg/AccelWithCovarianceStamped */
+  /** `geometry_msgs/msg/AccelWithCovarianceStamped` */
   interface geometry_msgs__msg__AccelWithCovarianceStamped {
+    /** This represents an estimated accel with reference coordinate frame and timestamp. */
     header: std_msgs__msg__Header;
     accel: geometry_msgs__msg__AccelWithCovariance;
   }
-  /** geometry_msgs/msg/Inertia */
+  /** `geometry_msgs/msg/Inertia` */
   interface geometry_msgs__msg__Inertia {
+    /** Mass [kg] */
     m: number;
+    /** Center of mass [m] */
     com: geometry_msgs__msg__Vector3;
+    /**
+     * Inertia Tensor [kg-m^2] about the center of mass
+     *     | ixx ixy ixz |
+     * I = | ixy iyy iyz |
+     *     | ixz iyz izz |
+     */
     ixx: number;
     ixy: number;
     ixz: number;
@@ -357,191 +812,444 @@ declare module "rclbunjs" {
     iyz: number;
     izz: number;
   }
-  /** geometry_msgs/msg/InertiaStamped */
+  /**
+   * An Inertia with a time stamp and reference frame.
+   *
+   * `geometry_msgs/msg/InertiaStamped`
+   */
   interface geometry_msgs__msg__InertiaStamped {
     header: std_msgs__msg__Header;
     inertia: geometry_msgs__msg__Inertia;
   }
-  /** geometry_msgs/msg/Point */
+  /** `geometry_msgs/msg/Point` */
   interface geometry_msgs__msg__Point {
+    /** This contains the position of a point in free space */
     x: number;
     y: number;
     z: number;
   }
-  /** geometry_msgs/msg/Point32 */
+  /**
+   * This contains the position of a point in free space(with 32 bits of precision).
+   * It is recommended to use Point wherever possible instead of Point32.
+   *
+   * This recommendation is to promote interoperability.
+   *
+   * This message is designed to take up less space when sending
+   * lots of points at once, as in the case of a PointCloud.
+   *
+   * `geometry_msgs/msg/Point32`
+   */
   interface geometry_msgs__msg__Point32 {
     x: number;
     y: number;
     z: number;
   }
-  /** geometry_msgs/msg/PointStamped */
+  /**
+   * This represents a Point with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/PointStamped`
+   */
   interface geometry_msgs__msg__PointStamped {
     header: std_msgs__msg__Header;
     point: geometry_msgs__msg__Point;
   }
-  /** geometry_msgs/msg/Polygon */
+  /**
+   * A specification of a polygon where the first and last points are assumed to be connected
+   *
+   * `geometry_msgs/msg/Polygon`
+   */
   interface geometry_msgs__msg__Polygon {
     points: geometry_msgs__msg__Point32[];
   }
-  /** geometry_msgs/msg/PolygonInstance */
+  /**
+   * A specification of a polygon where the first and last points are assumed to be connected
+   * It includes a unique identification field for disambiguating multiple instances
+   *
+   * `geometry_msgs/msg/PolygonInstance`
+   */
   interface geometry_msgs__msg__PolygonInstance {
     polygon: geometry_msgs__msg__Polygon;
     id: bigint;
   }
-  /** geometry_msgs/msg/PolygonInstanceStamped */
+  /**
+   * This represents a Polygon with reference coordinate frame and timestamp
+   * It includes a unique identification field for disambiguating multiple instances
+   *
+   * `geometry_msgs/msg/PolygonInstanceStamped`
+   */
   interface geometry_msgs__msg__PolygonInstanceStamped {
     header: std_msgs__msg__Header;
     polygon: geometry_msgs__msg__PolygonInstance;
   }
-  /** geometry_msgs/msg/PolygonStamped */
+  /**
+   * This represents a Polygon with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/PolygonStamped`
+   */
   interface geometry_msgs__msg__PolygonStamped {
     header: std_msgs__msg__Header;
     polygon: geometry_msgs__msg__Polygon;
   }
-  /** geometry_msgs/msg/Pose */
+  /**
+   * A representation of pose in free space, composed of position and orientation.
+   *
+   * `geometry_msgs/msg/Pose`
+   */
   interface geometry_msgs__msg__Pose {
     position: geometry_msgs__msg__Point;
     orientation: geometry_msgs__msg__Quaternion;
   }
-  /** geometry_msgs/msg/Pose2D */
+  /**
+   * Deprecated as of Foxy and will potentially be removed in any following release.
+   * Please use the full 3D pose.
+   *
+   * `geometry_msgs/msg/Pose2D`
+   */
   interface geometry_msgs__msg__Pose2D {
     x: number;
     y: number;
     theta: number;
   }
-  /** geometry_msgs/msg/PoseArray */
+  /**
+   * An array of poses with a header for global reference.
+   *
+   * `geometry_msgs/msg/PoseArray`
+   */
   interface geometry_msgs__msg__PoseArray {
     header: std_msgs__msg__Header;
     poses: geometry_msgs__msg__Pose[];
   }
-  /** geometry_msgs/msg/PoseStamped */
+  /**
+   * A Pose with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/PoseStamped`
+   */
   interface geometry_msgs__msg__PoseStamped {
     header: std_msgs__msg__Header;
     pose: geometry_msgs__msg__Pose;
   }
-  /** geometry_msgs/msg/PoseWithCovariance */
+  /**
+   * This represents a pose in free space with uncertainty.
+   *
+   * `geometry_msgs/msg/PoseWithCovariance`
+   */
   interface geometry_msgs__msg__PoseWithCovariance {
     pose: geometry_msgs__msg__Pose;
+    /**
+     * Row-major representation of the 6x6 covariance matrix
+     * The orientation parameters use a fixed-axis representation.
+     * In order, the parameters are:
+     * (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+     *
+     * Fixed length: 36.
+     */
     covariance: Float64Array | number[];
   }
-  /** geometry_msgs/msg/PoseWithCovarianceStamped */
+  /**
+   * This expresses an estimated pose with a reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/PoseWithCovarianceStamped`
+   */
   interface geometry_msgs__msg__PoseWithCovarianceStamped {
     header: std_msgs__msg__Header;
     pose: geometry_msgs__msg__PoseWithCovariance;
   }
-  /** geometry_msgs/msg/Quaternion */
+  /**
+   * This represents an orientation in free space in quaternion form.
+   *
+   * `geometry_msgs/msg/Quaternion`
+   */
   interface geometry_msgs__msg__Quaternion {
+    /** @default 0 */
     x: number;
+    /** @default 0 */
     y: number;
+    /** @default 0 */
     z: number;
+    /** @default 1 */
     w: number;
   }
-  /** geometry_msgs/msg/QuaternionStamped */
+  /**
+   * This represents an orientation with reference coordinate frame and timestamp.
+   *
+   * `geometry_msgs/msg/QuaternionStamped`
+   */
   interface geometry_msgs__msg__QuaternionStamped {
     header: std_msgs__msg__Header;
     quaternion: geometry_msgs__msg__Quaternion;
   }
-  /** geometry_msgs/msg/Transform */
+  /**
+   * This represents the transform between two coordinate frames in free space.
+   *
+   * `geometry_msgs/msg/Transform`
+   */
   interface geometry_msgs__msg__Transform {
     translation: geometry_msgs__msg__Vector3;
     rotation: geometry_msgs__msg__Quaternion;
   }
-  /** geometry_msgs/msg/TransformStamped */
+  /**
+   * This expresses a transform from coordinate frame header.frame_id
+   * to the coordinate frame child_frame_id at the time of header.stamp
+   *
+   * This message is mostly used by the
+   * <a href="https://docs.ros.org/en/rolling/p/tf2/">tf2</a> package.
+   * See its documentation for more information.
+   *
+   * The child_frame_id is necessary in addition to the frame_id
+   * in the Header to communicate the full reference for the transform
+   * in a self contained message.
+   *
+   * `geometry_msgs/msg/TransformStamped`
+   */
   interface geometry_msgs__msg__TransformStamped {
+    /** The frame id in the header is used as the reference frame of this transform. */
     header: std_msgs__msg__Header;
+    /** The frame id of the child frame to which this transform points. */
     child_frame_id: string;
+    /** Translation and rotation in 3-dimensions of child_frame_id from header.frame_id. */
     transform: geometry_msgs__msg__Transform;
   }
-  /** geometry_msgs/msg/Twist */
+  /**
+   * This expresses velocity in free space broken into its linear and angular parts.
+   *
+   * `geometry_msgs/msg/Twist`
+   */
   interface geometry_msgs__msg__Twist {
     linear: geometry_msgs__msg__Vector3;
     angular: geometry_msgs__msg__Vector3;
   }
-  /** geometry_msgs/msg/TwistStamped */
+  /**
+   * A twist with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/TwistStamped`
+   */
   interface geometry_msgs__msg__TwistStamped {
     header: std_msgs__msg__Header;
     twist: geometry_msgs__msg__Twist;
   }
-  /** geometry_msgs/msg/TwistWithCovariance */
+  /**
+   * This expresses velocity in free space with uncertainty.
+   *
+   * `geometry_msgs/msg/TwistWithCovariance`
+   */
   interface geometry_msgs__msg__TwistWithCovariance {
     twist: geometry_msgs__msg__Twist;
+    /**
+     * Row-major representation of the 6x6 covariance matrix
+     * The orientation parameters use a fixed-axis representation.
+     * In order, the parameters are:
+     * (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+     *
+     * Fixed length: 36.
+     */
     covariance: Float64Array | number[];
   }
-  /** geometry_msgs/msg/TwistWithCovarianceStamped */
+  /**
+   * This represents an estimated twist with reference coordinate frame and timestamp.
+   *
+   * `geometry_msgs/msg/TwistWithCovarianceStamped`
+   */
   interface geometry_msgs__msg__TwistWithCovarianceStamped {
     header: std_msgs__msg__Header;
     twist: geometry_msgs__msg__TwistWithCovariance;
   }
-  /** geometry_msgs/msg/Vector3 */
+  /**
+   * This represents a vector in free space.
+   *
+   * `geometry_msgs/msg/Vector3`
+   */
   interface geometry_msgs__msg__Vector3 {
     x: number;
     y: number;
     z: number;
   }
-  /** geometry_msgs/msg/Vector3Stamped */
+  /**
+   * This represents a Vector3 with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/Vector3Stamped`
+   */
   interface geometry_msgs__msg__Vector3Stamped {
     header: std_msgs__msg__Header;
     vector: geometry_msgs__msg__Vector3;
   }
-  /** geometry_msgs/msg/VelocityStamped */
+  /**
+   * This expresses the timestamped velocity vector of a frame 'body_frame_id' in the reference frame 'reference_frame_id' expressed from arbitrary observation frame 'header.frame_id'.
+   * - If the 'body_frame_id' and 'header.frame_id' are identical, the velocity is observed and defined in the local coordinates system of the body
+   *   which is the usual use-case in mobile robotics and is also known as a body twist.
+   *
+   * `geometry_msgs/msg/VelocityStamped`
+   */
   interface geometry_msgs__msg__VelocityStamped {
     header: std_msgs__msg__Header;
     body_frame_id: string;
     reference_frame_id: string;
     velocity: geometry_msgs__msg__Twist;
   }
-  /** geometry_msgs/msg/VelocityWithCovarianceStamped */
+  /**
+   * A timestamped velocity of a body whose frame is 'body_frame_id', measured
+   * relative to the reference frame 'reference_frame_id', with the velocity and
+   * covariance both expressed in the basis of the observation frame
+   * 'header.frame_id'.
+   *
+   * - If 'body_frame_id' and 'header.frame_id' are identical, the velocity and
+   *   covariance are expressed in the body's own basis. This is functionally
+   *   equivalent to the body-twist convention used by
+   *   'geometry_msgs/TwistStamped'.
+   *
+   * This message is the covariance-bearing analogue of
+   * 'geometry_msgs/VelocityStamped'.
+   *
+   * `geometry_msgs/msg/VelocityWithCovarianceStamped`
+   */
   interface geometry_msgs__msg__VelocityWithCovarianceStamped {
     header: std_msgs__msg__Header;
     body_frame_id: string;
     reference_frame_id: string;
     velocity: geometry_msgs__msg__TwistWithCovariance;
   }
-  /** geometry_msgs/msg/Wrench */
+  /**
+   * This represents force in free space, separated into its linear and angular parts.
+   *
+   * `geometry_msgs/msg/Wrench`
+   */
   interface geometry_msgs__msg__Wrench {
     force: geometry_msgs__msg__Vector3;
     torque: geometry_msgs__msg__Vector3;
   }
-  /** geometry_msgs/msg/WrenchStamped */
+  /**
+   * A wrench with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/WrenchStamped`
+   */
   interface geometry_msgs__msg__WrenchStamped {
     header: std_msgs__msg__Header;
     wrench: geometry_msgs__msg__Wrench;
   }
-  /** lifecycle_msgs/msg/State */
+  /**
+   * Primary state definitions as depicted in:
+   * http://design.ros2.org/articles/node_lifecycle.html
+   *
+   * `lifecycle_msgs/msg/State`
+   */
   interface lifecycle_msgs__msg__State {
+    /** The state id value from the above definitions. */
     id: number;
+    /** A text label of the state. */
     label: string;
   }
-  /** constants of lifecycle_msgs/msg/State */
+  /** Constants of `lifecycle_msgs/msg/State` (also properties of `require("lifecycle_msgs/msg/State")`). */
   interface lifecycle_msgs__msg__State__Constants {
+    /** Indicates state has not yet been set. */
     readonly PRIMARY_STATE_UNKNOWN: 0;
+    /**
+     * This is the life cycle state the node is in immediately after being
+     * instantiated.
+     */
     readonly PRIMARY_STATE_UNCONFIGURED: 1;
+    /** This state represents a node that is not currently performing any processing. */
     readonly PRIMARY_STATE_INACTIVE: 2;
+    /**
+     * This is the main state of the node's life cycle. While in this state, the node
+     * performs any processing, responds to service requests, reads and processes
+     * data, produces output, etc.
+     */
     readonly PRIMARY_STATE_ACTIVE: 3;
+    /**
+     * The finalized state is the state in which the node ends immediately before
+     * being destroyed.
+     */
     readonly PRIMARY_STATE_FINALIZED: 4;
+    /**
+     * In this transition state the node's onConfigure callback will be called to
+     * allow the node to load its configuration and conduct any required setup.
+     */
     readonly TRANSITION_STATE_CONFIGURING: 10;
+    /**
+     * In this transition state the node's callback onCleanup will be called to clear
+     * all state and return the node to a functionally equivalent state as when
+     * first created.
+     */
     readonly TRANSITION_STATE_CLEANINGUP: 11;
+    /**
+     * In this transition state the callback onShutdown will be executed to do any
+     * cleanup necessary before destruction.
+     */
     readonly TRANSITION_STATE_SHUTTINGDOWN: 12;
+    /**
+     * In this transition state the callback onActivate will be executed to do any
+     * final preparations to start executing.
+     */
     readonly TRANSITION_STATE_ACTIVATING: 13;
+    /**
+     * In this transition state the callback onDeactivate will be executed to do any
+     * cleanup to start executing, and reverse the onActivate changes.
+     */
     readonly TRANSITION_STATE_DEACTIVATING: 14;
+    /** This transition state is where any error may be cleaned up. */
     readonly TRANSITION_STATE_ERRORPROCESSING: 15;
   }
-  /** lifecycle_msgs/msg/Transition */
+  /**
+   * Default values for transitions as described in:
+   * http://design.ros2.org/articles/node_lifecycle.html
+   *
+   * `lifecycle_msgs/msg/Transition`
+   */
   interface lifecycle_msgs__msg__Transition {
+    /** The transition id from above definitions. */
     id: number;
+    /** A text label of the transition. */
     label: string;
   }
-  /** constants of lifecycle_msgs/msg/Transition */
+  /** Constants of `lifecycle_msgs/msg/Transition` (also properties of `require("lifecycle_msgs/msg/Transition")`). */
   interface lifecycle_msgs__msg__Transition__Constants {
+    /**
+     * This transition will instantiate the node, but will not run any code beyond
+     * the constructor.
+     */
     readonly TRANSITION_CREATE: 0;
+    /**
+     * The node's onConfigure callback will be called to allow the node to load its
+     * configuration and conduct any required setup.
+     */
     readonly TRANSITION_CONFIGURE: 1;
+    /**
+     * The node's callback onCleanup will be called in this transition to allow the
+     * node to load its configuration and conduct any required setup.
+     */
     readonly TRANSITION_CLEANUP: 2;
+    /**
+     * The node's callback onActivate will be executed to do any final preparations
+     * to start executing.
+     */
     readonly TRANSITION_ACTIVATE: 3;
+    /**
+     * The node's callback onDeactivate will be executed to do any cleanup to start
+     * executing, and reverse the onActivate changes.
+     */
     readonly TRANSITION_DEACTIVATE: 4;
+    /**
+     * This signals shutdown during an unconfigured state, the node's callback
+     * onShutdown will be executed to do any cleanup necessary before destruction.
+     */
     readonly TRANSITION_UNCONFIGURED_SHUTDOWN: 5;
+    /**
+     * This signals shutdown during an inactive state, the node's callback onShutdown
+     * will be executed to do any cleanup necessary before destruction.
+     */
     readonly TRANSITION_INACTIVE_SHUTDOWN: 6;
+    /**
+     * This signals shutdown during an active state, the node's callback onShutdown
+     * will be executed to do any cleanup necessary before destruction.
+     */
     readonly TRANSITION_ACTIVE_SHUTDOWN: 7;
+    /** This transition will simply cause the deallocation of the node. */
     readonly TRANSITION_DESTROY: 8;
+    /**
+     * Reserved [10-69], private transitions
+     * These transitions are not publicly available and cannot be invoked by a user.
+     * The following transitions are implicitly invoked based on the callback
+     * feedback of the intermediate transition states.
+     */
     readonly TRANSITION_ON_CONFIGURE_SUCCESS: 10;
     readonly TRANSITION_ON_CONFIGURE_FAILURE: 11;
     readonly TRANSITION_ON_CONFIGURE_ERROR: 12;
@@ -560,187 +1268,405 @@ declare module "rclbunjs" {
     readonly TRANSITION_ON_ERROR_SUCCESS: 60;
     readonly TRANSITION_ON_ERROR_FAILURE: 61;
     readonly TRANSITION_ON_ERROR_ERROR: 62;
+    /** The transition callback successfully performed its required functionality. */
     readonly TRANSITION_CALLBACK_SUCCESS: 97;
+    /** The transition callback failed to perform its required functionality. */
     readonly TRANSITION_CALLBACK_FAILURE: 98;
+    /**
+     * The transition callback encountered an error that requires special cleanup, if
+     * possible.
+     */
     readonly TRANSITION_CALLBACK_ERROR: 99;
   }
-  /** lifecycle_msgs/msg/TransitionDescription */
+  /** `lifecycle_msgs/msg/TransitionDescription` */
   interface lifecycle_msgs__msg__TransitionDescription {
+    /** The transition id and label of this description. */
     transition: lifecycle_msgs__msg__Transition;
+    /** The current state from which this transition transitions. */
     start_state: lifecycle_msgs__msg__State;
+    /** The desired target state of this transition. */
     goal_state: lifecycle_msgs__msg__State;
   }
-  /** lifecycle_msgs/msg/TransitionEvent */
+  /** `lifecycle_msgs/msg/TransitionEvent` */
   interface lifecycle_msgs__msg__TransitionEvent {
+    /** The time point at which this event occurred. */
     timestamp: bigint;
+    /** The id and label of this transition event. */
     transition: lifecycle_msgs__msg__Transition;
+    /** The starting state from which this event transitioned. */
     start_state: lifecycle_msgs__msg__State;
+    /** The end state of this transition event. */
     goal_state: lifecycle_msgs__msg__State;
   }
-  /** lifecycle_msgs/srv/ChangeState_Request */
+  /** `lifecycle_msgs/srv/ChangeState_Request` */
   interface lifecycle_msgs__srv__ChangeState_Request {
+    /**
+     * The requested transition.
+     *
+     * This change state service will fail if the transition is not possible.
+     */
     transition: lifecycle_msgs__msg__Transition;
   }
-  /** lifecycle_msgs/srv/ChangeState_Response */
+  /** `lifecycle_msgs/srv/ChangeState_Response` */
   interface lifecycle_msgs__srv__ChangeState_Response {
+    /** Indicates whether the service was able to initiate the state transition */
     success: boolean;
   }
-  /** lifecycle_msgs/srv/GetAvailableStates_Request */
+  /** `lifecycle_msgs/srv/GetAvailableStates_Request` */
   interface lifecycle_msgs__srv__GetAvailableStates_Request {
   }
-  /** lifecycle_msgs/srv/GetAvailableStates_Response */
+  /** `lifecycle_msgs/srv/GetAvailableStates_Response` */
   interface lifecycle_msgs__srv__GetAvailableStates_Response {
+    /** Array of possible states that can be transitioned to. */
     available_states: lifecycle_msgs__msg__State[];
   }
-  /** lifecycle_msgs/srv/GetAvailableTransitions_Request */
+  /** `lifecycle_msgs/srv/GetAvailableTransitions_Request` */
   interface lifecycle_msgs__srv__GetAvailableTransitions_Request {
   }
-  /** lifecycle_msgs/srv/GetAvailableTransitions_Response */
+  /** `lifecycle_msgs/srv/GetAvailableTransitions_Response` */
   interface lifecycle_msgs__srv__GetAvailableTransitions_Response {
+    /** An array of the possible start_state-goal_state transitions */
     available_transitions: lifecycle_msgs__msg__TransitionDescription[];
   }
-  /** lifecycle_msgs/srv/GetState_Request */
+  /** `lifecycle_msgs/srv/GetState_Request` */
   interface lifecycle_msgs__srv__GetState_Request {
   }
-  /** lifecycle_msgs/srv/GetState_Response */
+  /** `lifecycle_msgs/srv/GetState_Response` */
   interface lifecycle_msgs__srv__GetState_Response {
+    /** The current state-machine state of the node. */
     current_state: lifecycle_msgs__msg__State;
   }
-  /** nav_msgs/msg/Goals */
+  /**
+   * An array of navigation goals
+   *
+   * `nav_msgs/msg/Goals`
+   */
   interface nav_msgs__msg__Goals {
+    /**
+     * This header will store the time at which the poses were computed (not to be confused with the stamps of the poses themselves)
+     * In the case that individual poses do not have their frame_id set or their timetamp set they will use the default value here.
+     */
     header: std_msgs__msg__Header;
+    /**
+     * An array of goals to for navigation to achieve.
+     * The goals should be executed in the order of the array.
+     * The header and stamp are intended to be used for computing the position of the goals.
+     * They may vary to support cases of goals that are moving with respect to the robot.
+     */
     goals: geometry_msgs__msg__PoseStamped[];
   }
-  /** nav_msgs/msg/GridCells */
+  /**
+   * An array of cells in a 2D grid
+   *
+   * `nav_msgs/msg/GridCells`
+   */
   interface nav_msgs__msg__GridCells {
     header: std_msgs__msg__Header;
+    /** Width of each cell */
     cell_width: number;
+    /** Height of each cell */
     cell_height: number;
+    /** Each cell is represented by the Point at the center of the cell */
     cells: geometry_msgs__msg__Point[];
   }
-  /** nav_msgs/msg/MapMetaData */
+  /**
+   * This hold basic information about the characteristics of the OccupancyGrid
+   *
+   * `nav_msgs/msg/MapMetaData`
+   */
   interface nav_msgs__msg__MapMetaData {
+    /** The time at which the map was loaded */
     map_load_time: builtin_interfaces__msg__Time;
+    /** The map resolution [m/cell] */
     resolution: number;
+    /** Map width [cells] */
     width: number;
+    /** Map height [cells] */
     height: number;
+    /**
+     * The origin of the map [m, m, rad].  This is the real-world pose of the
+     * bottom left corner of cell (0,0) in the map.
+     */
     origin: geometry_msgs__msg__Pose;
   }
-  /** nav_msgs/msg/OccupancyGrid */
+  /** `nav_msgs/msg/OccupancyGrid` */
   interface nav_msgs__msg__OccupancyGrid {
+    /** This represents a 2-D grid map */
     header: std_msgs__msg__Header;
+    /** MetaData for the map */
     info: nav_msgs__msg__MapMetaData;
+    /**
+     * The map data, in row-major order, starting with (0,0).
+     * Cell (1, 0) will be listed second, representing the next cell in the x direction.
+     * Cell (0, 1) will be at the index equal to info.width, followed by (1, 1).
+     * The values inside are application dependent, but frequently,
+     * 0 represents unoccupied, 1 represents definitely occupied, and
+     * -1 represents unknown.
+     */
     data: Int8Array | number[];
   }
-  /** nav_msgs/msg/Odometry */
+  /**
+   * This represents an estimate of a position and velocity in free space.
+   * The pose in this message should be specified in the coordinate frame given by header.frame_id
+   * The twist in this message should be specified in the coordinate frame given by the child_frame_id
+   *
+   * `nav_msgs/msg/Odometry`
+   */
   interface nav_msgs__msg__Odometry {
+    /** Includes the frame id of the pose parent. */
     header: std_msgs__msg__Header;
+    /** Frame id the pose points to. The twist is in this coordinate frame. */
     child_frame_id: string;
+    /** Estimated pose that is typically relative to a fixed world frame. */
     pose: geometry_msgs__msg__PoseWithCovariance;
+    /** Estimated linear and angular velocity relative to child_frame_id. */
     twist: geometry_msgs__msg__TwistWithCovariance;
   }
-  /** nav_msgs/msg/Path */
+  /**
+   * An array of poses that represents a Path for a robot to follow.
+   *
+   * `nav_msgs/msg/Path`
+   */
   interface nav_msgs__msg__Path {
+    /** Indicates the frame_id of the path. */
     header: std_msgs__msg__Header;
+    /** Array of poses to follow. */
     poses: geometry_msgs__msg__PoseStamped[];
   }
-  /** nav_msgs/msg/Trajectory */
+  /**
+   * An array of trajectory points that represents a trajectory for a robot to follow.
+   *
+   * `nav_msgs/msg/Trajectory`
+   */
   interface nav_msgs__msg__Trajectory {
+    /** Indicates the frame_id in which the planner ran and timestamp represents when the trajectory was generated. */
     header: std_msgs__msg__Header;
+    /** Array of trajectory points to follow. */
     points: nav_msgs__msg__TrajectoryPoint[];
   }
-  /** nav_msgs/msg/TrajectoryPoint */
+  /**
+   * Trajectory point state
+   *
+   * `nav_msgs/msg/TrajectoryPoint`
+   */
   interface nav_msgs__msg__TrajectoryPoint {
+    /** Absolute time and frame of reference of the point along a trajectory */
     header: std_msgs__msg__Header;
+    /** Pose of the trajectory sample. */
     pose: geometry_msgs__msg__Pose;
+    /** Velocity of the trajectory sample. */
     velocity: geometry_msgs__msg__Twist;
+    /** Acceleration of the trajectory (optional, linear.x component is NaN if not set). */
     acceleration: geometry_msgs__msg__Accel;
+    /** Force/Torque to apply at trajectory sample (optional, force.x component is NaN if not set). */
     effort: geometry_msgs__msg__Wrench;
   }
-  /** nav_msgs/srv/GetMap_Request */
+  /**
+   * Get the map as a nav_msgs/OccupancyGrid
+   *
+   * `nav_msgs/srv/GetMap_Request`
+   */
   interface nav_msgs__srv__GetMap_Request {
   }
-  /** nav_msgs/srv/GetMap_Response */
+  /** `nav_msgs/srv/GetMap_Response` */
   interface nav_msgs__srv__GetMap_Response {
+    /** The current map hosted by this map service. */
     map: nav_msgs__msg__OccupancyGrid;
   }
-  /** nav_msgs/srv/GetPlan_Request */
+  /**
+   * Get a plan from the current position to the goal Pose
+   *
+   * `nav_msgs/srv/GetPlan_Request`
+   */
   interface nav_msgs__srv__GetPlan_Request {
+    /** The start pose for the plan */
     start: geometry_msgs__msg__PoseStamped;
+    /** The final pose of the goal position */
     goal: geometry_msgs__msg__PoseStamped;
+    /**
+     * If the goal is obstructed, how many meters the planner can
+     * relax the constraint in x and y before failing.
+     */
     tolerance: number;
   }
-  /** nav_msgs/srv/GetPlan_Response */
+  /** `nav_msgs/srv/GetPlan_Response` */
   interface nav_msgs__srv__GetPlan_Response {
+    /** Array of poses from start to goal if one was successfully found. */
     plan: nav_msgs__msg__Path;
   }
-  /** nav_msgs/srv/LoadMap_Request */
+  /** `nav_msgs/srv/LoadMap_Request` */
   interface nav_msgs__srv__LoadMap_Request {
+    /**
+     * URL of map resource
+     * Can be an absolute path to a file: file:///path/to/maps/floor1.yaml
+     * Or, relative to a ROS package: package://my_ros_package/maps/floor2.yaml
+     */
     map_url: string;
   }
-  /** nav_msgs/srv/LoadMap_Response */
+  /** `nav_msgs/srv/LoadMap_Response` */
   interface nav_msgs__srv__LoadMap_Response {
+    /** Returned map is only valid if result equals RESULT_SUCCESS */
     map: nav_msgs__msg__OccupancyGrid;
     result: number;
   }
-  /** constants of nav_msgs/srv/LoadMap_Response */
+  /** Constants of `nav_msgs/srv/LoadMap_Response` (also properties of `require("nav_msgs/srv/LoadMap_Response")`). */
   interface nav_msgs__srv__LoadMap_Response__Constants {
+    /** Result code defintions */
     readonly RESULT_SUCCESS: 0;
     readonly RESULT_MAP_DOES_NOT_EXIST: 1;
     readonly RESULT_INVALID_MAP_DATA: 2;
     readonly RESULT_INVALID_MAP_METADATA: 3;
     readonly RESULT_UNDEFINED_FAILURE: 255;
   }
-  /** nav_msgs/srv/SetMap_Request */
+  /**
+   * Set a new map together with an initial pose
+   *
+   * `nav_msgs/srv/SetMap_Request`
+   */
   interface nav_msgs__srv__SetMap_Request {
+    /** Requested 2D map to be set. */
     map: nav_msgs__msg__OccupancyGrid;
+    /** Estimated initial pose when setting new map. */
     initial_pose: geometry_msgs__msg__PoseWithCovarianceStamped;
   }
-  /** nav_msgs/srv/SetMap_Response */
+  /** `nav_msgs/srv/SetMap_Response` */
   interface nav_msgs__srv__SetMap_Response {
+    /** True if the map was successfully set, false otherwise. */
     success: boolean;
   }
-  /** rcl_interfaces/msg/FloatingPointRange */
+  /**
+   * Represents bounds and a step value for a floating point typed parameter.
+   *
+   * `rcl_interfaces/msg/FloatingPointRange`
+   */
   interface rcl_interfaces__msg__FloatingPointRange {
+    /** Start value for valid values, inclusive. */
     from_value: number;
+    /** End value for valid values, inclusive. */
     to_value: number;
+    /**
+     * Size of valid steps between the from and to bound.
+     *
+     * Step is considered to be a magnitude, therefore negative values are treated
+     * the same as positive values, and a step value of zero implies a continuous
+     * range of values.
+     *
+     * Ideally, the step would be less than or equal to the distance between the
+     * bounds, as well as an even multiple of the distance between the bounds, but
+     * neither are required.
+     *
+     * If the absolute value of the step is larger than or equal to the distance
+     * between the two bounds, then the bounds will be the only valid values. e.g. if
+     * the range is defined as {from_value: 1.0, to_value: 2.0, step: 5.0} then the
+     * valid values will be 1.0 and 2.0.
+     *
+     * If the step is less than the distance between the bounds, but the distance is
+     * not a multiple of the step, then the "to" bound will always be a valid value,
+     * e.g. if the range is defined as {from_value: 2.0, to_value: 5.0, step: 2.0}
+     * then the valid values will be 2.0, 4.0, and 5.0.
+     */
     step: number;
   }
-  /** rcl_interfaces/msg/IntegerRange */
+  /**
+   * Represents bounds and a step value for an integer typed parameter.
+   *
+   * `rcl_interfaces/msg/IntegerRange`
+   */
   interface rcl_interfaces__msg__IntegerRange {
+    /** Start value for valid values, inclusive. */
     from_value: bigint;
+    /** End value for valid values, inclusive. */
     to_value: bigint;
+    /**
+     * Size of valid steps between the from and to bound.
+     *
+     * A step value of zero implies a continuous range of values. Ideally, the step
+     * would be less than or equal to the distance between the bounds, as well as an
+     * even multiple of the distance between the bounds, but neither are required.
+     *
+     * If the absolute value of the step is larger than or equal to the distance
+     * between the two bounds, then the bounds will be the only valid values. e.g. if
+     * the range is defined as {from_value: 1, to_value: 2, step: 5} then the valid
+     * values will be 1 and 2.
+     *
+     * If the step is less than the distance between the bounds, but the distance is
+     * not a multiple of the step, then the "to" bound will always be a valid value,
+     * e.g. if the range is defined as {from_value: 2, to_value: 5, step: 2} then
+     * the valid values will be 2, 4, and 5.
+     */
     step: bigint;
   }
-  /** rcl_interfaces/msg/ListParametersResult */
+  /** `rcl_interfaces/msg/ListParametersResult` */
   interface rcl_interfaces__msg__ListParametersResult {
+    /** The resulting parameters under the given prefixes. */
     names: string[];
+    /**
+     * The resulting prefixes under the given prefixes.
+     * TODO(wjwwood): link to prefix definition and rules.
+     */
     prefixes: string[];
   }
-  /** rcl_interfaces/msg/Log */
+  /**
+   * Severity level constants
+   *
+   * These logging levels follow the Python Standard
+   * https://docs.python.org/3/library/logging.html#logging-levels
+   * And are implemented in rcutils as well
+   * https://github.com/ros2/rcutils/blob/35f29850064e0c33a4063cbc947ebbfeada11dba/include/rcutils/logging.h#L164-L172
+   * This leaves space for other standard logging levels to be inserted in the middle in the future,
+   * as well as custom user defined levels.
+   * Since there are several other logging enumeration standard for different implementations,
+   * other logging implementations may need to provide level mappings to match their internal implementations.
+   *
+   * `rcl_interfaces/msg/Log`
+   */
   interface rcl_interfaces__msg__Log {
+    /** Timestamp when this message was generated by the node. */
     stamp: builtin_interfaces__msg__Time;
+    /** Corresponding log level, see above definitions. */
     level: number;
+    /** The name representing the logger this message came from. */
     name: string;
+    /** The full log message. */
     msg: string;
+    /** The file the message came from. */
     file: string;
+    /** The function the message came from. */
     function: string;
+    /** The line in the file the message came from. */
     line: number;
   }
-  /** constants of rcl_interfaces/msg/Log */
+  /** Constants of `rcl_interfaces/msg/Log` (also properties of `require("rcl_interfaces/msg/Log")`). */
   interface rcl_interfaces__msg__Log__Constants {
+    /** Debug is for pedantic information, which is useful when debugging issues. */
     readonly DEBUG: 10;
+    /**
+     * Info is the standard informational level and is used to report expected
+     * information.
+     */
     readonly INFO: 20;
+    /**
+     * Warning is for information that may potentially cause issues or possibly unexpected
+     * behavior.
+     */
     readonly WARN: 30;
+    /** Error is for information that this node cannot resolve. */
     readonly ERROR: 40;
+    /** Information about a impending node shutdown. */
     readonly FATAL: 50;
   }
-  /** rcl_interfaces/msg/LoggerLevel */
+  /**
+   * All available logger levels; these correspond to the enum in rcutils/logger.h
+   *
+   * `rcl_interfaces/msg/LoggerLevel`
+   */
   interface rcl_interfaces__msg__LoggerLevel {
+    /** The logger name. */
     name: string;
+    /** The logger level */
     level: number;
   }
-  /** constants of rcl_interfaces/msg/LoggerLevel */
+  /** Constants of `rcl_interfaces/msg/LoggerLevel` (also properties of `require("rcl_interfaces/msg/LoggerLevel")`). */
   interface rcl_interfaces__msg__LoggerLevel__Constants {
     readonly LOG_LEVEL_UNKNOWN: 0;
     readonly LOG_LEVEL_DEBUG: 10;
@@ -749,41 +1675,107 @@ declare module "rclbunjs" {
     readonly LOG_LEVEL_ERROR: 40;
     readonly LOG_LEVEL_FATAL: 50;
   }
-  /** rcl_interfaces/msg/Parameter */
+  /**
+   * This is the message to communicate a parameter. It is an open struct with an enum in
+   * the descriptor to select which value is active.
+   *
+   * `rcl_interfaces/msg/Parameter`
+   */
   interface rcl_interfaces__msg__Parameter {
+    /** The full name of the parameter. */
     name: string;
+    /**
+     * The parameter's value which can be one of several types, see
+     * `ParameterValue.msg` and `ParameterType.msg`.
+     */
     value: rcl_interfaces__msg__ParameterValue;
   }
-  /** rcl_interfaces/msg/ParameterDescriptor */
+  /**
+   * This is the message to communicate a parameter's descriptor.
+   *
+   * `rcl_interfaces/msg/ParameterDescriptor`
+   */
   interface rcl_interfaces__msg__ParameterDescriptor {
+    /** The name of the parameter. */
     name: string;
+    /** Enum values are defined in the `ParameterType.msg` message. */
     type: number;
+    /** Description of the parameter, visible from introspection tools. */
     description: string;
+    /**
+     * Plain English description of additional constraints which cannot be expressed
+     * with the available constraints, e.g. "only prime numbers".
+     *
+     * By convention, this should only be used to clarify constraints which cannot
+     * be completely expressed with the parameter constraints below.
+     */
     additional_constraints: string;
+    /**
+     * If 'true' then the value cannot change after it has been initialized.
+     *
+     * @default false
+     */
     read_only: boolean;
+    /**
+     * If true, the parameter is allowed to change type.
+     *
+     * @default false
+     */
     dynamic_typing: boolean;
+    /**
+     * FloatingPointRange consists of a from_value, a to_value, and a step.
+     *
+     * At most 1 elements.
+     */
     floating_point_range: rcl_interfaces__msg__FloatingPointRange[];
+    /**
+     * IntegerRange consists of a from_value, a to_value, and a step.
+     *
+     * At most 1 elements.
+     */
     integer_range: rcl_interfaces__msg__IntegerRange[];
   }
-  /** rcl_interfaces/msg/ParameterEvent */
+  /**
+   * This message contains a parameter event.
+   * Because the parameter event was an atomic update, a specific parameter name
+   * can only be in one of the three sets.
+   *
+   * `rcl_interfaces/msg/ParameterEvent`
+   */
   interface rcl_interfaces__msg__ParameterEvent {
+    /** The time stamp when this parameter event occurred. */
     stamp: builtin_interfaces__msg__Time;
+    /** Fully qualified ROS path to node. */
     node: string;
+    /** New parameters that have been set for this node. */
     new_parameters: rcl_interfaces__msg__Parameter[];
+    /** Parameters that have been changed during this event. */
     changed_parameters: rcl_interfaces__msg__Parameter[];
+    /** Parameters that have been deleted during this event. */
     deleted_parameters: rcl_interfaces__msg__Parameter[];
   }
-  /** rcl_interfaces/msg/ParameterEventDescriptors */
+  /**
+   * This message contains descriptors of a parameter event.
+   * It was an atomic update.
+   * A specific parameter name can only be in one of the three sets.
+   *
+   * `rcl_interfaces/msg/ParameterEventDescriptors`
+   */
   interface rcl_interfaces__msg__ParameterEventDescriptors {
     new_parameters: rcl_interfaces__msg__ParameterDescriptor[];
     changed_parameters: rcl_interfaces__msg__ParameterDescriptor[];
     deleted_parameters: rcl_interfaces__msg__ParameterDescriptor[];
   }
-  /** rcl_interfaces/msg/ParameterType */
+  /**
+   * These types correspond to the value that is set in the ParameterValue message.
+   *
+   * `rcl_interfaces/msg/ParameterType`
+   */
   interface rcl_interfaces__msg__ParameterType {
   }
-  /** constants of rcl_interfaces/msg/ParameterType */
+  /** Constants of `rcl_interfaces/msg/ParameterType` (also properties of `require("rcl_interfaces/msg/ParameterType")`). */
   interface rcl_interfaces__msg__ParameterType__Constants {
+    /** Default value, which implies this is not a valid parameter. */
     readonly PARAMETER_NOT_SET: 0;
     readonly PARAMETER_BOOL: 1;
     readonly PARAMETER_INTEGER: 2;
@@ -795,277 +1787,263 @@ declare module "rclbunjs" {
     readonly PARAMETER_DOUBLE_ARRAY: 8;
     readonly PARAMETER_STRING_ARRAY: 9;
   }
-  /** rcl_interfaces/msg/ParameterValue */
+  /**
+   * Used to determine which of the next *_value fields are set.
+   * ParameterType.PARAMETER_NOT_SET indicates that the parameter was not set
+   * (if gotten) or is uninitialized.
+   * Values are enumerated in `ParameterType.msg`.
+   *
+   * `rcl_interfaces/msg/ParameterValue`
+   */
   interface rcl_interfaces__msg__ParameterValue {
+    /** The type of this parameter, which corresponds to the appropriate field below. */
     type: number;
+    /** Boolean value, can be either true or false. */
     bool_value: boolean;
+    /**
+     * Integer value ranging from -9,223,372,036,854,775,808 to
+     * 9,223,372,036,854,775,807.
+     */
     integer_value: bigint;
+    /** A double precision floating point value following IEEE 754. */
     double_value: number;
+    /** A textual value with no practical length limit. */
     string_value: string;
+    /** An array of bytes, used for non-textual information. */
     byte_array_value: Uint8Array | number[];
+    /** An array of boolean values. */
     bool_array_value: boolean[];
+    /** An array of 64-bit integer values. */
     integer_array_value: bigint[];
+    /** An array of 64-bit floating point values. */
     double_array_value: Float64Array | number[];
+    /** An array of string values. */
     string_array_value: string[];
   }
-  /** rcl_interfaces/msg/SetLoggerLevelsResult */
+  /** `rcl_interfaces/msg/SetLoggerLevelsResult` */
   interface rcl_interfaces__msg__SetLoggerLevelsResult {
+    /** True when succeed, false when failed. */
     successful: boolean;
+    /** Reason why the setting was either successful or a failure. */
     reason: string;
   }
-  /** rcl_interfaces/msg/SetParametersResult */
+  /** `rcl_interfaces/msg/SetParametersResult` */
   interface rcl_interfaces__msg__SetParametersResult {
+    /**
+     * A true value of the same index indicates that the parameter was set
+     * successfully. A false value indicates the change was rejected.
+     */
     successful: boolean;
+    /**
+     * Reason why the setting was a failure. On success, the contents of this field
+     * are undefined.  This should only be used for logging and user interfaces.
+     */
     reason: string;
   }
-  /** rcl_interfaces/srv/DescribeParameters_Request */
+  /** `rcl_interfaces/srv/DescribeParameters_Request` */
   interface rcl_interfaces__srv__DescribeParameters_Request {
+    /** A list of parameters of which to get the descriptor. */
     names: string[];
   }
-  /** rcl_interfaces/srv/DescribeParameters_Response */
+  /** `rcl_interfaces/srv/DescribeParameters_Response` */
   interface rcl_interfaces__srv__DescribeParameters_Response {
+    /**
+     * A list of the descriptors of all parameters requested in the same order
+     * as they were requested. This list has the same length as the list of
+     * parameters requested.
+     */
     descriptors: rcl_interfaces__msg__ParameterDescriptor[];
   }
-  /** rcl_interfaces/srv/GetLoggerLevels_Request */
+  /** `rcl_interfaces/srv/GetLoggerLevels_Request` */
   interface rcl_interfaces__srv__GetLoggerLevels_Request {
+    /** A list of logger names to get. */
     names: string[];
   }
-  /** rcl_interfaces/srv/GetLoggerLevels_Response */
+  /** `rcl_interfaces/srv/GetLoggerLevels_Response` */
   interface rcl_interfaces__srv__GetLoggerLevels_Response {
+    /**
+     * List of logger levels which is the same order as the provided names. If a
+     * logger was not yet set, the value will have 'unknown' as the value.
+     */
     levels: rcl_interfaces__msg__LoggerLevel[];
   }
-  /** rcl_interfaces/srv/GetParameters_Request */
+  /**
+   * TODO(wjwwood): Decide on the rules for grouping, nodes, and parameter "names"
+   * in general, then link to that.
+   *
+   * For more information about parameters and naming rules, see:
+   * https://design.ros2.org/articles/ros_parameters.html
+   * https://github.com/ros2/design/pull/241
+   *
+   * `rcl_interfaces/srv/GetParameters_Request`
+   */
   interface rcl_interfaces__srv__GetParameters_Request {
+    /** A list of parameter names to get. */
     names: string[];
   }
-  /** rcl_interfaces/srv/GetParameters_Response */
+  /** `rcl_interfaces/srv/GetParameters_Response` */
   interface rcl_interfaces__srv__GetParameters_Response {
+    /**
+     * List of values which is the same length and order as the provided names. If a
+     * parameter was not yet set, the value will have PARAMETER_NOT_SET as the
+     * type.
+     */
     values: rcl_interfaces__msg__ParameterValue[];
   }
-  /** rcl_interfaces/srv/GetParameterTypes_Request */
+  /** `rcl_interfaces/srv/GetParameterTypes_Request` */
   interface rcl_interfaces__srv__GetParameterTypes_Request {
+    /**
+     * A list of parameter names.
+     * TODO(wjwwood): link to parameter naming rules.
+     */
     names: string[];
   }
-  /** rcl_interfaces/srv/GetParameterTypes_Response */
+  /** `rcl_interfaces/srv/GetParameterTypes_Response` */
   interface rcl_interfaces__srv__GetParameterTypes_Response {
+    /**
+     * List of types which is the same length and order as the provided names.
+     *
+     * The type enum is defined in ParameterType.msg. ParameterType.PARAMETER_NOT_SET
+     * indicates that the parameter is not currently set.
+     */
     types: Uint8Array | number[];
   }
-  /** rcl_interfaces/srv/ListParameters_Request */
+  /** `rcl_interfaces/srv/ListParameters_Request` */
   interface rcl_interfaces__srv__ListParameters_Request {
+    /** The list of parameter prefixes to query. */
     prefixes: string[];
+    /**
+     * Relative depth from given prefixes to return.
+     *
+     * Use DEPTH_RECURSIVE to get the recursive parameters and prefixes for each prefix.
+     */
     depth: bigint;
   }
-  /** constants of rcl_interfaces/srv/ListParameters_Request */
+  /** Constants of `rcl_interfaces/srv/ListParameters_Request` (also properties of `require("rcl_interfaces/srv/ListParameters_Request")`). */
   interface rcl_interfaces__srv__ListParameters_Request__Constants {
-    readonly DEPTH_RECURSIVE: 0;
+    /** Recursively get parameters with unlimited depth. */
+    readonly DEPTH_RECURSIVE: 0n;
   }
-  /** rcl_interfaces/srv/ListParameters_Response */
+  /** `rcl_interfaces/srv/ListParameters_Response` */
   interface rcl_interfaces__srv__ListParameters_Response {
+    /** The list of parameter names and their prefixes. */
     result: rcl_interfaces__msg__ListParametersResult;
   }
-  /** rcl_interfaces/srv/SetLoggerLevels_Request */
+  /** `rcl_interfaces/srv/SetLoggerLevels_Request` */
   interface rcl_interfaces__srv__SetLoggerLevels_Request {
+    /** A list of loggers to set. */
     levels: rcl_interfaces__msg__LoggerLevel[];
   }
-  /** rcl_interfaces/srv/SetLoggerLevels_Response */
+  /** `rcl_interfaces/srv/SetLoggerLevels_Response` */
   interface rcl_interfaces__srv__SetLoggerLevels_Response {
+    /** Indicates whether setting each logger succeeded or not and why. */
     results: rcl_interfaces__msg__SetLoggerLevelsResult[];
   }
-  /** rcl_interfaces/srv/SetParameters_Request */
+  /** `rcl_interfaces/srv/SetParameters_Request` */
   interface rcl_interfaces__srv__SetParameters_Request {
+    /** A list of parameters to set. */
     parameters: rcl_interfaces__msg__Parameter[];
   }
-  /** rcl_interfaces/srv/SetParameters_Response */
+  /** `rcl_interfaces/srv/SetParameters_Response` */
   interface rcl_interfaces__srv__SetParameters_Response {
+    /** Indicates whether setting each parameter succeeded or not and why. */
     results: rcl_interfaces__msg__SetParametersResult[];
   }
-  /** rcl_interfaces/srv/SetParametersAtomically_Request */
+  /** `rcl_interfaces/srv/SetParametersAtomically_Request` */
   interface rcl_interfaces__srv__SetParametersAtomically_Request {
+    /**
+     * A list of parameters to set atomically.
+     *
+     * This call will either set all values, or none of the values.
+     */
     parameters: rcl_interfaces__msg__Parameter[];
   }
-  /** rcl_interfaces/srv/SetParametersAtomically_Response */
+  /** `rcl_interfaces/srv/SetParametersAtomically_Response` */
   interface rcl_interfaces__srv__SetParametersAtomically_Response {
+    /** Indicates whether setting all of the parameters succeeded or not and why. */
     result: rcl_interfaces__msg__SetParametersResult;
   }
-  /** rmw_dds_common/msg/Gid */
+  /** `rmw_dds_common/msg/Gid` */
   interface rmw_dds_common__msg__Gid {
+    /** Fixed length: 16. */
     data: Uint8Array | number[];
   }
-  /** rmw_dds_common/msg/NodeEntitiesInfo */
+  /** `rmw_dds_common/msg/NodeEntitiesInfo` */
   interface rmw_dds_common__msg__NodeEntitiesInfo {
+    /** At most 256 characters. */
     node_namespace: string;
+    /** At most 256 characters. */
     node_name: string;
     reader_gid_seq: rmw_dds_common__msg__Gid[];
     writer_gid_seq: rmw_dds_common__msg__Gid[];
   }
-  /** rmw_dds_common/msg/ParticipantEntitiesInfo */
+  /** `rmw_dds_common/msg/ParticipantEntitiesInfo` */
   interface rmw_dds_common__msg__ParticipantEntitiesInfo {
     gid: rmw_dds_common__msg__Gid;
     node_entities_info_seq: rmw_dds_common__msg__NodeEntitiesInfo[];
   }
-  /** rosbag2_interfaces/msg/ReadSplitEvent */
-  interface rosbag2_interfaces__msg__ReadSplitEvent {
-    closed_file: string;
-    opened_file: string;
-    node_name: string;
-  }
-  /** rosbag2_interfaces/msg/WriteSplitEvent */
-  interface rosbag2_interfaces__msg__WriteSplitEvent {
-    closed_file: string;
-    opened_file: string;
-    node_name: string;
-  }
-  /** rosbag2_interfaces/srv/Burst_Request */
-  interface rosbag2_interfaces__srv__Burst_Request {
-    num_messages: bigint;
-  }
-  /** rosbag2_interfaces/srv/Burst_Response */
-  interface rosbag2_interfaces__srv__Burst_Response {
-    actually_burst: bigint;
-  }
-  /** rosbag2_interfaces/srv/GetRate_Request */
-  interface rosbag2_interfaces__srv__GetRate_Request {
-  }
-  /** rosbag2_interfaces/srv/GetRate_Response */
-  interface rosbag2_interfaces__srv__GetRate_Response {
-    rate: number;
-  }
-  /** rosbag2_interfaces/srv/IsDiscoveryRunning_Request */
-  interface rosbag2_interfaces__srv__IsDiscoveryRunning_Request {
-  }
-  /** rosbag2_interfaces/srv/IsDiscoveryRunning_Response */
-  interface rosbag2_interfaces__srv__IsDiscoveryRunning_Response {
-    running: boolean;
-  }
-  /** rosbag2_interfaces/srv/IsPaused_Request */
-  interface rosbag2_interfaces__srv__IsPaused_Request {
-  }
-  /** rosbag2_interfaces/srv/IsPaused_Response */
-  interface rosbag2_interfaces__srv__IsPaused_Response {
-    paused: boolean;
-  }
-  /** rosbag2_interfaces/srv/Pause_Request */
-  interface rosbag2_interfaces__srv__Pause_Request {
-  }
-  /** rosbag2_interfaces/srv/Pause_Response */
-  interface rosbag2_interfaces__srv__Pause_Response {
-  }
-  /** rosbag2_interfaces/srv/Play_Request */
-  interface rosbag2_interfaces__srv__Play_Request {
-    start_offset: builtin_interfaces__msg__Time;
-    playback_duration: builtin_interfaces__msg__Duration;
-    playback_until_timestamp: builtin_interfaces__msg__Time;
-  }
-  /** rosbag2_interfaces/srv/Play_Response */
-  interface rosbag2_interfaces__srv__Play_Response {
-    success: boolean;
-  }
-  /** rosbag2_interfaces/srv/PlayNext_Request */
-  interface rosbag2_interfaces__srv__PlayNext_Request {
-  }
-  /** rosbag2_interfaces/srv/PlayNext_Response */
-  interface rosbag2_interfaces__srv__PlayNext_Response {
-    success: boolean;
-  }
-  /** rosbag2_interfaces/srv/Record_Request */
-  interface rosbag2_interfaces__srv__Record_Request {
-    uri: string;
-  }
-  /** rosbag2_interfaces/srv/Record_Response */
-  interface rosbag2_interfaces__srv__Record_Response {
-    return_code: number;
-    error_string: string;
-  }
-  /** rosbag2_interfaces/srv/Resume_Request */
-  interface rosbag2_interfaces__srv__Resume_Request {
-  }
-  /** rosbag2_interfaces/srv/Resume_Response */
-  interface rosbag2_interfaces__srv__Resume_Response {
-  }
-  /** rosbag2_interfaces/srv/Seek_Request */
-  interface rosbag2_interfaces__srv__Seek_Request {
-    time: builtin_interfaces__msg__Time;
-  }
-  /** rosbag2_interfaces/srv/Seek_Response */
-  interface rosbag2_interfaces__srv__Seek_Response {
-    success: boolean;
-  }
-  /** rosbag2_interfaces/srv/SetRate_Request */
-  interface rosbag2_interfaces__srv__SetRate_Request {
-    rate: number;
-  }
-  /** rosbag2_interfaces/srv/SetRate_Response */
-  interface rosbag2_interfaces__srv__SetRate_Response {
-    success: boolean;
-  }
-  /** rosbag2_interfaces/srv/Snapshot_Request */
-  interface rosbag2_interfaces__srv__Snapshot_Request {
-  }
-  /** rosbag2_interfaces/srv/Snapshot_Response */
-  interface rosbag2_interfaces__srv__Snapshot_Response {
-    success: boolean;
-  }
-  /** rosbag2_interfaces/srv/SplitBagfile_Request */
-  interface rosbag2_interfaces__srv__SplitBagfile_Request {
-  }
-  /** rosbag2_interfaces/srv/SplitBagfile_Response */
-  interface rosbag2_interfaces__srv__SplitBagfile_Response {
-  }
-  /** rosbag2_interfaces/srv/StartDiscovery_Request */
-  interface rosbag2_interfaces__srv__StartDiscovery_Request {
-  }
-  /** rosbag2_interfaces/srv/StartDiscovery_Response */
-  interface rosbag2_interfaces__srv__StartDiscovery_Response {
-    return_code: number;
-    error_string: string;
-  }
-  /** rosbag2_interfaces/srv/Stop_Request */
-  interface rosbag2_interfaces__srv__Stop_Request {
-  }
-  /** rosbag2_interfaces/srv/Stop_Response */
-  interface rosbag2_interfaces__srv__Stop_Response {
-  }
-  /** rosbag2_interfaces/srv/StopDiscovery_Request */
-  interface rosbag2_interfaces__srv__StopDiscovery_Request {
-  }
-  /** rosbag2_interfaces/srv/StopDiscovery_Response */
-  interface rosbag2_interfaces__srv__StopDiscovery_Response {
-    return_code: number;
-    error_string: string;
-  }
-  /** rosbag2_interfaces/srv/TogglePaused_Request */
-  interface rosbag2_interfaces__srv__TogglePaused_Request {
-  }
-  /** rosbag2_interfaces/srv/TogglePaused_Response */
-  interface rosbag2_interfaces__srv__TogglePaused_Response {
-  }
-  /** rosgraph_msgs/msg/Action */
+  /**
+   * Describes a single Action endpoint, which may be a Server or Client
+   *
+   * `rosgraph_msgs/msg/Action`
+   */
   interface rosgraph_msgs__msg__Action {
+    /** Fully qualified name of the Action */
     name: string;
+    /** An action is actually a composition of the following fundamental ROS entities */
     send_goal: rosgraph_msgs__msg__Service;
     get_result: rosgraph_msgs__msg__Service;
     cancel_goal: rosgraph_msgs__msg__Service;
     feedback: rosgraph_msgs__msg__Topic;
     status: rosgraph_msgs__msg__Topic;
   }
-  /** rosgraph_msgs/msg/Clock */
+  /** `rosgraph_msgs/msg/Clock` */
   interface rosgraph_msgs__msg__Clock {
+    /**
+     * This message communicates the current time.
+     *
+     * For more information, see https://design.ros2.org/articles/clock_and_time.html.
+     */
     clock: builtin_interfaces__msg__Time;
   }
-  /** rosgraph_msgs/msg/Graph */
+  /** `rosgraph_msgs/msg/Graph` */
   interface rosgraph_msgs__msg__Graph {
+    /** Represents a ROS node graph, which is only a collection of nodes */
     nodes: rosgraph_msgs__msg__Node[];
   }
-  /** rosgraph_msgs/msg/InterfaceType */
+  /**
+   * Represent a type of a ROS Graph Interface
+   *
+   * `rosgraph_msgs/msg/InterfaceType`
+   */
   interface rosgraph_msgs__msg__InterfaceType {
+    /** The plaintext namespaced name of the type - e.g. sensor_msgs/Image */
     name: string;
+    /**
+     * The hash uniquely identifies the exact structure of the type,
+     * the definition of which may change between package version
+     */
     hash: rosgraph_msgs__msg__TypeHash;
   }
-  /** rosgraph_msgs/msg/Node */
+  /**
+   * Represents the observable runtime state of a ROS Node
+   * Therefore, does not perfectly align with the abstract specification which created it.
+   *
+   * `rosgraph_msgs/msg/Node`
+   */
   interface rosgraph_msgs__msg__Node {
+    /** Fully qualified node name (FQN) */
     name: string;
+    /** Parameter specifications for the node */
     parameters: rcl_interfaces__msg__ParameterDescriptor[];
+    /**
+     * Current values of the node's parameters
+     * NOTE:
+     *   parameter_values[] must be empty, or the same size as parameters[]
+     *   When set, parameter_values[] match 1:1 with the same index in parameters[]
+     */
     parameter_values: rcl_interfaces__msg__ParameterValue[];
+    /** Communications endpoints - Topics, Services, and Actions */
     publishers: rosgraph_msgs__msg__Topic[];
     subscriptions: rosgraph_msgs__msg__Topic[];
     service_clients: rosgraph_msgs__msg__Service[];
@@ -1073,84 +2051,154 @@ declare module "rclbunjs" {
     action_clients: rosgraph_msgs__msg__Action[];
     action_servers: rosgraph_msgs__msg__Action[];
   }
-  /** rosgraph_msgs/msg/QoSProfile */
+  /**
+   * Message-based representation of ROS 2 Quality of Service settings
+   * Default values are kept in sync with RMW by integration test
+   * Note that SYSTEM_DEFAULT and BEST_AVAILABLE values cannot be an observed value,
+   * because they resolve concretely at runtime.
+   * They are included here for completeness to match the data structures in RMW
+   *
+   * `rosgraph_msgs/msg/QoSProfile`
+   */
   interface rosgraph_msgs__msg__QoSProfile {
+    /** Depth of the message queue (only meaningful when history==KEEP_LAST) */
     depth: number;
+    /** Deadline between messages (0 for no deadline) */
     deadline: builtin_interfaces__msg__Duration;
+    /** Lifespan of each message (0 for infinite) */
     lifespan: builtin_interfaces__msg__Duration;
     history: number;
     reliability: number;
     durability: number;
     liveliness: number;
+    /** Lease duration for liveliness (0 for infinite) */
     liveliness_lease_duration: builtin_interfaces__msg__Duration;
   }
-  /** constants of rosgraph_msgs/msg/QoSProfile */
+  /** Constants of `rosgraph_msgs/msg/QoSProfile` (also properties of `require("rosgraph_msgs/msg/QoSProfile")`). */
   interface rosgraph_msgs__msg__QoSProfile__Constants {
+    /** History policy */
     readonly HISTORY_SYSTEM_DEFAULT: 0;
     readonly HISTORY_KEEP_LAST: 1;
     readonly HISTORY_KEEP_ALL: 2;
     readonly HISTORY_UNKNOWN: 3;
+    /** Reliability policy */
     readonly RELIABILITY_SYSTEM_DEFAULT: 0;
     readonly RELIABILITY_RELIABLE: 1;
     readonly RELIABILITY_BEST_EFFORT: 2;
     readonly RELIABILITY_UNKNOWN: 3;
     readonly RELIABILITY_BEST_AVAILABLE: 4;
+    /** Durability policy */
     readonly DURABILITY_SYSTEM_DEFAULT: 0;
     readonly DURABILITY_TRANSIENT_LOCAL: 1;
     readonly DURABILITY_VOLATILE: 2;
     readonly DURABILITY_UNKNOWN: 3;
     readonly DURABILITY_BEST_AVAILABLE: 4;
+    /** Liveliness policy */
     readonly LIVELINESS_SYSTEM_DEFAULT: 0;
     readonly LIVELINESS_AUTOMATIC: 1;
     readonly LIVELINESS_MANUAL_BY_TOPIC: 3;
     readonly LIVELINESS_UNKNOWN: 4;
     readonly LIVELINESS_BEST_AVAILABLE: 5;
   }
-  /** rosgraph_msgs/msg/Service */
+  /**
+   * Describes a single Service endpoint, which may be a Server or Client
+   *
+   * `rosgraph_msgs/msg/Service`
+   */
   interface rosgraph_msgs__msg__Service {
+    /** Fully qualified name of the Service */
     name: string;
+    /** Type and actual QoS of the request publisher (Client) or subscription (Server) */
     request_type: rosgraph_msgs__msg__InterfaceType;
     request_qos: rosgraph_msgs__msg__QoSProfile;
+    /** Type and actual QoS of the request subscription (Client) or publisher (Server) */
     response_type: rosgraph_msgs__msg__InterfaceType;
     response_qos: rosgraph_msgs__msg__QoSProfile;
   }
-  /** rosgraph_msgs/msg/Topic */
+  /**
+   * Describes a single topic endpoint, which may be a Publisher or Subscription
+   *
+   * `rosgraph_msgs/msg/Topic`
+   */
   interface rosgraph_msgs__msg__Topic {
+    /** Fully qualified name of the topic */
     name: string;
+    /** Type of the topic */
     type: rosgraph_msgs__msg__InterfaceType;
+    /** Observed QoS of the endpoint */
     qos: rosgraph_msgs__msg__QoSProfile;
   }
-  /** rosgraph_msgs/msg/TypeHash */
+  /** `rosgraph_msgs/msg/TypeHash` */
   interface rosgraph_msgs__msg__TypeHash {
+    /**
+     * RIHS spec version
+     *
+     * @default 1
+     */
     version: number;
+    /**
+     * ROSIDL_TYPE_HASH_SIZE == 32
+     *
+     * Fixed length: 32.
+     */
     value: Uint8Array | number[];
   }
-  /** sensor_msgs/msg/BatteryState */
+  /**
+   * Constants are chosen to match the enums in the linux kernel
+   * defined in include/linux/power_supply.h as of version 3.7
+   * The one difference is for style reasons the constants are
+   * all uppercase not mixed case.
+   *
+   * `sensor_msgs/msg/BatteryState`
+   */
   interface sensor_msgs__msg__BatteryState {
     header: std_msgs__msg__Header;
+    /** Voltage in Volts (Mandatory) */
     voltage: number;
+    /** Temperature in Degrees Celsius (If unmeasured NaN) */
     temperature: number;
+    /** Negative when discharging (A)  (If unmeasured NaN) */
     current: number;
+    /** Current charge in Ah  (If unmeasured NaN) */
     charge: number;
+    /** Capacity in Ah (last full capacity)  (If unmeasured NaN) */
     capacity: number;
+    /** Capacity in Ah (design capacity)  (If unmeasured NaN) */
     design_capacity: number;
+    /** Charge percentage on 0 to 1 range  (If unmeasured NaN) */
     percentage: number;
+    /** The charging status as reported. Values defined above */
     power_supply_status: number;
+    /** The battery health metric. Values defined above */
     power_supply_health: number;
+    /** The battery chemistry. Values defined above */
     power_supply_technology: number;
+    /** True if the battery is present */
     present: boolean;
+    /** An array of individual cell voltages for each cell in the pack */
     cell_voltage: Float32Array | number[];
+    /**
+     * If individual voltages unknown but number of cells known set each to NaN
+     * An array of individual cell temperatures for each cell in the pack
+     */
     cell_temperature: Float32Array | number[];
+    /**
+     * If individual temperatures unknown but number of cells known set each to NaN
+     * The location into which the battery is inserted. (slot number or plug)
+     */
     location: string;
+    /** The best approximation of the battery serial number */
     serial_number: string;
   }
-  /** constants of sensor_msgs/msg/BatteryState */
+  /** Constants of `sensor_msgs/msg/BatteryState` (also properties of `require("sensor_msgs/msg/BatteryState")`). */
   interface sensor_msgs__msg__BatteryState__Constants {
+    /** Power supply status constants */
     readonly POWER_SUPPLY_STATUS_UNKNOWN: 0;
     readonly POWER_SUPPLY_STATUS_CHARGING: 1;
     readonly POWER_SUPPLY_STATUS_DISCHARGING: 2;
     readonly POWER_SUPPLY_STATUS_NOT_CHARGING: 3;
     readonly POWER_SUPPLY_STATUS_FULL: 4;
+    /** Power supply health constants */
     readonly POWER_SUPPLY_HEALTH_UNKNOWN: 0;
     readonly POWER_SUPPLY_HEALTH_GOOD: 1;
     readonly POWER_SUPPLY_HEALTH_OVERHEAT: 2;
@@ -1160,74 +2208,323 @@ declare module "rclbunjs" {
     readonly POWER_SUPPLY_HEALTH_COLD: 6;
     readonly POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE: 7;
     readonly POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE: 8;
+    /**
+     * Power supply technology (chemistry) constants
+     * Unknown battery technology
+     */
     readonly POWER_SUPPLY_TECHNOLOGY_UNKNOWN: 0;
+    /** Nickel-Metal Hydride battery */
     readonly POWER_SUPPLY_TECHNOLOGY_NIMH: 1;
+    /** Lithium-ion battery */
     readonly POWER_SUPPLY_TECHNOLOGY_LION: 2;
+    /** Lithium Polymer battery */
     readonly POWER_SUPPLY_TECHNOLOGY_LIPO: 3;
+    /** Lithium Iron Phosphate battery */
     readonly POWER_SUPPLY_TECHNOLOGY_LIFE: 4;
+    /** Nickel-Cadmium battery */
     readonly POWER_SUPPLY_TECHNOLOGY_NICD: 5;
+    /** Lithium Manganese Dioxide battery */
     readonly POWER_SUPPLY_TECHNOLOGY_LIMN: 6;
+    /** Ternary Lithium battery */
     readonly POWER_SUPPLY_TECHNOLOGY_TERNARY: 7;
+    /** Valve Regulated Lead-Acid battery */
     readonly POWER_SUPPLY_TECHNOLOGY_VRLA: 8;
   }
-  /** sensor_msgs/msg/CameraInfo */
+  /**
+   * This message defines meta information for a camera. It should be in a
+   * camera namespace on topic "camera_info" and accompanied by up to five
+   * image topics named:
+   *
+   *   image_raw - raw data from the camera driver, possibly Bayer encoded
+   *   image            - monochrome, distorted
+   *   image_color      - color, distorted
+   *   image_rect       - monochrome, rectified
+   *   image_rect_color - color, rectified
+   *
+   * The image_pipeline contains packages (image_proc, stereo_image_proc)
+   * for producing the four processed image topics from image_raw and
+   * camera_info. The meaning of the camera parameters are described in
+   * detail at http://www.ros.org/wiki/image_pipeline/CameraInfo.
+   *
+   * The image_geometry package provides a user-friendly interface to
+   * common operations using this meta information. If you want to, e.g.,
+   * project a 3d point into image coordinates, we strongly recommend
+   * using image_geometry.
+   *
+   * If the camera is uncalibrated, the matrices D, K, R, P should be left
+   * zeroed out. In particular, clients may assume that K[0] == 0.0
+   * indicates an uncalibrated camera.
+   *
+   * `sensor_msgs/msg/CameraInfo`
+   */
   interface sensor_msgs__msg__CameraInfo {
+    /**
+     * Time of image acquisition, camera coordinate frame ID
+     * Header timestamp should be acquisition time of image
+     */
     header: std_msgs__msg__Header;
+    /**
+     * The image dimensions with which the camera was calibrated.
+     * Normally this will be the full camera resolution in pixels.
+     */
     height: number;
     width: number;
+    /**
+     * The distortion model used. Supported models are listed in
+     * sensor_msgs/distortion_models.hpp. For most cameras, "plumb_bob" - a
+     * simple model of radial and tangential distortion - is sufficent.
+     */
     distortion_model: string;
+    /**
+     * The distortion parameters, size depending on the distortion model.
+     * For "plumb_bob", the 5 parameters are: (k1, k2, t1, t2, k3).
+     */
     d: Float64Array | number[];
+    /**
+     * Intrinsic camera matrix for the raw (distorted) images.
+     *     [fx  0 cx]
+     * K = [ 0 fy cy]
+     *     [ 0  0  1]
+     * Projects 3D points in the camera coordinate frame to 2D pixel
+     * coordinates using the focal lengths (fx, fy) and principal point
+     * (cx, cy).
+     * 3x3 row-major matrix
+     *
+     * Fixed length: 9.
+     */
     k: Float64Array | number[];
+    /**
+     * Rectification matrix (stereo cameras only)
+     * A rotation matrix aligning the camera coordinate system to the ideal
+     * stereo image plane so that epipolar lines in both stereo images are
+     * parallel.
+     * 3x3 row-major matrix
+     *
+     * Fixed length: 9.
+     */
     r: Float64Array | number[];
+    /**
+     * Projection/camera matrix
+     *     [fx'  0  cx' Tx]
+     * P = [ 0  fy' cy' Ty]
+     *     [ 0   0   1   0]
+     * By convention, this matrix specifies the intrinsic (camera) matrix
+     *  of the processed (rectified) image. That is, the left 3x3 portion
+     *  is the normal camera intrinsic matrix for the rectified image.
+     * It projects 3D points in the camera coordinate frame to 2D pixel
+     *  coordinates using the focal lengths (fx', fy') and principal point
+     *  (cx', cy') - these may differ from the values in K.
+     * For monocular cameras, Tx = Ty = 0. Normally, monocular cameras will
+     *  also have R = the identity and P[1:3,1:3] = K.
+     * For a stereo pair, the fourth column [Tx Ty 0]' is related to the
+     *  position of the optical center of the second camera in the first
+     *  camera's frame. We assume Tz = 0 so both cameras are in the same
+     *  stereo image plane. The first camera always has Tx = Ty = 0. For
+     *  the right (second) camera of a horizontal stereo pair, Ty = 0 and
+     *  Tx = -fx' * B, where B is the baseline between the cameras.
+     * Given a 3D point [X Y Z]', the projection (x, y) of the point onto
+     *  the rectified image is given by:
+     *  [u v w]' = P * [X Y Z 1]'
+     *         x = u / w
+     *         y = v / w
+     *  This holds for both images of a stereo pair.
+     * 3x4 row-major matrix
+     *
+     * Fixed length: 12.
+     */
     p: Float64Array | number[];
+    /**
+     * Binning refers here to any camera setting which combines rectangular
+     *  neighborhoods of pixels into larger "super-pixels." It reduces the
+     *  resolution of the output image to
+     *  (width / binning_x) x (height / binning_y).
+     * The default values binning_x = binning_y = 0 is considered the same
+     *  as binning_x = binning_y = 1 (no subsampling).
+     */
     binning_x: number;
     binning_y: number;
+    /**
+     * Region of interest (subwindow of full camera resolution), given in
+     *  full resolution (unbinned) image coordinates. A particular ROI
+     *  always denotes the same window of pixels on the camera sensor,
+     *  regardless of binning settings.
+     * The default setting of roi (all values 0) is considered the same as
+     *  full resolution (roi.width = width, roi.height = height).
+     */
     roi: sensor_msgs__msg__RegionOfInterest;
   }
-  /** sensor_msgs/msg/ChannelFloat32 */
+  /**
+   * This message is used by the PointCloud message to hold optional data
+   * associated with each point in the cloud. The length of the values
+   * array should be the same as the length of the points array in the
+   * PointCloud, and each value should be associated with the corresponding
+   * point.
+   *
+   * Channel names in existing practice include:
+   *   "u", "v" - row and column (respectively) in the left stereo image.
+   *              This is opposite to usual conventions but remains for
+   *              historical reasons. The newer PointCloud2 message has no
+   *              such problem.
+   *   "rgb" - For point clouds produced by color stereo cameras. uint8
+   *           (R,G,B) values packed into the least significant 24 bits,
+   *           in order.
+   *   "intensity" - laser or pixel intensity.
+   *   "distance"
+   *
+   * `sensor_msgs/msg/ChannelFloat32`
+   */
   interface sensor_msgs__msg__ChannelFloat32 {
+    /**
+     * The channel name should give semantics of the channel (e.g.
+     * "intensity" instead of "value").
+     */
     name: string;
+    /**
+     * The values array should be 1-1 with the elements of the associated
+     * PointCloud.
+     */
     values: Float32Array | number[];
   }
-  /** sensor_msgs/msg/CompressedImage */
+  /**
+   * This message contains a compressed image.
+   *
+   * `sensor_msgs/msg/CompressedImage`
+   */
   interface sensor_msgs__msg__CompressedImage {
+    /** Header timestamp should be acquisition time of image */
     header: std_msgs__msg__Header;
+    /** Specifies the format of the data */
     format: string;
+    /** Compressed image buffer */
     data: Uint8Array | number[];
   }
-  /** sensor_msgs/msg/FluidPressure */
+  /**
+   * Single pressure reading.  This message is appropriate for measuring the
+   * pressure inside of a fluid (air, water, etc).  This also includes
+   * atmospheric or barometric pressure.
+   *
+   * This message is not appropriate for force/pressure contact sensors.
+   *
+   * `sensor_msgs/msg/FluidPressure`
+   */
   interface sensor_msgs__msg__FluidPressure {
+    /** timestamp of the measurement */
     header: std_msgs__msg__Header;
+    /** Absolute pressure reading in Pascals. */
     fluid_pressure: number;
+    /** 0 is interpreted as variance unknown */
     variance: number;
   }
-  /** sensor_msgs/msg/Illuminance */
+  /**
+   * Single photometric illuminance measurement.  Light should be assumed to be
+   * measured along the sensor's x-axis (the area of detection is the y-z plane).
+   * The illuminance should have a 0 or positive value and be received with
+   * the sensor's +X axis pointing toward the light source.
+   *
+   * Photometric illuminance is the measure of the human eye's sensitivity of the
+   * intensity of light encountering or passing through a surface.
+   *
+   * All other Photometric and Radiometric measurements should not use this message.
+   * This message cannot represent:
+   *  - Luminous intensity (candela/light source output)
+   *  - Luminance (nits/light output per area)
+   *  - Irradiance (watt/area), etc.
+   *
+   * `sensor_msgs/msg/Illuminance`
+   */
   interface sensor_msgs__msg__Illuminance {
+    /** timestamp is the time the illuminance was measured */
     header: std_msgs__msg__Header;
+    /** Measurement of the Photometric Illuminance in Lux. */
     illuminance: number;
+    /** 0 is interpreted as variance unknown */
     variance: number;
   }
-  /** sensor_msgs/msg/Image */
+  /**
+   * This message contains an uncompressed image
+   * (0, 0) is at top-left corner of image
+   *
+   * `sensor_msgs/msg/Image`
+   */
   interface sensor_msgs__msg__Image {
+    /** Header timestamp should be acquisition time of image */
     header: std_msgs__msg__Header;
+    /** image height, that is, number of rows */
     height: number;
+    /** image width, that is, number of columns */
     width: number;
+    /** Encoding of pixels -- channel meaning, ordering, size */
     encoding: string;
+    /** is this data bigendian? */
     is_bigendian: number;
+    /** Full row length in bytes */
     step: number;
+    /** actual matrix data, size is (step * rows) */
     data: Uint8Array | number[];
   }
-  /** sensor_msgs/msg/Imu */
+  /**
+   * This is a message to hold data from an IMU (Inertial Measurement Unit)
+   *
+   * Accelerations should be in m/s^2 (not in g's), and rotational velocity should be in rad/sec
+   *
+   * If the covariance of the measurement is known, it should be filled in (if all you know is the
+   * variance of each measurement, e.g. from the datasheet, just put those along the diagonal)
+   * A covariance matrix of all zeros will be interpreted as "covariance unknown", and to use the
+   * data a covariance will have to be assumed or gotten from some other source
+   *
+   * If you have no estimate for one of the data elements (e.g. your IMU doesn't produce an
+   * orientation estimate), please set element 0 of the associated covariance matrix to -1
+   * If you are interpreting this message, please check for a value of -1 in the first element of each
+   * covariance matrix, and disregard the associated estimate.
+   *
+   * `sensor_msgs/msg/Imu`
+   */
   interface sensor_msgs__msg__Imu {
     header: std_msgs__msg__Header;
     orientation: geometry_msgs__msg__Quaternion;
+    /**
+     * Row major about x, y, z axes
+     *
+     * Fixed length: 9.
+     */
     orientation_covariance: Float64Array | number[];
     angular_velocity: geometry_msgs__msg__Vector3;
+    /**
+     * Row major about x, y, z axes
+     *
+     * Fixed length: 9.
+     */
     angular_velocity_covariance: Float64Array | number[];
     linear_acceleration: geometry_msgs__msg__Vector3;
+    /**
+     * Row major x, y z
+     *
+     * Fixed length: 9.
+     */
     linear_acceleration_covariance: Float64Array | number[];
   }
-  /** sensor_msgs/msg/JointState */
+  /**
+   * This is a message that holds data to describe the state of a set of torque controlled joints.
+   *
+   * The state of each joint (revolute or prismatic) is defined by:
+   *  * the position of the joint (rad or m),
+   *  * the velocity of the joint (rad/s or m/s) and
+   *  * the effort that is applied in the joint (Nm or N).
+   *
+   * Each joint is uniquely identified by its name
+   * The header specifies the time at which the joint states were recorded. All the joint states
+   * in one message have to be recorded at the same time.
+   *
+   * This message consists of a multiple arrays, one for each part of the joint state.
+   * The goal is to make each of the fields optional. When e.g. your joints have no
+   * effort associated with them, you can leave the effort array empty.
+   *
+   * All arrays in this message should have the same size, or be empty.
+   * This is the only way to uniquely associate the joint name with the correct
+   * states.
+   *
+   * `sensor_msgs/msg/JointState`
+   */
   interface sensor_msgs__msg__JointState {
     header: std_msgs__msg__Header;
     name: string[];
@@ -1235,52 +2532,140 @@ declare module "rclbunjs" {
     velocity: Float64Array | number[];
     effort: Float64Array | number[];
   }
-  /** sensor_msgs/msg/Joy */
+  /**
+   * Reports the state of a joystick's axes and buttons.
+   *
+   * `sensor_msgs/msg/Joy`
+   */
   interface sensor_msgs__msg__Joy {
+    /** The timestamp is the time at which data is received from the joystick. */
     header: std_msgs__msg__Header;
+    /** The axes measurements from a joystick. */
     axes: Float32Array | number[];
+    /** The buttons measurements from a joystick. */
     buttons: Int32Array | number[];
   }
-  /** sensor_msgs/msg/JoyFeedback */
+  /** `sensor_msgs/msg/JoyFeedback` */
   interface sensor_msgs__msg__JoyFeedback {
     type: number;
+    /**
+     * This will hold an id number for each type of each feedback.
+     * Example, the first led would be id=0, the second would be id=1
+     */
     id: number;
+    /**
+     * Intensity of the feedback, from 0.0 to 1.0, inclusive.  If device is
+     * actually binary, driver should treat 0<=x<0.5 as off, 0.5<=x<=1 as on.
+     */
     intensity: number;
   }
-  /** constants of sensor_msgs/msg/JoyFeedback */
+  /** Constants of `sensor_msgs/msg/JoyFeedback` (also properties of `require("sensor_msgs/msg/JoyFeedback")`). */
   interface sensor_msgs__msg__JoyFeedback__Constants {
+    /** Declare of the type of feedback */
     readonly TYPE_LED: 0;
     readonly TYPE_RUMBLE: 1;
     readonly TYPE_BUZZER: 2;
   }
-  /** sensor_msgs/msg/JoyFeedbackArray */
+  /** `sensor_msgs/msg/JoyFeedbackArray` */
   interface sensor_msgs__msg__JoyFeedbackArray {
+    /** This message publishes values for multiple feedback at once. */
     array: sensor_msgs__msg__JoyFeedback[];
   }
-  /** sensor_msgs/msg/LaserEcho */
+  /**
+   * This message is a submessage of MultiEchoLaserScan and is not intended
+   * to be used separately.
+   *
+   * `sensor_msgs/msg/LaserEcho`
+   */
   interface sensor_msgs__msg__LaserEcho {
+    /** Multiple values of ranges or intensities. */
     echoes: Float32Array | number[];
   }
-  /** sensor_msgs/msg/LaserScan */
+  /**
+   * Single scan from a planar laser range-finder
+   *
+   * If you have another ranging device with different behavior (e.g. a sonar
+   * array), please find or create a different message, since applications
+   * will make fairly laser-specific assumptions about this data
+   *
+   * `sensor_msgs/msg/LaserScan`
+   */
   interface sensor_msgs__msg__LaserScan {
+    /** timestamp in the header is the acquisition time of */
     header: std_msgs__msg__Header;
+    /** start angle of the scan [rad] */
     angle_min: number;
+    /** end angle of the scan [rad] */
     angle_max: number;
+    /** angular distance between measurements [rad] */
     angle_increment: number;
+    /** time between measurements [seconds] - if your scanner */
     time_increment: number;
+    /**
+     * is moving, this will be used in interpolating position
+     * of 3d points
+     * time between scans [seconds]
+     */
     scan_time: number;
+    /** minimum range value [m] */
     range_min: number;
+    /** maximum range value [m] */
     range_max: number;
+    /** range data [m] */
     ranges: Float32Array | number[];
+    /**
+     * (Note: values < range_min or > range_max should be discarded)
+     * intensity data [device-specific units].  If your
+     */
     intensities: Float32Array | number[];
   }
-  /** sensor_msgs/msg/MagneticField */
+  /**
+   * Measurement of the Magnetic Field vector at a specific location.
+   *
+   * If the covariance of the measurement is known, it should be filled in.
+   * If all you know is the variance of each measurement, e.g. from the datasheet,
+   * just put those along the diagonal.
+   * A covariance matrix of all zeros will be interpreted as "covariance unknown",
+   * and to use the data a covariance will have to be assumed or gotten from some
+   * other source.
+   *
+   * `sensor_msgs/msg/MagneticField`
+   */
   interface sensor_msgs__msg__MagneticField {
+    /** timestamp is the time the */
     header: std_msgs__msg__Header;
+    /** x, y, and z components of the */
     magnetic_field: geometry_msgs__msg__Vector3;
+    /**
+     * Row major about x, y, z axes
+     *
+     * Fixed length: 9.
+     */
     magnetic_field_covariance: Float64Array | number[];
   }
-  /** sensor_msgs/msg/MultiDOFJointState */
+  /**
+   * Representation of state for joints with multiple degrees of freedom,
+   * following the structure of JointState which can only represent a single degree of freedom.
+   *
+   * It is assumed that a joint in a system corresponds to a transform that gets applied
+   * along the kinematic chain. For example, a planar joint (as in URDF) is 3DOF (x, y, yaw)
+   * and those 3DOF can be expressed as a transformation matrix, and that transformation
+   * matrix can be converted back to (x, y, yaw)
+   *
+   * Each joint is uniquely identified by its name
+   * The header specifies the time at which the joint states were recorded. All the joint states
+   * in one message have to be recorded at the same time.
+   *
+   * This message consists of a multiple arrays, one for each part of the joint state.
+   * The goal is to make each of the fields optional. When e.g. your joints have no
+   * wrench associated with them, you can leave the wrench array empty.
+   *
+   * All arrays in this message should have the same size, or be empty.
+   * This is the only way to uniquely associate the joint name with the correct
+   * states.
+   *
+   * `sensor_msgs/msg/MultiDOFJointState`
+   */
   interface sensor_msgs__msg__MultiDOFJointState {
     header: std_msgs__msg__Header;
     joint_names: string[];
@@ -1288,81 +2673,208 @@ declare module "rclbunjs" {
     twist: geometry_msgs__msg__Twist[];
     wrench: geometry_msgs__msg__Wrench[];
   }
-  /** sensor_msgs/msg/MultiEchoLaserScan */
+  /**
+   * Single scan from a multi-echo planar laser range-finder
+   *
+   * If you have another ranging device with different behavior (e.g. a sonar
+   * array), please find or create a different message, since applications
+   * will make fairly laser-specific assumptions about this data
+   *
+   * `sensor_msgs/msg/MultiEchoLaserScan`
+   */
   interface sensor_msgs__msg__MultiEchoLaserScan {
+    /** timestamp in the header is the acquisition time of */
     header: std_msgs__msg__Header;
+    /** start angle of the scan [rad] */
     angle_min: number;
+    /** end angle of the scan [rad] */
     angle_max: number;
+    /** angular distance between measurements [rad] */
     angle_increment: number;
+    /** time between measurements [seconds] - if your scanner */
     time_increment: number;
+    /**
+     * is moving, this will be used in interpolating position
+     * of 3d points
+     * time between scans [seconds]
+     */
     scan_time: number;
+    /** minimum range value [m] */
     range_min: number;
+    /** maximum range value [m] */
     range_max: number;
+    /** range data [m] */
     ranges: sensor_msgs__msg__LaserEcho[];
+    /**
+     * (Note: NaNs, values < range_min or > range_max should be discarded)
+     * +Inf measurements are out of range
+     * -Inf measurements are too close to determine exact distance.
+     * intensity data [device-specific units].  If your
+     */
     intensities: sensor_msgs__msg__LaserEcho[];
   }
-  /** sensor_msgs/msg/NavSatFix */
+  /**
+   * Navigation Satellite fix for any Global Navigation Satellite System
+   *
+   * Specified using the WGS 84 reference ellipsoid
+   *
+   * `sensor_msgs/msg/NavSatFix`
+   */
   interface sensor_msgs__msg__NavSatFix {
+    /**
+     * header.stamp specifies the ROS time for this measurement (the
+     *        corresponding satellite time may be reported using the
+     *        sensor_msgs/TimeReference message).
+     *
+     * header.frame_id is the frame of reference reported by the satellite
+     *        receiver, usually the location of the antenna.  This is a
+     *        Euclidean frame relative to the vehicle, not a reference
+     *        ellipsoid.
+     */
     header: std_msgs__msg__Header;
+    /** Satellite fix status information. */
     status: sensor_msgs__msg__NavSatStatus;
+    /** Latitude [degrees]. Positive is north of equator; negative is south. */
     latitude: number;
+    /** Longitude [degrees]. Positive is east of prime meridian; negative is west. */
     longitude: number;
+    /**
+     * Altitude [m]. Positive is above the WGS 84 ellipsoid
+     * (quiet NaN if no altitude is available).
+     */
     altitude: number;
+    /**
+     * Position covariance [m^2] defined relative to a tangential plane
+     * through the reported position. The components are East, North, and
+     * Up (ENU), in row-major order.
+     *
+     * Beware: this coordinate system exhibits singularities at the poles.
+     *
+     * Fixed length: 9.
+     */
     position_covariance: Float64Array | number[];
     position_covariance_type: number;
   }
-  /** constants of sensor_msgs/msg/NavSatFix */
+  /** Constants of `sensor_msgs/msg/NavSatFix` (also properties of `require("sensor_msgs/msg/NavSatFix")`). */
   interface sensor_msgs__msg__NavSatFix__Constants {
     readonly COVARIANCE_TYPE_UNKNOWN: 0;
     readonly COVARIANCE_TYPE_APPROXIMATED: 1;
     readonly COVARIANCE_TYPE_DIAGONAL_KNOWN: 2;
     readonly COVARIANCE_TYPE_KNOWN: 3;
   }
-  /** sensor_msgs/msg/NavSatStatus */
+  /**
+   * Navigation Satellite fix status for any Global Navigation Satellite System.
+   *
+   * Whether to output an augmented fix is determined by both the fix
+   * type and the last time differential corrections were received.  A
+   * fix is valid when status >= STATUS_FIX.
+   *
+   * `sensor_msgs/msg/NavSatStatus`
+   */
   interface sensor_msgs__msg__NavSatStatus {
+    /**
+     * STATUS_UNKNOWN
+     *
+     * @default -2
+     */
     status: number;
     service: number;
   }
-  /** constants of sensor_msgs/msg/NavSatStatus */
+  /** Constants of `sensor_msgs/msg/NavSatStatus` (also properties of `require("sensor_msgs/msg/NavSatStatus")`). */
   interface sensor_msgs__msg__NavSatStatus__Constants {
+    /** status is not yet set */
     readonly STATUS_UNKNOWN: -2;
+    /** unable to fix position */
     readonly STATUS_NO_FIX: -1;
+    /** unaugmented fix */
     readonly STATUS_FIX: 0;
+    /** with satellite-based augmentation */
     readonly STATUS_SBAS_FIX: 1;
+    /** with ground-based augmentation */
     readonly STATUS_GBAS_FIX: 2;
+    /** Remember service is a bitfield, so checking (service & SERVICE_UNKNOWN) will not work. Use == instead. */
     readonly SERVICE_UNKNOWN: 0;
     readonly SERVICE_GPS: 1;
     readonly SERVICE_GLONASS: 2;
+    /** includes BeiDou. */
     readonly SERVICE_COMPASS: 4;
     readonly SERVICE_GALILEO: 8;
   }
-  /** sensor_msgs/msg/PointCloud */
+  /**
+   * THIS MESSAGE IS DEPRECATED AS OF FOXY
+   * Please use sensor_msgs/PointCloud2
+   *
+   * `sensor_msgs/msg/PointCloud`
+   */
   interface sensor_msgs__msg__PointCloud {
+    /** Time of sensor data acquisition, coordinate frame ID. */
     header: std_msgs__msg__Header;
+    /**
+     * Array of 3d points. Each Point32 should be interpreted as a 3d point
+     * in the frame given in the header.
+     */
     points: geometry_msgs__msg__Point32[];
+    /**
+     * Each channel should have the same number of elements as points array,
+     * and the data in each channel should correspond 1:1 with each point.
+     * Channel names in common practice are listed in ChannelFloat32.msg.
+     */
     channels: sensor_msgs__msg__ChannelFloat32[];
   }
-  /** sensor_msgs/msg/PointCloud2 */
+  /**
+   * This message holds a collection of N-dimensional points, which may
+   * contain additional information such as normals, intensity, etc. The
+   * point data is stored as a binary blob, its layout described by the
+   * contents of the "fields" array.
+   *
+   * The point cloud data may be organized 2d (image-like) or 1d (unordered).
+   * Point clouds organized as 2d images may be produced by camera depth sensors
+   * such as stereo or time-of-flight.
+   *
+   * `sensor_msgs/msg/PointCloud2`
+   */
   interface sensor_msgs__msg__PointCloud2 {
+    /** Time of sensor data acquisition, and the coordinate frame ID (for 3d points). */
     header: std_msgs__msg__Header;
+    /**
+     * 2D structure of the point cloud. If the cloud is unordered, height is
+     * 1 and width is the length of the point cloud.
+     */
     height: number;
     width: number;
+    /** Describes the channels and their layout in the binary data blob. */
     fields: sensor_msgs__msg__PointField[];
+    /** Is this data bigendian? */
     is_bigendian: boolean;
+    /** Length of a point in bytes */
     point_step: number;
+    /** Length of a row in bytes */
     row_step: number;
+    /** Actual point data, size is (row_step*height) */
     data: Uint8Array | number[];
+    /** True if there are no invalid points */
     is_dense: boolean;
   }
-  /** sensor_msgs/msg/PointField */
+  /** `sensor_msgs/msg/PointField` */
   interface sensor_msgs__msg__PointField {
+    /**
+     * Common PointField names are x, y, z, intensity, rgb, rgba
+     * Name of field
+     */
     name: string;
+    /** Offset from start of point struct */
     offset: number;
+    /** Datatype enumeration, see above */
     datatype: number;
+    /** How many elements in the field */
     count: number;
   }
-  /** constants of sensor_msgs/msg/PointField */
+  /** Constants of `sensor_msgs/msg/PointField` (also properties of `require("sensor_msgs/msg/PointField")`). */
   interface sensor_msgs__msg__PointField__Constants {
+    /**
+     * This message holds the description of one point entry in the
+     * PointCloud2 message format.
+     */
     readonly INT8: 1;
     readonly UINT8: 2;
     readonly INT16: 3;
@@ -1372,99 +2884,233 @@ declare module "rclbunjs" {
     readonly FLOAT32: 7;
     readonly FLOAT64: 8;
   }
-  /** sensor_msgs/msg/Range */
+  /**
+   * Single range reading from an active ranger that emits energy and reports
+   * one range reading that is valid along an arc at the distance measured.
+   * This message is  not appropriate for laser scanners. See the LaserScan
+   * message if you are working with a laser scanner.
+   *
+   * This message also can represent a fixed-distance (binary) ranger.  This
+   * sensor will have min_range===max_range===distance of detection.
+   * These sensors follow REP 117 and will output -Inf if the object is detected
+   * and +Inf if the object is outside of the detection range.
+   *
+   * `sensor_msgs/msg/Range`
+   */
   interface sensor_msgs__msg__Range {
+    /** timestamp in the header is the time the ranger */
     header: std_msgs__msg__Header;
+    /** the type of radiation used by the sensor */
     radiation_type: number;
+    /** the size of the arc that the distance reading is */
     field_of_view: number;
+    /** minimum range value [m] */
     min_range: number;
+    /** maximum range value [m] */
     max_range: number;
+    /** range data [m] */
     range: number;
+    /** variance of the range sensor */
     variance: number;
   }
-  /** constants of sensor_msgs/msg/Range */
+  /** Constants of `sensor_msgs/msg/Range` (also properties of `require("sensor_msgs/msg/Range")`). */
   interface sensor_msgs__msg__Range__Constants {
+    /**
+     * Radiation type enums
+     * If you want a value added to this list, send an email to the ros-users list
+     */
     readonly ULTRASOUND: 0;
     readonly INFRARED: 1;
   }
-  /** sensor_msgs/msg/RegionOfInterest */
+  /**
+   * This message is used to specify a region of interest within an image.
+   *
+   * When used to specify the ROI setting of the camera when the image was
+   * taken, the height and width fields should either match the height and
+   * width fields for the associated image; or height = width = 0
+   * indicates that the full resolution image was captured.
+   *
+   * `sensor_msgs/msg/RegionOfInterest`
+   */
   interface sensor_msgs__msg__RegionOfInterest {
+    /** Leftmost pixel of the ROI */
     x_offset: number;
+    /**
+     * (0 if the ROI includes the left edge of the image)
+     * Topmost pixel of the ROI
+     */
     y_offset: number;
+    /**
+     * (0 if the ROI includes the top edge of the image)
+     * Height of ROI
+     */
     height: number;
+    /** Width of ROI */
     width: number;
+    /**
+     * True if a distinct rectified ROI should be calculated from the "raw"
+     * ROI in this message. Typically this should be False if the full image
+     * is captured (ROI not used), and True if a subwindow is captured (ROI
+     * used).
+     */
     do_rectify: boolean;
   }
-  /** sensor_msgs/msg/RelativeHumidity */
+  /**
+   * Single reading from a relative humidity sensor.
+   * Defines the ratio of partial pressure of water vapor to the saturated vapor
+   * pressure at a temperature.
+   *
+   * `sensor_msgs/msg/RelativeHumidity`
+   */
   interface sensor_msgs__msg__RelativeHumidity {
+    /** timestamp of the measurement */
     header: std_msgs__msg__Header;
+    /** Expression of the relative humidity */
     relative_humidity: number;
+    /** 0 is interpreted as variance unknown */
     variance: number;
   }
-  /** sensor_msgs/msg/Temperature */
+  /**
+   * Single temperature reading.
+   *
+   * `sensor_msgs/msg/Temperature`
+   */
   interface sensor_msgs__msg__Temperature {
+    /** timestamp is the time the temperature was measured */
     header: std_msgs__msg__Header;
+    /** Measurement of the Temperature in Degrees Celsius. */
     temperature: number;
+    /** 0 is interpreted as variance unknown. */
     variance: number;
   }
-  /** sensor_msgs/msg/TimeReference */
+  /**
+   * Measurement from an external time source not actively synchronized with the system clock.
+   *
+   * `sensor_msgs/msg/TimeReference`
+   */
   interface sensor_msgs__msg__TimeReference {
+    /** stamp is system time for which measurement was valid */
     header: std_msgs__msg__Header;
+    /** corresponding time from this external source */
     time_ref: builtin_interfaces__msg__Time;
+    /** (optional) name of time source */
     source: string;
   }
-  /** sensor_msgs/srv/SetCameraInfo_Request */
+  /**
+   * This service requests that a camera stores the given CameraInfo as that
+   * camera's calibration information.
+   *
+   * The width and height in the camera_info field should match what the
+   * camera is currently outputting on its camera_info topic, and the camera
+   * will assume that the region of the imager that is being referred to is
+   * the region that the camera is currently capturing.
+   *
+   * `sensor_msgs/srv/SetCameraInfo_Request`
+   */
   interface sensor_msgs__srv__SetCameraInfo_Request {
+    /** The camera_info to store */
     camera_info: sensor_msgs__msg__CameraInfo;
   }
-  /** sensor_msgs/srv/SetCameraInfo_Response */
+  /** `sensor_msgs/srv/SetCameraInfo_Response` */
   interface sensor_msgs__srv__SetCameraInfo_Response {
+    /** True if the call succeeded */
     success: boolean;
+    /** Used to give details about success */
     status_message: string;
   }
-  /** service_msgs/msg/ServiceEventInfo */
+  /** `service_msgs/msg/ServiceEventInfo` */
   interface service_msgs__msg__ServiceEventInfo {
+    /** The type of event this message represents */
     event_type: number;
+    /** Timestamp for when the event occurred (sent or received time) */
     stamp: builtin_interfaces__msg__Time;
+    /**
+     * Unique identifier for the client that sent the service request
+     * Note, this is only unique for the current session.
+     * The size here has to match the size of rmw_dds_common/msg/Gid,
+     * but unfortunately we cannot use that message directly due to a
+     * circular dependency.
+     *
+     * Fixed length: 16.
+     */
     client_gid: Uint8Array | number[];
+    /**
+     * Sequence number for the request
+     * Combined with the client ID, this creates a unique ID for the service transaction
+     */
     sequence_number: bigint;
   }
-  /** constants of service_msgs/msg/ServiceEventInfo */
+  /** Constants of `service_msgs/msg/ServiceEventInfo` (also properties of `require("service_msgs/msg/ServiceEventInfo")`). */
   interface service_msgs__msg__ServiceEventInfo__Constants {
     readonly REQUEST_SENT: 0;
     readonly REQUEST_RECEIVED: 1;
     readonly RESPONSE_SENT: 2;
     readonly RESPONSE_RECEIVED: 3;
   }
-  /** shape_msgs/msg/Mesh */
+  /**
+   * Definition of a mesh.
+   *
+   * `shape_msgs/msg/Mesh`
+   */
   interface shape_msgs__msg__Mesh {
+    /** List of triangles; the index values refer to positions in vertices[]. */
     triangles: shape_msgs__msg__MeshTriangle[];
+    /** The actual vertices that make up the mesh. */
     vertices: geometry_msgs__msg__Point[];
   }
-  /** shape_msgs/msg/MeshTriangle */
+  /**
+   * Definition of a triangle's vertices.
+   *
+   * `shape_msgs/msg/MeshTriangle`
+   */
   interface shape_msgs__msg__MeshTriangle {
+    /** Fixed length: 3. */
     vertex_indices: Uint32Array | number[];
   }
-  /** shape_msgs/msg/Plane */
+  /** `shape_msgs/msg/Plane` */
   interface shape_msgs__msg__Plane {
+    /**
+     * Representation of a plane, using the plane equation ax + by + cz + d = 0.
+     *
+     * a := coef[0]
+     * b := coef[1]
+     * c := coef[2]
+     * d := coef[3]
+     *
+     * Fixed length: 4.
+     */
     coef: Float64Array | number[];
   }
-  /** shape_msgs/msg/SolidPrimitive */
+  /**
+   * Defines box, sphere, cylinder, cone and prism.
+   * All shapes are defined to have their bounding boxes centered around 0,0,0.
+   *
+   * `shape_msgs/msg/SolidPrimitive`
+   */
   interface shape_msgs__msg__SolidPrimitive {
+    /** The type of the shape */
     type: number;
+    /**
+     * The dimensions of the shape
+     * At no point will dimensions have a length > 3.
+     *
+     * At most 3 elements.
+     */
     dimensions: Float64Array | number[];
     polygon: geometry_msgs__msg__Polygon;
   }
-  /** constants of shape_msgs/msg/SolidPrimitive */
+  /** Constants of `shape_msgs/msg/SolidPrimitive` (also properties of `require("shape_msgs/msg/SolidPrimitive")`). */
   interface shape_msgs__msg__SolidPrimitive__Constants {
     readonly BOX: 1;
     readonly SPHERE: 2;
     readonly CYLINDER: 3;
     readonly CONE: 4;
     readonly PRISM: 5;
+    /** For type BOX, the X, Y, and Z dimensions are the length of the corresponding sides of the box. */
     readonly BOX_X: 0;
     readonly BOX_Y: 1;
     readonly BOX_Z: 2;
+    /** For the SPHERE type, only one component is used, and it gives the radius of the sphere. */
     readonly SPHERE_RADIUS: 0;
     readonly CYLINDER_HEIGHT: 0;
     readonly CYLINDER_RADIUS: 1;
@@ -1472,269 +3118,660 @@ declare module "rclbunjs" {
     readonly CONE_RADIUS: 1;
     readonly PRISM_HEIGHT: 0;
   }
-  /** statistics_msgs/msg/MetricsMessage */
+  /**
+   * A generic metrics message providing statistics for measurements from different sources. For example,
+   * measure a system's CPU % for a given window yields the following data points over a window of time:
+   *
+   *   - average cpu %
+   *   - std deviation
+   *   - min
+   *   - max
+   *   - sample count
+   *
+   * These are all represented as different 'StatisticDataPoint's.
+   *
+   * `statistics_msgs/msg/MetricsMessage`
+   */
   interface statistics_msgs__msg__MetricsMessage {
+    /** Name metric measurement source, e.g., node, topic, or process name */
     measurement_source_name: string;
+    /** Name of the metric being measured, e.g. cpu_percentage, free_memory_mb, message_age, etc. */
     metrics_source: string;
+    /** Unit of measure of the metric, e.g. percent, mb, seconds, etc. */
     unit: string;
+    /** Measurement window start time */
     window_start: builtin_interfaces__msg__Time;
+    /** Measurement window end time */
     window_stop: builtin_interfaces__msg__Time;
+    /** A list of statistics data point, defined in StatisticDataPoint.msg */
     statistics: statistics_msgs__msg__StatisticDataPoint[];
   }
-  /** statistics_msgs/msg/StatisticDataPoint */
+  /**
+   * This holds the structure of a single data point of a StatisticDataType.
+   *
+   * This message is used in MetricsStatisticsMessage, defined in MetricsStatisticsMessage.msg.
+   *
+   * Examples of the value of data point are
+   * - average size of messages received
+   * - standard deviation of the period of messages published
+   * - maximum age of messages published
+   *
+   * A value of nan represents no data is available.
+   * One example is that standard deviation is only available when there are two or more data points but there is only one,
+   * and in this case the value would be nan.
+   * +inf and -inf are not allowed.
+   *
+   * `statistics_msgs/msg/StatisticDataPoint`
+   */
   interface statistics_msgs__msg__StatisticDataPoint {
+    /**
+     * The statistic type of this data point, defined in StatisticDataType.msg
+     * Default value should be StatisticDataType.STATISTICS_DATA_TYPE_UNINITIALIZED (0).
+     */
     data_type: number;
+    /** The value of the data point */
     data: number;
   }
-  /** statistics_msgs/msg/StatisticDataType */
+  /**
+   * This file contains the commonly used constants for the statistics data type.
+   *
+   * The value 0 is reserved for unitialized statistic message data type.
+   * Range of values: [0, 255].
+   * Unallowed values: any value that is not specified in this file.
+   *
+   * `statistics_msgs/msg/StatisticDataType`
+   */
   interface statistics_msgs__msg__StatisticDataType {
   }
-  /** constants of statistics_msgs/msg/StatisticDataType */
+  /** Constants of `statistics_msgs/msg/StatisticDataType` (also properties of `require("statistics_msgs/msg/StatisticDataType")`). */
   interface statistics_msgs__msg__StatisticDataType__Constants {
+    /** Constant for uninitialized */
     readonly STATISTICS_DATA_TYPE_UNINITIALIZED: 0;
+    /** Allowed values */
     readonly STATISTICS_DATA_TYPE_AVERAGE: 1;
     readonly STATISTICS_DATA_TYPE_MINIMUM: 2;
     readonly STATISTICS_DATA_TYPE_MAXIMUM: 3;
     readonly STATISTICS_DATA_TYPE_STDDEV: 4;
     readonly STATISTICS_DATA_TYPE_SAMPLE_COUNT: 5;
   }
-  /** std_msgs/msg/Bool */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Bool`
+   */
   interface std_msgs__msg__Bool {
     data: boolean;
   }
-  /** std_msgs/msg/Byte */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Byte`
+   */
   interface std_msgs__msg__Byte {
     data: number;
   }
-  /** std_msgs/msg/ByteMultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/ByteMultiArray`
+   */
   interface std_msgs__msg__ByteMultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint8Array | number[];
   }
-  /** std_msgs/msg/Char */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Char`
+   */
   interface std_msgs__msg__Char {
     data: number;
   }
-  /** std_msgs/msg/ColorRGBA */
+  /** `std_msgs/msg/ColorRGBA` */
   interface std_msgs__msg__ColorRGBA {
     r: number;
     g: number;
     b: number;
     a: number;
   }
-  /** std_msgs/msg/Empty */
+  /** `std_msgs/msg/Empty` */
   interface std_msgs__msg__Empty {
   }
-  /** std_msgs/msg/Float32 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Float32`
+   */
   interface std_msgs__msg__Float32 {
     data: number;
   }
-  /** std_msgs/msg/Float32MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Float32MultiArray`
+   */
   interface std_msgs__msg__Float32MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Float32Array | number[];
   }
-  /** std_msgs/msg/Float64 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Float64`
+   */
   interface std_msgs__msg__Float64 {
     data: number;
   }
-  /** std_msgs/msg/Float64MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Float64MultiArray`
+   */
   interface std_msgs__msg__Float64MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Float64Array | number[];
   }
-  /** std_msgs/msg/Header */
+  /**
+   * Standard metadata for higher-level stamped data types.
+   * This is generally used to communicate timestamped data
+   * in a particular coordinate frame.
+   *
+   * `std_msgs/msg/Header`
+   */
   interface std_msgs__msg__Header {
+    /** Two-integer timestamp that is expressed as seconds and nanoseconds. */
     stamp: builtin_interfaces__msg__Time;
+    /** Transform frame with which this data is associated. */
     frame_id: string;
   }
-  /** std_msgs/msg/Int16 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int16`
+   */
   interface std_msgs__msg__Int16 {
     data: number;
   }
-  /** std_msgs/msg/Int16MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int16MultiArray`
+   */
   interface std_msgs__msg__Int16MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Int16Array | number[];
   }
-  /** std_msgs/msg/Int32 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int32`
+   */
   interface std_msgs__msg__Int32 {
     data: number;
   }
-  /** std_msgs/msg/Int32MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int32MultiArray`
+   */
   interface std_msgs__msg__Int32MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Int32Array | number[];
   }
-  /** std_msgs/msg/Int64 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int64`
+   */
   interface std_msgs__msg__Int64 {
     data: bigint;
   }
-  /** std_msgs/msg/Int64MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int64MultiArray`
+   */
   interface std_msgs__msg__Int64MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: bigint[];
   }
-  /** std_msgs/msg/Int8 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int8`
+   */
   interface std_msgs__msg__Int8 {
     data: number;
   }
-  /** std_msgs/msg/Int8MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/Int8MultiArray`
+   */
   interface std_msgs__msg__Int8MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Int8Array | number[];
   }
-  /** std_msgs/msg/MultiArrayDimension */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/MultiArrayDimension`
+   */
   interface std_msgs__msg__MultiArrayDimension {
+    /** label of given dimension */
     label: string;
+    /** size of given dimension (in type units) */
     size: number;
+    /** stride of given dimension */
     stride: number;
   }
-  /** std_msgs/msg/MultiArrayLayout */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/MultiArrayLayout`
+   */
   interface std_msgs__msg__MultiArrayLayout {
+    /** Array of dimension properties */
     dim: std_msgs__msg__MultiArrayDimension[];
+    /** padding bytes at front of data */
     data_offset: number;
   }
-  /** std_msgs/msg/String */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/String`
+   */
   interface std_msgs__msg__String {
     data: string;
   }
-  /** std_msgs/msg/UInt16 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt16`
+   */
   interface std_msgs__msg__UInt16 {
     data: number;
   }
-  /** std_msgs/msg/UInt16MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt16MultiArray`
+   */
   interface std_msgs__msg__UInt16MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint16Array | number[];
   }
-  /** std_msgs/msg/UInt32 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt32`
+   */
   interface std_msgs__msg__UInt32 {
     data: number;
   }
-  /** std_msgs/msg/UInt32MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt32MultiArray`
+   */
   interface std_msgs__msg__UInt32MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint32Array | number[];
   }
-  /** std_msgs/msg/UInt64 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt64`
+   */
   interface std_msgs__msg__UInt64 {
     data: bigint;
   }
-  /** std_msgs/msg/UInt64MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt64MultiArray`
+   */
   interface std_msgs__msg__UInt64MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: bigint[];
   }
-  /** std_msgs/msg/UInt8 */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt8`
+   */
   interface std_msgs__msg__UInt8 {
     data: number;
   }
-  /** std_msgs/msg/UInt8MultiArray */
+  /**
+   * This was originally provided as an example message.
+   * It is deprecated as of Foxy
+   * It is recommended to create your own semantically meaningful message.
+   * However if you would like to continue using this please use the equivalent in example_msgs.
+   *
+   * `std_msgs/msg/UInt8MultiArray`
+   */
   interface std_msgs__msg__UInt8MultiArray {
+    /** specification of data layout */
     layout: std_msgs__msg__MultiArrayLayout;
+    /** array of data */
     data: Uint8Array | number[];
   }
-  /** std_srvs/srv/Empty_Request */
+  /** `std_srvs/srv/Empty_Request` */
   interface std_srvs__srv__Empty_Request {
   }
-  /** std_srvs/srv/Empty_Response */
+  /** `std_srvs/srv/Empty_Response` */
   interface std_srvs__srv__Empty_Response {
   }
-  /** std_srvs/srv/SetBool_Request */
+  /** `std_srvs/srv/SetBool_Request` */
   interface std_srvs__srv__SetBool_Request {
+    /** e.g. for hardware enabling / disabling */
     data: boolean;
   }
-  /** std_srvs/srv/SetBool_Response */
+  /** `std_srvs/srv/SetBool_Response` */
   interface std_srvs__srv__SetBool_Response {
+    /** indicate successful run of triggered service */
     success: boolean;
+    /** informational, e.g. for error messages */
     message: string;
   }
-  /** std_srvs/srv/Trigger_Request */
+  /** `std_srvs/srv/Trigger_Request` */
   interface std_srvs__srv__Trigger_Request {
   }
-  /** std_srvs/srv/Trigger_Response */
+  /** `std_srvs/srv/Trigger_Response` */
   interface std_srvs__srv__Trigger_Response {
+    /** indicate successful run of triggered service */
     success: boolean;
+    /** informational, e.g. for error messages */
     message: string;
   }
-  /** stereo_msgs/msg/DisparityImage */
+  /** `stereo_msgs/msg/DisparityImage` */
   interface stereo_msgs__msg__DisparityImage {
+    /**
+     * Separate header for compatibility with current TimeSynchronizer.
+     * Likely to be removed in a later release, use image.header instead.
+     */
     header: std_msgs__msg__Header;
+    /**
+     * Floating point disparity image. The disparities are pre-adjusted for any
+     * x-offset between the principal points of the two cameras (in the case
+     * that they are verged). That is: d = x_l - x_r - (cx_l - cx_r)
+     */
     image: sensor_msgs__msg__Image;
+    /**
+     * Stereo geometry. For disparity d, the depth from the camera is Z = fT/d.
+     * Focal length, pixels
+     */
     f: number;
+    /** Baseline, world units */
     t: number;
+    /** Subwindow of (potentially) valid disparity values. */
     valid_window: sensor_msgs__msg__RegionOfInterest;
+    /**
+     * The range of disparities searched.
+     * In the disparity image, any disparity less than min_disparity is invalid.
+     * The disparity search range defines the horopter, or 3D volume that the
+     * stereo algorithm can "see". Points with Z outside of:
+     *     Z_min = fT / max_disparity
+     *     Z_max = fT / min_disparity
+     * could not be found.
+     */
     min_disparity: number;
     max_disparity: number;
+    /**
+     * Smallest allowed disparity increment. The smallest achievable depth range
+     * resolution is delta_Z = (Z^2/fT)*delta_d.
+     */
     delta_d: number;
   }
-  /** test_msgs/action/Fibonacci_Feedback */
+  /** `test_msgs/action/Fibonacci_Feedback` */
   interface test_msgs__action__Fibonacci_Feedback {
+    /** feedback */
     sequence: Int32Array | number[];
   }
-  /** test_msgs/action/Fibonacci_Goal */
+  /** `test_msgs/action/Fibonacci_Goal` */
   interface test_msgs__action__Fibonacci_Goal {
+    /** goal definition */
     order: number;
   }
-  /** test_msgs/action/Fibonacci_Result */
+  /** `test_msgs/action/Fibonacci_Result` */
   interface test_msgs__action__Fibonacci_Result {
+    /** result definition */
     sequence: Int32Array | number[];
   }
-  /** test_msgs/action/NestedMessage_Feedback */
+  /** `test_msgs/action/NestedMessage_Feedback` */
   interface test_msgs__action__NestedMessage_Feedback {
+    /** feedback */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** test_msgs/action/NestedMessage_Goal */
+  /** `test_msgs/action/NestedMessage_Goal` */
   interface test_msgs__action__NestedMessage_Goal {
+    /** goal definition */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** test_msgs/action/NestedMessage_Result */
+  /** `test_msgs/action/NestedMessage_Result` */
   interface test_msgs__action__NestedMessage_Result {
+    /** result definition */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** test_msgs/msg/Arrays */
+  /** `test_msgs/msg/Arrays` */
   interface test_msgs__msg__Arrays {
+    /**
+     * Arrays of different types
+     *
+     * Fixed length: 3.
+     */
     bool_values: boolean[];
+    /** Fixed length: 3. */
     byte_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     char_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     float32_values: Float32Array | number[];
+    /** Fixed length: 3. */
     float64_values: Float64Array | number[];
+    /** Fixed length: 3. */
     int8_values: Int8Array | number[];
+    /** Fixed length: 3. */
     uint8_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     int16_values: Int16Array | number[];
+    /** Fixed length: 3. */
     uint16_values: Uint16Array | number[];
+    /** Fixed length: 3. */
     int32_values: Int32Array | number[];
+    /** Fixed length: 3. */
     uint32_values: Uint32Array | number[];
+    /** Fixed length: 3. */
     int64_values: bigint[];
+    /** Fixed length: 3. */
     uint64_values: bigint[];
+    /** Fixed length: 3. */
     string_values: string[];
+    /** Fixed length: 3. */
     basic_types_values: test_msgs__msg__BasicTypes[];
+    /** Fixed length: 3. */
     constants_values: test_msgs__msg__Constants[];
+    /** Fixed length: 3. */
     defaults_values: test_msgs__msg__Defaults[];
+    /**
+     * Fixed length: 3.
+     * @default [false, true, false]
+     */
     bool_values_default: boolean[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     byte_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 127]
+     */
     char_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [1.125, 0, -1.125]
+     */
     float32_values_default: Float32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [3.1415, 0, -3.1415]
+     */
     float64_values_default: Float64Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 127, -128]
+     */
     int8_values_default: Int8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     uint8_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 32767, -32768]
+     */
     int16_values_default: Int16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 65535]
+     */
     uint16_values_default: Uint16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 2147483647, -2147483648]
+     */
     int32_values_default: Int32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 4294967295]
+     */
     uint32_values_default: Uint32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 9223372036854775807n, -9223372036854775808n]
+     */
     int64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 1n, 18446744073709551615n]
+     */
     uint64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default ["", "max value", "min value"]
+     */
     string_values_default: string[];
+    /** Regression test: check alignment of basic field after an array field is correct */
     alignment_check: number;
   }
-  /** test_msgs/msg/BasicTypes */
+  /** `test_msgs/msg/BasicTypes` */
   interface test_msgs__msg__BasicTypes {
     bool_value: boolean;
     byte_value: number;
@@ -1750,83 +3787,234 @@ declare module "rclbunjs" {
     int64_value: bigint;
     uint64_value: bigint;
   }
-  /** test_msgs/msg/BoundedPlainSequences */
+  /** `test_msgs/msg/BoundedPlainSequences` */
   interface test_msgs__msg__BoundedPlainSequences {
+    /**
+     * Bounded sequences of different POD types
+     *
+     * At most 3 elements.
+     */
     bool_values: boolean[];
+    /** At most 3 elements. */
     byte_values: Uint8Array | number[];
+    /** At most 3 elements. */
     char_values: Uint8Array | number[];
+    /** At most 3 elements. */
     float32_values: Float32Array | number[];
+    /** At most 3 elements. */
     float64_values: Float64Array | number[];
+    /** At most 3 elements. */
     int8_values: Int8Array | number[];
+    /** At most 3 elements. */
     uint8_values: Uint8Array | number[];
+    /** At most 3 elements. */
     int16_values: Int16Array | number[];
+    /** At most 3 elements. */
     uint16_values: Uint16Array | number[];
+    /** At most 3 elements. */
     int32_values: Int32Array | number[];
+    /** At most 3 elements. */
     uint32_values: Uint32Array | number[];
+    /** At most 3 elements. */
     int64_values: bigint[];
+    /** At most 3 elements. */
     uint64_values: bigint[];
+    /** At most 3 elements. */
     basic_types_values: test_msgs__msg__BasicTypes[];
+    /** At most 3 elements. */
     constants_values: test_msgs__msg__Constants[];
+    /** At most 3 elements. */
     defaults_values: test_msgs__msg__Defaults[];
+    /**
+     * At most 3 elements.
+     * @default [false, true, false]
+     */
     bool_values_default: boolean[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 255]
+     */
     byte_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 127]
+     */
     char_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [1.125, 0, -1.125]
+     */
     float32_values_default: Float32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [3.1415, 0, -3.1415]
+     */
     float64_values_default: Float64Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 127, -128]
+     */
     int8_values_default: Int8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 255]
+     */
     uint8_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 32767, -32768]
+     */
     int16_values_default: Int16Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 65535]
+     */
     uint16_values_default: Uint16Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 2147483647, -2147483648]
+     */
     int32_values_default: Int32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 4294967295]
+     */
     uint32_values_default: Uint32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0n, 9223372036854775807n, -9223372036854775808n]
+     */
     int64_values_default: bigint[];
+    /**
+     * At most 3 elements.
+     * @default [0n, 1n, 18446744073709551615n]
+     */
     uint64_values_default: bigint[];
+    /** Regression test: check alignment of basic field after a sequence field is correct */
     alignment_check: number;
   }
-  /** test_msgs/msg/BoundedSequences */
+  /** `test_msgs/msg/BoundedSequences` */
   interface test_msgs__msg__BoundedSequences {
+    /**
+     * Bounded sequences of different types
+     *
+     * At most 3 elements.
+     */
     bool_values: boolean[];
+    /** At most 3 elements. */
     byte_values: Uint8Array | number[];
+    /** At most 3 elements. */
     char_values: Uint8Array | number[];
+    /** At most 3 elements. */
     float32_values: Float32Array | number[];
+    /** At most 3 elements. */
     float64_values: Float64Array | number[];
+    /** At most 3 elements. */
     int8_values: Int8Array | number[];
+    /** At most 3 elements. */
     uint8_values: Uint8Array | number[];
+    /** At most 3 elements. */
     int16_values: Int16Array | number[];
+    /** At most 3 elements. */
     uint16_values: Uint16Array | number[];
+    /** At most 3 elements. */
     int32_values: Int32Array | number[];
+    /** At most 3 elements. */
     uint32_values: Uint32Array | number[];
+    /** At most 3 elements. */
     int64_values: bigint[];
+    /** At most 3 elements. */
     uint64_values: bigint[];
+    /** At most 3 elements. */
     string_values: string[];
+    /** At most 3 elements. */
     basic_types_values: test_msgs__msg__BasicTypes[];
+    /** At most 3 elements. */
     constants_values: test_msgs__msg__Constants[];
+    /** At most 3 elements. */
     defaults_values: test_msgs__msg__Defaults[];
+    /**
+     * At most 3 elements.
+     * @default [false, true, false]
+     */
     bool_values_default: boolean[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 255]
+     */
     byte_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 127]
+     */
     char_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [1.125, 0, -1.125]
+     */
     float32_values_default: Float32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [3.1415, 0, -3.1415]
+     */
     float64_values_default: Float64Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 127, -128]
+     */
     int8_values_default: Int8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 255]
+     */
     uint8_values_default: Uint8Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 32767, -32768]
+     */
     int16_values_default: Int16Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 65535]
+     */
     uint16_values_default: Uint16Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 2147483647, -2147483648]
+     */
     int32_values_default: Int32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0, 1, 4294967295]
+     */
     uint32_values_default: Uint32Array | number[];
+    /**
+     * At most 3 elements.
+     * @default [0n, 9223372036854775807n, -9223372036854775808n]
+     */
     int64_values_default: bigint[];
+    /**
+     * At most 3 elements.
+     * @default [0n, 1n, 18446744073709551615n]
+     */
     uint64_values_default: bigint[];
+    /**
+     * At most 3 elements.
+     * @default ["", "max value", "min value"]
+     */
     string_values_default: string[];
+    /** Regression test: check alignment of basic field after a sequence field is correct */
     alignment_check: number;
   }
-  /** test_msgs/msg/Builtins */
+  /** `test_msgs/msg/Builtins` */
   interface test_msgs__msg__Builtins {
     duration_value: builtin_interfaces__msg__Duration;
     time_value: builtin_interfaces__msg__Time;
   }
-  /** test_msgs/msg/Constants */
+  /** `test_msgs/msg/Constants` */
   interface test_msgs__msg__Constants {
   }
-  /** constants of test_msgs/msg/Constants */
+  /** Constants of `test_msgs/msg/Constants` (also properties of `require("test_msgs/msg/Constants")`). */
   interface test_msgs__msg__Constants__Constants {
     readonly BOOL_CONST: true;
     readonly BYTE_CONST: 50;
@@ -1839,65 +4027,115 @@ declare module "rclbunjs" {
     readonly UINT16_CONST: 2000;
     readonly INT32_CONST: -30000;
     readonly UINT32_CONST: 60000;
-    readonly INT64_CONST: -40000000;
-    readonly UINT64_CONST: 50000000;
+    readonly INT64_CONST: -40000000n;
+    readonly UINT64_CONST: 50000000n;
   }
-  /** test_msgs/msg/Defaults */
+  /** `test_msgs/msg/Defaults` */
   interface test_msgs__msg__Defaults {
+    /** @default true */
     bool_value: boolean;
+    /** @default 50 */
     byte_value: number;
+    /** @default 100 */
     char_value: number;
+    /** @default 1.125 */
     float32_value: number;
+    /** @default 1.125 */
     float64_value: number;
+    /** @default -50 */
     int8_value: number;
+    /** @default 200 */
     uint8_value: number;
+    /** @default -1000 */
     int16_value: number;
+    /** @default 2000 */
     uint16_value: number;
+    /** @default -30000 */
     int32_value: number;
+    /** @default 60000 */
     uint32_value: number;
+    /** @default -40000000n */
     int64_value: bigint;
+    /** @default 50000000n */
     uint64_value: bigint;
   }
-  /** test_msgs/msg/Empty */
+  /** `test_msgs/msg/Empty` */
   interface test_msgs__msg__Empty {
   }
-  /** test_msgs/msg/MultiNested */
+  /** `test_msgs/msg/MultiNested` */
   interface test_msgs__msg__MultiNested {
+    /**
+     * Mulitple levels of nested messages
+     *
+     * Fixed length: 3.
+     */
     array_of_arrays: test_msgs__msg__Arrays[];
+    /** Fixed length: 3. */
     array_of_bounded_sequences: test_msgs__msg__BoundedSequences[];
+    /** Fixed length: 3. */
     array_of_unbounded_sequences: test_msgs__msg__UnboundedSequences[];
+    /** At most 3 elements. */
     bounded_sequence_of_arrays: test_msgs__msg__Arrays[];
+    /** At most 3 elements. */
     bounded_sequence_of_bounded_sequences: test_msgs__msg__BoundedSequences[];
+    /** At most 3 elements. */
     bounded_sequence_of_unbounded_sequences: test_msgs__msg__UnboundedSequences[];
     unbounded_sequence_of_arrays: test_msgs__msg__Arrays[];
     unbounded_sequence_of_bounded_sequences: test_msgs__msg__BoundedSequences[];
     unbounded_sequence_of_unbounded_sequences: test_msgs__msg__UnboundedSequences[];
   }
-  /** test_msgs/msg/Nested */
+  /** `test_msgs/msg/Nested` */
   interface test_msgs__msg__Nested {
     basic_types_value: test_msgs__msg__BasicTypes;
   }
-  /** test_msgs/msg/Strings */
+  /** `test_msgs/msg/Strings` */
   interface test_msgs__msg__Strings {
     string_value: string;
+    /** @default "Hello world!" */
     string_value_default1: string;
+    /** @default "Hello'world!" */
     string_value_default2: string;
+    /** @default "Hello\"world!" */
     string_value_default3: string;
+    /** @default "Hello'world!" */
     string_value_default4: string;
+    /** @default "Hello\"world!" */
     string_value_default5: string;
+    /** At most 22 characters. */
     bounded_string_value: string;
+    /**
+     * At most 22 characters.
+     * @default "Hello world!"
+     */
     bounded_string_value_default1: string;
+    /**
+     * At most 22 characters.
+     * @default "Hello'world!"
+     */
     bounded_string_value_default2: string;
+    /**
+     * At most 22 characters.
+     * @default "Hello\"world!"
+     */
     bounded_string_value_default3: string;
+    /**
+     * At most 22 characters.
+     * @default "Hello'world!"
+     */
     bounded_string_value_default4: string;
+    /**
+     * At most 22 characters.
+     * @default "Hello\"world!"
+     */
     bounded_string_value_default5: string;
   }
-  /** constants of test_msgs/msg/Strings */
+  /** Constants of `test_msgs/msg/Strings` (also properties of `require("test_msgs/msg/Strings")`). */
   interface test_msgs__msg__Strings__Constants {
     readonly STRING_CONST: "Hello world!";
   }
-  /** test_msgs/msg/UnboundedSequences */
+  /** `test_msgs/msg/UnboundedSequences` */
   interface test_msgs__msg__UnboundedSequences {
+    /** Unbounded sequences of different types */
     bool_values: boolean[];
     byte_values: Uint8Array | number[];
     char_values: Uint8Array | number[];
@@ -1915,101 +4153,273 @@ declare module "rclbunjs" {
     basic_types_values: test_msgs__msg__BasicTypes[];
     constants_values: test_msgs__msg__Constants[];
     defaults_values: test_msgs__msg__Defaults[];
+    /** @default [false, true, false] */
     bool_values_default: boolean[];
+    /** @default [0, 1, 255] */
     byte_values_default: Uint8Array | number[];
+    /** @default [0, 1, 127] */
     char_values_default: Uint8Array | number[];
+    /** @default [1.125, 0, -1.125] */
     float32_values_default: Float32Array | number[];
+    /** @default [3.1415, 0, -3.1415] */
     float64_values_default: Float64Array | number[];
+    /** @default [0, 127, -128] */
     int8_values_default: Int8Array | number[];
+    /** @default [0, 1, 255] */
     uint8_values_default: Uint8Array | number[];
+    /** @default [0, 32767, -32768] */
     int16_values_default: Int16Array | number[];
+    /** @default [0, 1, 65535] */
     uint16_values_default: Uint16Array | number[];
+    /** @default [0, 2147483647, -2147483648] */
     int32_values_default: Int32Array | number[];
+    /** @default [0, 1, 4294967295] */
     uint32_values_default: Uint32Array | number[];
+    /** @default [0n, 9223372036854775807n, -9223372036854775808n] */
     int64_values_default: bigint[];
+    /** @default [0n, 1n, 18446744073709551615n] */
     uint64_values_default: bigint[];
+    /** @default ["", "max value", "min value"] */
     string_values_default: string[];
+    /** Regression test: check alignment of basic field after a sequence field is correct */
     alignment_check: number;
   }
-  /** test_msgs/msg/WStrings */
+  /** `test_msgs/msg/WStrings` */
   interface test_msgs__msg__WStrings {
     wstring_value: string;
+    /** @default "Hello world!" */
     wstring_value_default1: string;
+    /** @default "Hellö wörld!" */
     wstring_value_default2: string;
+    /** @default "ハローワールド" */
     wstring_value_default3: string;
+    /**
+     * wstring WSTRING_CONST="Hello world!"
+     * wstring<=22 bounded_wstring_value
+     * wstring<=22 bounded_wstring_value_default1 "Hello world!"
+     *
+     * Fixed length: 3.
+     */
     array_of_wstrings: string[];
+    /** At most 3 elements. */
     bounded_sequence_of_wstrings: string[];
     unbounded_sequence_of_wstrings: string[];
   }
-  /** test_msgs/srv/Arrays_Request */
+  /** `test_msgs/srv/Arrays_Request` */
   interface test_msgs__srv__Arrays_Request {
+    /** Fixed length: 3. */
     bool_values: boolean[];
+    /** Fixed length: 3. */
     byte_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     char_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     float32_values: Float32Array | number[];
+    /** Fixed length: 3. */
     float64_values: Float64Array | number[];
+    /** Fixed length: 3. */
     int8_values: Int8Array | number[];
+    /** Fixed length: 3. */
     uint8_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     int16_values: Int16Array | number[];
+    /** Fixed length: 3. */
     uint16_values: Uint16Array | number[];
+    /** Fixed length: 3. */
     int32_values: Int32Array | number[];
+    /** Fixed length: 3. */
     uint32_values: Uint32Array | number[];
+    /** Fixed length: 3. */
     int64_values: bigint[];
+    /** Fixed length: 3. */
     uint64_values: bigint[];
+    /** Fixed length: 3. */
     string_values: string[];
+    /** Fixed length: 3. */
     basic_types_values: test_msgs__msg__BasicTypes[];
+    /** Fixed length: 3. */
     constants_values: test_msgs__msg__Constants[];
+    /** Fixed length: 3. */
     defaults_values: test_msgs__msg__Defaults[];
+    /**
+     * Fixed length: 3.
+     * @default [false, true, false]
+     */
     bool_values_default: boolean[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     byte_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 127]
+     */
     char_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [1.125, 0, -1.125]
+     */
     float32_values_default: Float32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [3.1415, 0, -3.1415]
+     */
     float64_values_default: Float64Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 127, -128]
+     */
     int8_values_default: Int8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     uint8_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 32767, -32768]
+     */
     int16_values_default: Int16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 65535]
+     */
     uint16_values_default: Uint16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 2147483647, -2147483648]
+     */
     int32_values_default: Int32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 4294967295]
+     */
     uint32_values_default: Uint32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 9223372036854775807n, -9223372036854775808n]
+     */
     int64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 1n, 18446744073709551615n]
+     */
     uint64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default ["", "max value", "min value"]
+     */
     string_values_default: string[];
   }
-  /** test_msgs/srv/Arrays_Response */
+  /** `test_msgs/srv/Arrays_Response` */
   interface test_msgs__srv__Arrays_Response {
+    /** Fixed length: 3. */
     bool_values: boolean[];
+    /** Fixed length: 3. */
     byte_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     char_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     float32_values: Float32Array | number[];
+    /** Fixed length: 3. */
     float64_values: Float64Array | number[];
+    /** Fixed length: 3. */
     int8_values: Int8Array | number[];
+    /** Fixed length: 3. */
     uint8_values: Uint8Array | number[];
+    /** Fixed length: 3. */
     int16_values: Int16Array | number[];
+    /** Fixed length: 3. */
     uint16_values: Uint16Array | number[];
+    /** Fixed length: 3. */
     int32_values: Int32Array | number[];
+    /** Fixed length: 3. */
     uint32_values: Uint32Array | number[];
+    /** Fixed length: 3. */
     int64_values: bigint[];
+    /** Fixed length: 3. */
     uint64_values: bigint[];
+    /** Fixed length: 3. */
     string_values: string[];
+    /** Fixed length: 3. */
     basic_types_values: test_msgs__msg__BasicTypes[];
+    /** Fixed length: 3. */
     constants_values: test_msgs__msg__Constants[];
+    /** Fixed length: 3. */
     defaults_values: test_msgs__msg__Defaults[];
+    /**
+     * Fixed length: 3.
+     * @default [false, true, false]
+     */
     bool_values_default: boolean[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     byte_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 127]
+     */
     char_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [1.125, 0, -1.125]
+     */
     float32_values_default: Float32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [3.1415, 0, -3.1415]
+     */
     float64_values_default: Float64Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 127, -128]
+     */
     int8_values_default: Int8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 255]
+     */
     uint8_values_default: Uint8Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 32767, -32768]
+     */
     int16_values_default: Int16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 65535]
+     */
     uint16_values_default: Uint16Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 2147483647, -2147483648]
+     */
     int32_values_default: Int32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0, 1, 4294967295]
+     */
     uint32_values_default: Uint32Array | number[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 9223372036854775807n, -9223372036854775808n]
+     */
     int64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default [0n, 1n, 18446744073709551615n]
+     */
     uint64_values_default: bigint[];
+    /**
+     * Fixed length: 3.
+     * @default ["", "max value", "min value"]
+     */
     string_values_default: string[];
   }
-  /** test_msgs/srv/BasicTypes_Request */
+  /** `test_msgs/srv/BasicTypes_Request` */
   interface test_msgs__srv__BasicTypes_Request {
     bool_value: boolean;
     byte_value: number;
@@ -2026,7 +4436,7 @@ declare module "rclbunjs" {
     uint64_value: bigint;
     string_value: string;
   }
-  /** test_msgs/srv/BasicTypes_Response */
+  /** `test_msgs/srv/BasicTypes_Response` */
   interface test_msgs__srv__BasicTypes_Response {
     bool_value: boolean;
     byte_value: number;
@@ -2043,100 +4453,145 @@ declare module "rclbunjs" {
     uint64_value: bigint;
     string_value: string;
   }
-  /** test_msgs/srv/Empty_Request */
+  /** `test_msgs/srv/Empty_Request` */
   interface test_msgs__srv__Empty_Request {
   }
-  /** test_msgs/srv/Empty_Response */
+  /** `test_msgs/srv/Empty_Response` */
   interface test_msgs__srv__Empty_Response {
   }
-  /** tf2_msgs/action/LookupTransform_Feedback */
-  interface tf2_msgs__action__LookupTransform_Feedback {
-  }
-  /** tf2_msgs/action/LookupTransform_Goal */
-  interface tf2_msgs__action__LookupTransform_Goal {
-    target_frame: string;
-    source_frame: string;
-    source_time: builtin_interfaces__msg__Time;
-    timeout: builtin_interfaces__msg__Duration;
-    target_time: builtin_interfaces__msg__Time;
-    fixed_frame: string;
-    advanced: boolean;
-  }
-  /** tf2_msgs/action/LookupTransform_Result */
-  interface tf2_msgs__action__LookupTransform_Result {
-    transform: geometry_msgs__msg__TransformStamped;
-    error: tf2_msgs__msg__TF2Error;
-  }
-  /** tf2_msgs/msg/TF2Error */
-  interface tf2_msgs__msg__TF2Error {
-    error: number;
-    error_string: string;
-  }
-  /** constants of tf2_msgs/msg/TF2Error */
-  interface tf2_msgs__msg__TF2Error__Constants {
-    readonly NO_ERROR: 0;
-    readonly LOOKUP_ERROR: 1;
-    readonly CONNECTIVITY_ERROR: 2;
-    readonly EXTRAPOLATION_ERROR: 3;
-    readonly INVALID_ARGUMENT_ERROR: 4;
-    readonly TIMEOUT_ERROR: 5;
-    readonly TRANSFORM_ERROR: 6;
-  }
-  /** tf2_msgs/msg/TFMessage */
-  interface tf2_msgs__msg__TFMessage {
-    transforms: geometry_msgs__msg__TransformStamped[];
-  }
-  /** tf2_msgs/srv/FrameGraph_Request */
-  interface tf2_msgs__srv__FrameGraph_Request {
-  }
-  /** tf2_msgs/srv/FrameGraph_Response */
-  interface tf2_msgs__srv__FrameGraph_Response {
-    frame_yaml: string;
-  }
-  /** trajectory_msgs/msg/JointTrajectory */
+  /** `trajectory_msgs/msg/JointTrajectory` */
   interface trajectory_msgs__msg__JointTrajectory {
+    /**
+     * The header is used to specify the coordinate frame and the reference time for
+     * the trajectory durations
+     */
     header: std_msgs__msg__Header;
+    /**
+     * The names of the active joints in each trajectory point. These names are
+     * ordered and must correspond to the values in each trajectory point.
+     */
     joint_names: string[];
+    /**
+     * Array of trajectory points, which describe the positions, velocities,
+     * accelerations and/or efforts of the joints at each time point.
+     */
     points: trajectory_msgs__msg__JointTrajectoryPoint[];
   }
-  /** trajectory_msgs/msg/JointTrajectoryPoint */
+  /**
+   * Each trajectory point specifies either positions[, velocities[, accelerations]]
+   * or positions[, effort] for the trajectory to be executed.
+   * All specified values are in the same order as the joint names in JointTrajectory.msg.
+   *
+   * `trajectory_msgs/msg/JointTrajectoryPoint`
+   */
   interface trajectory_msgs__msg__JointTrajectoryPoint {
+    /**
+     * Single DOF joint positions for each joint relative to their "0" position.
+     * The units depend on the specific joint type: radians for revolute or
+     * continuous joints, and meters for prismatic joints.
+     */
     positions: Float64Array | number[];
+    /**
+     * The rate of change in position of each joint. Units are joint type dependent.
+     * Radians/second for revolute or continuous joints, and meters/second for
+     * prismatic joints.
+     */
     velocities: Float64Array | number[];
+    /**
+     * Rate of change in velocity of each joint. Units are joint type dependent.
+     * Radians/second^2 for revolute or continuous joints, and meters/second^2 for
+     * prismatic joints.
+     */
     accelerations: Float64Array | number[];
+    /**
+     * The torque or the force to be applied at each joint. For revolute/continuous
+     * joints effort denotes a torque in newton-meters. For prismatic joints, effort
+     * denotes a force in newtons.
+     */
     effort: Float64Array | number[];
+    /** Desired time from the trajectory start to arrive at this trajectory point. */
     time_from_start: builtin_interfaces__msg__Duration;
   }
-  /** trajectory_msgs/msg/MultiDOFJointTrajectory */
+  /** `trajectory_msgs/msg/MultiDOFJointTrajectory` */
   interface trajectory_msgs__msg__MultiDOFJointTrajectory {
+    /** The header is used to specify the coordinate frame and the reference time for the trajectory durations */
     header: std_msgs__msg__Header;
     joint_names: string[];
     points: trajectory_msgs__msg__MultiDOFJointTrajectoryPoint[];
   }
-  /** trajectory_msgs/msg/MultiDOFJointTrajectoryPoint */
+  /** `trajectory_msgs/msg/MultiDOFJointTrajectoryPoint` */
   interface trajectory_msgs__msg__MultiDOFJointTrajectoryPoint {
+    /** Each multi-dof joint can specify a transform (up to 6 DOF). */
     transforms: geometry_msgs__msg__Transform[];
+    /** There can be a velocity specified for the origin of the joint. */
     velocities: geometry_msgs__msg__Twist[];
+    /** There can be an acceleration specified for the origin of the joint. */
     accelerations: geometry_msgs__msg__Twist[];
+    /** Desired time from the trajectory start to arrive at this trajectory point. */
     time_from_start: builtin_interfaces__msg__Duration;
   }
-  /** type_description_interfaces/msg/Field */
+  /**
+   * Represents a single field in a type.
+   *
+   * `type_description_interfaces/msg/Field`
+   */
   interface type_description_interfaces__msg__Field {
+    /** Name of the field. */
     name: string;
+    /** Type of the field, including details about the type like length, nested name, etc. */
     type: type_description_interfaces__msg__FieldType;
+    /**
+     * Literal default value of the field as a string, as it appeared in the original
+     * message description file, whether that be .msg/.srv/.action or .idl.
+     */
     default_value: string;
   }
-  /** type_description_interfaces/msg/FieldType */
+  /**
+   * Represents the type of a field and related meta-data.
+   *
+   * `type_description_interfaces/msg/FieldType`
+   */
   interface type_description_interfaces__msg__FieldType {
+    /**
+     * Identifying number for the type of the field, using one of the above constants.
+     *
+     * @default 0
+     */
     type_id: number;
+    /**
+     * Only used when the type is an array or a bounded sequence.
+     * In the case of an array, this is the fixed capacity of the array.
+     * In the case of a bounded sequence, this is the maximum capacity of the sequence.
+     * In all other cases this field is unused.
+     */
     capacity: bigint;
+    /**
+     * Only used when the type is a fixed or bounded string/wstring, or a array/sequence of those.
+     * In the case of a fixed string/wstring, it is the fixed length of the string.
+     * In the case of a bounded string/wstring, it is the maximum capacity of the string.
+     * In the case of an array/sequence of fixed string/wstring, it is the fixed length of the strings.
+     * In the case of an array/sequence of bounded string/wstring, it is the maximum capacity of the strings.
+     * It is not currently possible to have different string capacities per element in the array/sequence.
+     */
     string_capacity: bigint;
+    /**
+     * Only used when the type is a nested type or array/sequence of nested types.
+     * This is limited to 255 characters.
+     * TODO(wjwwood): this 255 character limit was chosen due to this being the limit
+     *   for DDSI-RTPS based middlewares, which is the most commonly used right now.
+     *   We lack a ROS 2 specific limit in our design documents, but we should update
+     *   this and/or link to the design doc when that is available.
+     *
+     * At most 255 characters.
+     */
     nested_type_name: string;
   }
-  /** constants of type_description_interfaces/msg/FieldType */
+  /** Constants of `type_description_interfaces/msg/FieldType` (also properties of `require("type_description_interfaces/msg/FieldType")`). */
   interface type_description_interfaces__msg__FieldType__Constants {
     readonly FIELD_TYPE_NOT_SET: 0;
+    /** Nested type defined in other .msg/.idl files. */
     readonly FIELD_TYPE_NESTED_TYPE: 1;
+    /** Integer Types */
     readonly FIELD_TYPE_INT8: 2;
     readonly FIELD_TYPE_UINT8: 3;
     readonly FIELD_TYPE_INT16: 4;
@@ -2145,19 +4600,27 @@ declare module "rclbunjs" {
     readonly FIELD_TYPE_UINT32: 7;
     readonly FIELD_TYPE_INT64: 8;
     readonly FIELD_TYPE_UINT64: 9;
+    /** Floating-Point Types */
     readonly FIELD_TYPE_FLOAT: 10;
     readonly FIELD_TYPE_DOUBLE: 11;
     readonly FIELD_TYPE_LONG_DOUBLE: 12;
+    /** Char and WChar Types */
     readonly FIELD_TYPE_CHAR: 13;
     readonly FIELD_TYPE_WCHAR: 14;
+    /** Boolean Type */
     readonly FIELD_TYPE_BOOLEAN: 15;
+    /** Byte/Octet Type */
     readonly FIELD_TYPE_BYTE: 16;
+    /** String Types */
     readonly FIELD_TYPE_STRING: 17;
     readonly FIELD_TYPE_WSTRING: 18;
+    /** Fixed String Types */
     readonly FIELD_TYPE_FIXED_STRING: 19;
     readonly FIELD_TYPE_FIXED_WSTRING: 20;
+    /** Bounded String Types */
     readonly FIELD_TYPE_BOUNDED_STRING: 21;
     readonly FIELD_TYPE_BOUNDED_WSTRING: 22;
+    /** Fixed Sized Array Types */
     readonly FIELD_TYPE_NESTED_TYPE_ARRAY: 49;
     readonly FIELD_TYPE_INT8_ARRAY: 50;
     readonly FIELD_TYPE_UINT8_ARRAY: 51;
@@ -2180,6 +4643,7 @@ declare module "rclbunjs" {
     readonly FIELD_TYPE_FIXED_WSTRING_ARRAY: 68;
     readonly FIELD_TYPE_BOUNDED_STRING_ARRAY: 69;
     readonly FIELD_TYPE_BOUNDED_WSTRING_ARRAY: 70;
+    /** Bounded Sequence Types */
     readonly FIELD_TYPE_NESTED_TYPE_BOUNDED_SEQUENCE: 97;
     readonly FIELD_TYPE_INT8_BOUNDED_SEQUENCE: 98;
     readonly FIELD_TYPE_UINT8_BOUNDED_SEQUENCE: 99;
@@ -2202,6 +4666,7 @@ declare module "rclbunjs" {
     readonly FIELD_TYPE_FIXED_WSTRING_BOUNDED_SEQUENCE: 116;
     readonly FIELD_TYPE_BOUNDED_STRING_BOUNDED_SEQUENCE: 117;
     readonly FIELD_TYPE_BOUNDED_WSTRING_BOUNDED_SEQUENCE: 118;
+    /** Unbounded Sequence Types */
     readonly FIELD_TYPE_NESTED_TYPE_UNBOUNDED_SEQUENCE: 145;
     readonly FIELD_TYPE_INT8_UNBOUNDED_SEQUENCE: 146;
     readonly FIELD_TYPE_UINT8_UNBOUNDED_SEQUENCE: 147;
@@ -2225,62 +4690,152 @@ declare module "rclbunjs" {
     readonly FIELD_TYPE_BOUNDED_STRING_UNBOUNDED_SEQUENCE: 165;
     readonly FIELD_TYPE_BOUNDED_WSTRING_UNBOUNDED_SEQUENCE: 166;
   }
-  /** type_description_interfaces/msg/IndividualTypeDescription */
+  /**
+   * Represents a single type, without the types it references, if any.
+   *
+   * `type_description_interfaces/msg/IndividualTypeDescription`
+   */
   interface type_description_interfaces__msg__IndividualTypeDescription {
+    /**
+     * Name of the type.
+     * This is limited to 255 characters.
+     * TODO(wjwwood): this 255 character limit was chosen due to this being the limit
+     *   for DDSI-RTPS based middlewares, which is the most commonly used right now.
+     *   We lack a ROS 2 specific limit in our design documents, but we should update
+     *   this and/or link to the design doc when that is available.
+     *
+     * At most 255 characters.
+     */
     type_name: string;
+    /** Fields of the type. */
     fields: type_description_interfaces__msg__Field[];
   }
-  /** type_description_interfaces/msg/KeyValue */
+  /**
+   * Represents an arbitrary key-value pair for application-specific information.
+   *
+   * `type_description_interfaces/msg/KeyValue`
+   */
   interface type_description_interfaces__msg__KeyValue {
     key: string;
     value: string;
   }
-  /** type_description_interfaces/msg/TypeDescription */
+  /**
+   * Represents a complete type description, including the type itself as well as the types it references.
+   *
+   * `type_description_interfaces/msg/TypeDescription`
+   */
   interface type_description_interfaces__msg__TypeDescription {
+    /** Description of the type. */
     type_description: type_description_interfaces__msg__IndividualTypeDescription;
+    /** Descriptions of all referenced types, recursively. */
     referenced_type_descriptions: type_description_interfaces__msg__IndividualTypeDescription[];
   }
-  /** type_description_interfaces/msg/TypeSource */
+  /**
+   * Represents the original source of a ROS 2 interface definition.
+   *
+   * `type_description_interfaces/msg/TypeSource`
+   */
   interface type_description_interfaces__msg__TypeSource {
+    /** ROS interface type name, in PACKAGE/NAMESPACE/TYPENAME format. */
     type_name: string;
+    /**
+     * The type of the original source file, typically matching the file extension.
+     * Well-known encodings: "idl", "msg", "srv", "action", "dynamic", "implicit".
+     * "dynamic" specifies a type created programmatically by a user, thus having no source.
+     * "implicit" specifies a type created automatically as a subtype of a
+     * complex type (service or action) - such as the request message for a service.
+     * Implicit types will have no contents, the full source will be available on the parent srv/action.
+     */
     encoding: string;
+    /**
+     * Dumped contents of the interface definition source file.
+     * If `encoding` is "dynamic" or "implicit", this field will be empty.
+     */
     raw_file_contents: string;
   }
-  /** type_description_interfaces/srv/GetTypeDescription_Request */
+  /** `type_description_interfaces/srv/GetTypeDescription_Request` */
   interface type_description_interfaces__srv__GetTypeDescription_Request {
+    /** ROS interface type name, in PACKAGE/NAMESPACE/TYPENAME format. */
     type_name: string;
+    /** REP-2011 RIHS hash string. */
     type_hash: string;
+    /**
+     * Whether to return the original idl/msg/etc. source file(s) in the response.
+     *
+     * @default true
+     */
     include_type_sources: boolean;
   }
-  /** type_description_interfaces/srv/GetTypeDescription_Response */
+  /** `type_description_interfaces/srv/GetTypeDescription_Response` */
   interface type_description_interfaces__srv__GetTypeDescription_Response {
+    /**
+     * True if the type description information is available and populated in the response.
+     * If false, all other fields except `failure_reason` are considered undefined.
+     */
     successful: boolean;
+    /**
+     * If `successful` is false, contains a reason for failure.
+     * If `successful` is true, this is left empty.
+     */
     failure_reason: string;
+    /** The parsed type description which can be used programmatically. */
     type_description: type_description_interfaces__msg__TypeDescription;
+    /**
+     * A list containing the interface definition source text of the requested type,
+     * plus all types it recursively depends on.
+     * Each source text is a copy of the original contents of the
+     * .msg, .srv, .action, .idl, or other file if it exists, including comments and whitespace.
+     * Sources can be matched with IndividualTypeDescriptions by their `type_name`.
+     * The `encoding` field of each entry informs how to interpret its contents.
+     */
     type_sources: type_description_interfaces__msg__TypeSource[];
+    /** Key-value pairs of extra information. */
     extra_information: type_description_interfaces__msg__KeyValue[];
   }
-  /** unique_identifier_msgs/msg/UUID */
+  /**
+   * A universally unique identifier (UUID).
+   *
+   *  http://en.wikipedia.org/wiki/Universally_unique_identifier
+   *  http://tools.ietf.org/html/rfc4122.html
+   *
+   * `unique_identifier_msgs/msg/UUID`
+   */
   interface unique_identifier_msgs__msg__UUID {
+    /** Fixed length: 16. */
     uuid: Uint8Array | number[];
   }
-  /** visualization_msgs/msg/ImageMarker */
+  /** `visualization_msgs/msg/ImageMarker` */
   interface visualization_msgs__msg__ImageMarker {
     header: std_msgs__msg__Header;
+    /** Namespace which is used with the id to form a unique id. */
     ns: string;
+    /** Unique id within the namespace. */
     id: number;
+    /** One of the above types, e.g. CIRCLE, LINE_STRIP, etc. */
     type: number;
+    /** Either ADD or REMOVE. */
     action: number;
+    /** Two-dimensional coordinate position, in pixel-coordinates. */
     position: geometry_msgs__msg__Point;
+    /** The scale of the object, e.g. the diameter for a CIRCLE. */
     scale: number;
+    /** The outline color of the marker. */
     outline_color: std_msgs__msg__ColorRGBA;
+    /** Whether or not to fill in the shape with color. */
     filled: number;
+    /** Fill color; in the range: [0.0-1.0] */
     fill_color: std_msgs__msg__ColorRGBA;
+    /**
+     * How long the object should last before being automatically deleted.
+     * 0 indicates forever.
+     */
     lifetime: builtin_interfaces__msg__Duration;
+    /** Coordinates in 2D in pixel coords. Used for LINE_STRIP, LINE_LIST, POINTS, etc. */
     points: geometry_msgs__msg__Point[];
+    /** The color for each line, point, etc. in the points field. */
     outline_colors: std_msgs__msg__ColorRGBA[];
   }
-  /** constants of visualization_msgs/msg/ImageMarker */
+  /** Constants of `visualization_msgs/msg/ImageMarker` (also properties of `require("visualization_msgs/msg/ImageMarker")`). */
   interface visualization_msgs__msg__ImageMarker__Constants {
     readonly CIRCLE: 0;
     readonly LINE_STRIP: 1;
@@ -2290,32 +4845,104 @@ declare module "rclbunjs" {
     readonly ADD: 0;
     readonly REMOVE: 1;
   }
-  /** visualization_msgs/msg/InteractiveMarker */
+  /** `visualization_msgs/msg/InteractiveMarker` */
   interface visualization_msgs__msg__InteractiveMarker {
+    /**
+     * Time/frame info.
+     * If header.time is set to 0, the marker will be retransformed into
+     * its frame on each timestep. You will receive the pose feedback
+     * in the same frame.
+     * Otherwise, you might receive feedback in a different frame.
+     * For rviz, this will be the current 'fixed frame' set by the user.
+     */
     header: std_msgs__msg__Header;
+    /** Initial pose. Also, defines the pivot point for rotations. */
     pose: geometry_msgs__msg__Pose;
+    /**
+     * Identifying string. Must be globally unique in
+     * the topic that this message is sent through.
+     */
     name: string;
+    /** Short description (< 40 characters). */
     description: string;
+    /** Scale to be used for default controls (default=1). */
     scale: number;
+    /** All menu and submenu entries associated with this marker. */
     menu_entries: visualization_msgs__msg__MenuEntry[];
+    /** List of controls displayed for this marker. */
     controls: visualization_msgs__msg__InteractiveMarkerControl[];
   }
-  /** visualization_msgs/msg/InteractiveMarkerControl */
+  /**
+   * Represents a control that is to be displayed together with an interactive marker
+   *
+   * `visualization_msgs/msg/InteractiveMarkerControl`
+   */
   interface visualization_msgs__msg__InteractiveMarkerControl {
+    /**
+     * Identifying string for this control.
+     * You need to assign a unique value to this to receive feedback from the GUI
+     * on what actions the user performs on this control (e.g. a button click).
+     */
     name: string;
+    /**
+     * Defines the local coordinate frame (relative to the pose of the parent
+     * interactive marker) in which is being rotated and translated.
+     * Default: Identity
+     */
     orientation: geometry_msgs__msg__Quaternion;
     orientation_mode: number;
     interaction_mode: number;
+    /**
+     * If true, the contained markers will also be visible
+     * when the gui is not in interactive mode.
+     */
     always_visible: boolean;
+    /**
+     * Markers to be displayed as custom visual representation.
+     * Leave this empty to use the default control handles.
+     *
+     * Note:
+     * - The markers can be defined in an arbitrary coordinate frame,
+     *   but will be transformed into the local frame of the interactive marker.
+     * - If the header of a marker is empty, its pose will be interpreted as
+     *   relative to the pose of the parent interactive marker.
+     */
     markers: visualization_msgs__msg__Marker[];
+    /**
+     * In VIEW_FACING mode, set this to true if you don't want the markers
+     * to be aligned with the camera view point. The markers will show up
+     * as in INHERIT mode.
+     */
     independent_marker_orientation: boolean;
+    /**
+     * Short description (< 40 characters) of what this control does,
+     * e.g. "Move the robot".
+     * Default: A generic description based on the interaction mode
+     */
     description: string;
   }
-  /** constants of visualization_msgs/msg/InteractiveMarkerControl */
+  /** Constants of `visualization_msgs/msg/InteractiveMarkerControl` (also properties of `require("visualization_msgs/msg/InteractiveMarkerControl")`). */
   interface visualization_msgs__msg__InteractiveMarkerControl__Constants {
+    /**
+     * Orientation mode: controls how orientation changes.
+     * INHERIT: Follow orientation of interactive marker
+     * FIXED: Keep orientation fixed at initial state
+     * VIEW_FACING: Align y-z plane with screen (x: forward, y:left, z:up).
+     */
     readonly INHERIT: 0;
     readonly FIXED: 1;
     readonly VIEW_FACING: 2;
+    /**
+     * Interaction mode for this control
+     *
+     * NONE: This control is only meant for visualization; no context menu.
+     * MENU: Like NONE, but right-click menu is active.
+     * BUTTON: Element can be left-clicked.
+     * MOVE_AXIS: Translate along local x-axis.
+     * MOVE_PLANE: Translate in local y-z plane.
+     * ROTATE_AXIS: Rotate around local x-axis.
+     * MOVE_ROTATE: Combines MOVE_PLANE and ROTATE_AXIS.
+     */
     readonly NONE: 0;
     readonly MENU: 1;
     readonly BUTTON: 2;
@@ -2323,24 +4950,54 @@ declare module "rclbunjs" {
     readonly MOVE_PLANE: 4;
     readonly ROTATE_AXIS: 5;
     readonly MOVE_ROTATE: 6;
+    /**
+     * "3D" interaction modes work with the mouse+SHIFT+CTRL or with 3D cursors.
+     * MOVE_3D: Translate freely in 3D space.
+     * ROTATE_3D: Rotate freely in 3D space about the origin of parent frame.
+     * MOVE_ROTATE_3D: Full 6-DOF freedom of translation and rotation about the cursor origin.
+     */
     readonly MOVE_3D: 7;
     readonly ROTATE_3D: 8;
     readonly MOVE_ROTATE_3D: 9;
   }
-  /** visualization_msgs/msg/InteractiveMarkerFeedback */
+  /** `visualization_msgs/msg/InteractiveMarkerFeedback` */
   interface visualization_msgs__msg__InteractiveMarkerFeedback {
+    /** Time/frame info. */
     header: std_msgs__msg__Header;
+    /** Identifying string. Must be unique in the topic namespace. */
     client_id: string;
+    /** Specifies which interactive marker and control this message refers to */
     marker_name: string;
     control_name: string;
     event_type: number;
+    /**
+     * Current pose of the marker
+     * Note: Has to be valid for all feedback types.
+     */
     pose: geometry_msgs__msg__Pose;
+    /**
+     * Contains the ID of the selected menu entry
+     * Only valid for MENU_SELECT events.
+     */
     menu_entry_id: number;
+    /**
+     * If event_type is BUTTON_CLICK, MOUSE_DOWN, or MOUSE_UP, mouse_point
+     * may contain the 3 dimensional position of the event on the
+     * control.  If it does, mouse_point_valid will be true.  mouse_point
+     * will be relative to the frame listed in the header.
+     */
     mouse_point: geometry_msgs__msg__Point;
     mouse_point_valid: boolean;
   }
-  /** constants of visualization_msgs/msg/InteractiveMarkerFeedback */
+  /** Constants of `visualization_msgs/msg/InteractiveMarkerFeedback` (also properties of `require("visualization_msgs/msg/InteractiveMarkerFeedback")`). */
   interface visualization_msgs__msg__InteractiveMarkerFeedback__Constants {
+    /**
+     * Type of the event
+     * KEEP_ALIVE: sent while dragging to keep up control of the marker
+     * MENU_SELECT: a menu entry has been selected
+     * BUTTON_CLICK: a button control has been clicked
+     * POSE_UPDATE: the pose has been changed using one of the controls
+     */
     readonly KEEP_ALIVE: 0;
     readonly POSE_UPDATE: 1;
     readonly MENU_SELECT: 2;
@@ -2348,55 +5005,149 @@ declare module "rclbunjs" {
     readonly MOUSE_DOWN: 4;
     readonly MOUSE_UP: 5;
   }
-  /** visualization_msgs/msg/InteractiveMarkerInit */
+  /** `visualization_msgs/msg/InteractiveMarkerInit` */
   interface visualization_msgs__msg__InteractiveMarkerInit {
+    /**
+     * Identifying string. Must be unique in the topic namespace
+     * that this server works on.
+     */
     server_id: string;
+    /**
+     * Sequence number.
+     * The client will use this to detect if it has missed a subsequent
+     * update.  Every update message will have the same sequence number as
+     * an init message.  Clients will likely want to unsubscribe from the
+     * init topic after a successful initialization to avoid receiving
+     * duplicate data.
+     */
     seq_num: bigint;
+    /** All markers. */
     markers: visualization_msgs__msg__InteractiveMarker[];
   }
-  /** visualization_msgs/msg/InteractiveMarkerPose */
+  /** `visualization_msgs/msg/InteractiveMarkerPose` */
   interface visualization_msgs__msg__InteractiveMarkerPose {
+    /** Time/frame info. */
     header: std_msgs__msg__Header;
+    /** Initial pose. Also, defines the pivot point for rotations. */
     pose: geometry_msgs__msg__Pose;
+    /**
+     * Identifying string. Must be globally unique in
+     * the topic that this message is sent through.
+     */
     name: string;
   }
-  /** visualization_msgs/msg/InteractiveMarkerUpdate */
+  /** `visualization_msgs/msg/InteractiveMarkerUpdate` */
   interface visualization_msgs__msg__InteractiveMarkerUpdate {
+    /**
+     * Identifying string. Must be unique in the topic namespace
+     * that this server works on.
+     */
     server_id: string;
+    /**
+     * Sequence number.
+     * The client will use this to detect if it has missed an update.
+     */
     seq_num: bigint;
     type: number;
+    /** Markers to be added or updated */
     markers: visualization_msgs__msg__InteractiveMarker[];
+    /** Poses of markers that should be moved */
     poses: visualization_msgs__msg__InteractiveMarkerPose[];
+    /** Names of markers to be erased */
     erases: string[];
   }
-  /** constants of visualization_msgs/msg/InteractiveMarkerUpdate */
+  /** Constants of `visualization_msgs/msg/InteractiveMarkerUpdate` (also properties of `require("visualization_msgs/msg/InteractiveMarkerUpdate")`). */
   interface visualization_msgs__msg__InteractiveMarkerUpdate__Constants {
+    /**
+     * Type holds the purpose of this message.  It must be one of UPDATE or KEEP_ALIVE.
+     * UPDATE: Incremental update to previous state.
+     *         The sequence number must be 1 higher than for
+     *         the previous update.
+     * KEEP_ALIVE: Indicates the that the server is still living.
+     *             The sequence number does not increase.
+     *             No payload data should be filled out (markers, poses, or erases).
+     */
     readonly KEEP_ALIVE: 0;
     readonly UPDATE: 1;
   }
-  /** visualization_msgs/msg/Marker */
+  /**
+   * See:
+   *  - http://www.ros.org/wiki/rviz/DisplayTypes/Marker
+   *  - http://www.ros.org/wiki/rviz/Tutorials/Markers%3A%20Basic%20Shapes
+   *
+   * for more information on using this message with rviz.
+   *
+   * `visualization_msgs/msg/Marker`
+   */
   interface visualization_msgs__msg__Marker {
+    /** Header for timestamp and frame id. */
     header: std_msgs__msg__Header;
+    /**
+     * Namespace in which to place the object.
+     * Used in conjunction with id to create a unique name for the object.
+     */
     ns: string;
+    /** Object ID used in conjunction with the namespace for manipulating and deleting the object later. */
     id: number;
+    /** Type of object. */
     type: number;
+    /**
+     * Action to take; one of:
+     *  - 0 add/modify an object
+     *  - 1 (deprecated)
+     *  - 2 deletes an object (with the given ns and id)
+     *  - 3 deletes all objects (or those with the given ns if any)
+     */
     action: number;
+    /** Pose of the object with respect the frame_id specified in the header. */
     pose: geometry_msgs__msg__Pose;
+    /** Scale of the object; 1,1,1 means default (usually 1 meter square). */
     scale: geometry_msgs__msg__Vector3;
+    /** Color of the object; in the range: [0.0-1.0] */
     color: std_msgs__msg__ColorRGBA;
+    /**
+     * How long the object should last before being automatically deleted.
+     * 0 indicates forever.
+     */
     lifetime: builtin_interfaces__msg__Duration;
+    /** If this marker should be frame-locked, i.e. retransformed into its frame every timestep. */
     frame_locked: boolean;
+    /** Only used if the type specified has some use for them (eg. POINTS, LINE_STRIP, ARROW_STRIP, etc.) */
     points: geometry_msgs__msg__Point[];
+    /**
+     * Only used if the type specified has some use for them (eg. POINTS, LINE_STRIP, etc.)
+     * The number of colors provided must either be 0 or equal to the number of points provided.
+     * NOTE: alpha is not yet used
+     */
     colors: std_msgs__msg__ColorRGBA[];
+    /**
+     * Texture resource is a special URI that can either reference a texture file in
+     * a format acceptable to (resource retriever)[https://docs.ros.org/en/rolling/p/resource_retriever/]
+     * or an embedded texture via a string matching the format:
+     *   "embedded://texture_name"
+     */
     texture_resource: string;
+    /**
+     * An image to be loaded into the rendering engine as the texture for this marker.
+     * This will be used iff texture_resource is set to embedded.
+     */
     texture: sensor_msgs__msg__CompressedImage;
+    /** Location of each vertex within the texture; in the range: [0.0-1.0] */
     uv_coordinates: visualization_msgs__msg__UVCoordinate[];
+    /** Only used for text markers */
     text: string;
+    /**
+     * Only used for MESH_RESOURCE markers.
+     * Similar to texture_resource, mesh_resource uses resource retriever to load a mesh.
+     * Optionally, a mesh file can be sent in-message via the mesh_file field. If doing so,
+     * use the following format for mesh_resource:
+     *   "embedded://mesh_name"
+     */
     mesh_resource: string;
     mesh_file: visualization_msgs__msg__MeshFile;
     mesh_use_embedded_materials: boolean;
   }
-  /** constants of visualization_msgs/msg/Marker */
+  /** Constants of `visualization_msgs/msg/Marker` (also properties of `require("visualization_msgs/msg/Marker")`). */
   interface visualization_msgs__msg__Marker__Constants {
     readonly ARROW: 0;
     readonly CUBE: 1;
@@ -2416,41 +5167,143 @@ declare module "rclbunjs" {
     readonly DELETE: 2;
     readonly DELETEALL: 3;
   }
-  /** visualization_msgs/msg/MarkerArray */
+  /** `visualization_msgs/msg/MarkerArray` */
   interface visualization_msgs__msg__MarkerArray {
     markers: visualization_msgs__msg__Marker[];
   }
-  /** visualization_msgs/msg/MenuEntry */
+  /**
+   * MenuEntry message.
+   *
+   * Each InteractiveMarker message has an array of MenuEntry messages.
+   * A collection of MenuEntries together describe a
+   * menu/submenu/subsubmenu/etc tree, though they are stored in a flat
+   * array.  The tree structure is represented by giving each menu entry
+   * an ID number and a "parent_id" field.  Top-level entries are the
+   * ones with parent_id = 0.  Menu entries are ordered within their
+   * level the same way they are ordered in the containing array.  Parent
+   * entries must appear before their children.
+   *
+   * Example:
+   * - id = 3
+   *   parent_id = 0
+   *   title = "fun"
+   * - id = 2
+   *   parent_id = 0
+   *   title = "robot"
+   * - id = 4
+   *   parent_id = 2
+   *   title = "pr2"
+   * - id = 5
+   *   parent_id = 2
+   *   title = "turtle"
+   *
+   * Gives a menu tree like this:
+   *  - fun
+   *  - robot
+   *    - pr2
+   *    - turtle
+   *
+   * `visualization_msgs/msg/MenuEntry`
+   */
   interface visualization_msgs__msg__MenuEntry {
+    /**
+     * ID is a number for each menu entry.  Must be unique within the
+     * control, and should never be 0.
+     */
     id: number;
+    /**
+     * ID of the parent of this menu entry, if it is a submenu.  If this
+     * menu entry is a top-level entry, set parent_id to 0.
+     */
     parent_id: number;
+    /** menu / entry title */
     title: string;
+    /** Arguments to command indicated by command_type (below) */
     command: string;
     command_type: number;
   }
-  /** constants of visualization_msgs/msg/MenuEntry */
+  /** Constants of `visualization_msgs/msg/MenuEntry` (also properties of `require("visualization_msgs/msg/MenuEntry")`). */
   interface visualization_msgs__msg__MenuEntry__Constants {
+    /**
+     * Command_type stores the type of response desired when this menu
+     * entry is clicked.
+     * FEEDBACK: send an InteractiveMarkerFeedback message with menu_entry_id set to this entry's id.
+     * ROSRUN: execute "rosrun" with arguments given in the command field (above).
+     * ROSLAUNCH: execute "roslaunch" with arguments given in the command field (above).
+     */
     readonly FEEDBACK: 0;
     readonly ROSRUN: 1;
     readonly ROSLAUNCH: 2;
   }
-  /** visualization_msgs/msg/MeshFile */
+  /**
+   * Used to send raw mesh files.
+   *
+   * `visualization_msgs/msg/MeshFile`
+   */
   interface visualization_msgs__msg__MeshFile {
+    /**
+     * The filename is used for both debug purposes and to provide a file extension
+     * for whatever parser is used.
+     */
     filename: string;
+    /** This stores the raw text of the mesh file. */
     data: Uint8Array | number[];
   }
-  /** visualization_msgs/msg/UVCoordinate */
+  /** `visualization_msgs/msg/UVCoordinate` */
   interface visualization_msgs__msg__UVCoordinate {
+    /**
+     * Location of the pixel as a ratio of the width of a 2D texture.
+     * Values should be in range: [0.0-1.0].
+     */
     u: number;
     v: number;
   }
-  /** visualization_msgs/srv/GetInteractiveMarkers_Request */
+  /** `visualization_msgs/srv/GetInteractiveMarkers_Request` */
   interface visualization_msgs__srv__GetInteractiveMarkers_Request {
   }
-  /** visualization_msgs/srv/GetInteractiveMarkers_Response */
+  /** `visualization_msgs/srv/GetInteractiveMarkers_Response` */
   interface visualization_msgs__srv__GetInteractiveMarkers_Response {
+    /**
+     * Sequence number.
+     * Set to the sequence number of the latest update message
+     * at the time the server received the request.
+     * Clients use this to detect if any updates were missed.
+     */
     sequence_number: bigint;
+    /** All interactive markers provided by the server. */
     markers: visualization_msgs__msg__InteractiveMarker[];
+  }
+  interface MessageConstantsMap {
+    "action_msgs/msg/GoalStatus": action_msgs__msg__GoalStatus__Constants;
+    "action_msgs/srv/CancelGoal_Response": action_msgs__srv__CancelGoal_Response__Constants;
+    "actionlib_msgs/msg/GoalStatus": actionlib_msgs__msg__GoalStatus__Constants;
+    "diagnostic_msgs/msg/DiagnosticStatus": diagnostic_msgs__msg__DiagnosticStatus__Constants;
+    "lifecycle_msgs/msg/State": lifecycle_msgs__msg__State__Constants;
+    "lifecycle_msgs/msg/Transition": lifecycle_msgs__msg__Transition__Constants;
+    "nav_msgs/srv/LoadMap_Response": nav_msgs__srv__LoadMap_Response__Constants;
+    "rcl_interfaces/msg/Log": rcl_interfaces__msg__Log__Constants;
+    "rcl_interfaces/msg/LoggerLevel": rcl_interfaces__msg__LoggerLevel__Constants;
+    "rcl_interfaces/msg/ParameterType": rcl_interfaces__msg__ParameterType__Constants;
+    "rcl_interfaces/srv/ListParameters_Request": rcl_interfaces__srv__ListParameters_Request__Constants;
+    "rosgraph_msgs/msg/QoSProfile": rosgraph_msgs__msg__QoSProfile__Constants;
+    "sensor_msgs/msg/BatteryState": sensor_msgs__msg__BatteryState__Constants;
+    "sensor_msgs/msg/JoyFeedback": sensor_msgs__msg__JoyFeedback__Constants;
+    "sensor_msgs/msg/NavSatFix": sensor_msgs__msg__NavSatFix__Constants;
+    "sensor_msgs/msg/NavSatStatus": sensor_msgs__msg__NavSatStatus__Constants;
+    "sensor_msgs/msg/PointField": sensor_msgs__msg__PointField__Constants;
+    "sensor_msgs/msg/Range": sensor_msgs__msg__Range__Constants;
+    "service_msgs/msg/ServiceEventInfo": service_msgs__msg__ServiceEventInfo__Constants;
+    "shape_msgs/msg/SolidPrimitive": shape_msgs__msg__SolidPrimitive__Constants;
+    "statistics_msgs/msg/StatisticDataType": statistics_msgs__msg__StatisticDataType__Constants;
+    "test_msgs/msg/Constants": test_msgs__msg__Constants__Constants;
+    "test_msgs/msg/Strings": test_msgs__msg__Strings__Constants;
+    "type_description_interfaces/msg/FieldType": type_description_interfaces__msg__FieldType__Constants;
+    "visualization_msgs/msg/ImageMarker": visualization_msgs__msg__ImageMarker__Constants;
+    "visualization_msgs/msg/InteractiveMarkerControl": visualization_msgs__msg__InteractiveMarkerControl__Constants;
+    "visualization_msgs/msg/InteractiveMarkerFeedback": visualization_msgs__msg__InteractiveMarkerFeedback__Constants;
+    "visualization_msgs/msg/InteractiveMarkerUpdate": visualization_msgs__msg__InteractiveMarkerUpdate__Constants;
+    "visualization_msgs/msg/Marker": visualization_msgs__msg__Marker__Constants;
+    "visualization_msgs/msg/MenuEntry": visualization_msgs__msg__MenuEntry__Constants;
   }
   interface MessageTypeMap {
     "action_msgs/msg/GoalInfo": action_msgs__msg__GoalInfo;
@@ -2554,8 +5407,6 @@ declare module "rclbunjs" {
     "rmw_dds_common/msg/Gid": rmw_dds_common__msg__Gid;
     "rmw_dds_common/msg/NodeEntitiesInfo": rmw_dds_common__msg__NodeEntitiesInfo;
     "rmw_dds_common/msg/ParticipantEntitiesInfo": rmw_dds_common__msg__ParticipantEntitiesInfo;
-    "rosbag2_interfaces/msg/ReadSplitEvent": rosbag2_interfaces__msg__ReadSplitEvent;
-    "rosbag2_interfaces/msg/WriteSplitEvent": rosbag2_interfaces__msg__WriteSplitEvent;
     "rosgraph_msgs/msg/Action": rosgraph_msgs__msg__Action;
     "rosgraph_msgs/msg/Clock": rosgraph_msgs__msg__Clock;
     "rosgraph_msgs/msg/Graph": rosgraph_msgs__msg__Graph;
@@ -2644,8 +5495,6 @@ declare module "rclbunjs" {
     "test_msgs/msg/Strings": test_msgs__msg__Strings;
     "test_msgs/msg/UnboundedSequences": test_msgs__msg__UnboundedSequences;
     "test_msgs/msg/WStrings": test_msgs__msg__WStrings;
-    "tf2_msgs/msg/TF2Error": tf2_msgs__msg__TF2Error;
-    "tf2_msgs/msg/TFMessage": tf2_msgs__msg__TFMessage;
     "trajectory_msgs/msg/JointTrajectory": trajectory_msgs__msg__JointTrajectory;
     "trajectory_msgs/msg/JointTrajectoryPoint": trajectory_msgs__msg__JointTrajectoryPoint;
     "trajectory_msgs/msg/MultiDOFJointTrajectory": trajectory_msgs__msg__MultiDOFJointTrajectory;
@@ -2696,23 +5545,6 @@ declare module "rclbunjs" {
     "rcl_interfaces/srv/SetLoggerLevels": { Request: rcl_interfaces__srv__SetLoggerLevels_Request; Response: rcl_interfaces__srv__SetLoggerLevels_Response };
     "rcl_interfaces/srv/SetParameters": { Request: rcl_interfaces__srv__SetParameters_Request; Response: rcl_interfaces__srv__SetParameters_Response };
     "rcl_interfaces/srv/SetParametersAtomically": { Request: rcl_interfaces__srv__SetParametersAtomically_Request; Response: rcl_interfaces__srv__SetParametersAtomically_Response };
-    "rosbag2_interfaces/srv/Burst": { Request: rosbag2_interfaces__srv__Burst_Request; Response: rosbag2_interfaces__srv__Burst_Response };
-    "rosbag2_interfaces/srv/GetRate": { Request: rosbag2_interfaces__srv__GetRate_Request; Response: rosbag2_interfaces__srv__GetRate_Response };
-    "rosbag2_interfaces/srv/IsDiscoveryRunning": { Request: rosbag2_interfaces__srv__IsDiscoveryRunning_Request; Response: rosbag2_interfaces__srv__IsDiscoveryRunning_Response };
-    "rosbag2_interfaces/srv/IsPaused": { Request: rosbag2_interfaces__srv__IsPaused_Request; Response: rosbag2_interfaces__srv__IsPaused_Response };
-    "rosbag2_interfaces/srv/Pause": { Request: rosbag2_interfaces__srv__Pause_Request; Response: rosbag2_interfaces__srv__Pause_Response };
-    "rosbag2_interfaces/srv/Play": { Request: rosbag2_interfaces__srv__Play_Request; Response: rosbag2_interfaces__srv__Play_Response };
-    "rosbag2_interfaces/srv/PlayNext": { Request: rosbag2_interfaces__srv__PlayNext_Request; Response: rosbag2_interfaces__srv__PlayNext_Response };
-    "rosbag2_interfaces/srv/Record": { Request: rosbag2_interfaces__srv__Record_Request; Response: rosbag2_interfaces__srv__Record_Response };
-    "rosbag2_interfaces/srv/Resume": { Request: rosbag2_interfaces__srv__Resume_Request; Response: rosbag2_interfaces__srv__Resume_Response };
-    "rosbag2_interfaces/srv/Seek": { Request: rosbag2_interfaces__srv__Seek_Request; Response: rosbag2_interfaces__srv__Seek_Response };
-    "rosbag2_interfaces/srv/SetRate": { Request: rosbag2_interfaces__srv__SetRate_Request; Response: rosbag2_interfaces__srv__SetRate_Response };
-    "rosbag2_interfaces/srv/Snapshot": { Request: rosbag2_interfaces__srv__Snapshot_Request; Response: rosbag2_interfaces__srv__Snapshot_Response };
-    "rosbag2_interfaces/srv/SplitBagfile": { Request: rosbag2_interfaces__srv__SplitBagfile_Request; Response: rosbag2_interfaces__srv__SplitBagfile_Response };
-    "rosbag2_interfaces/srv/StartDiscovery": { Request: rosbag2_interfaces__srv__StartDiscovery_Request; Response: rosbag2_interfaces__srv__StartDiscovery_Response };
-    "rosbag2_interfaces/srv/Stop": { Request: rosbag2_interfaces__srv__Stop_Request; Response: rosbag2_interfaces__srv__Stop_Response };
-    "rosbag2_interfaces/srv/StopDiscovery": { Request: rosbag2_interfaces__srv__StopDiscovery_Request; Response: rosbag2_interfaces__srv__StopDiscovery_Response };
-    "rosbag2_interfaces/srv/TogglePaused": { Request: rosbag2_interfaces__srv__TogglePaused_Request; Response: rosbag2_interfaces__srv__TogglePaused_Response };
     "sensor_msgs/srv/SetCameraInfo": { Request: sensor_msgs__srv__SetCameraInfo_Request; Response: sensor_msgs__srv__SetCameraInfo_Response };
     "std_srvs/srv/Empty": { Request: std_srvs__srv__Empty_Request; Response: std_srvs__srv__Empty_Response };
     "std_srvs/srv/SetBool": { Request: std_srvs__srv__SetBool_Request; Response: std_srvs__srv__SetBool_Response };
@@ -2720,7 +5552,6 @@ declare module "rclbunjs" {
     "test_msgs/srv/Arrays": { Request: test_msgs__srv__Arrays_Request; Response: test_msgs__srv__Arrays_Response };
     "test_msgs/srv/BasicTypes": { Request: test_msgs__srv__BasicTypes_Request; Response: test_msgs__srv__BasicTypes_Response };
     "test_msgs/srv/Empty": { Request: test_msgs__srv__Empty_Request; Response: test_msgs__srv__Empty_Response };
-    "tf2_msgs/srv/FrameGraph": { Request: tf2_msgs__srv__FrameGraph_Request; Response: tf2_msgs__srv__FrameGraph_Response };
     "type_description_interfaces/srv/GetTypeDescription": { Request: type_description_interfaces__srv__GetTypeDescription_Request; Response: type_description_interfaces__srv__GetTypeDescription_Response };
     "visualization_msgs/srv/GetInteractiveMarkers": { Request: visualization_msgs__srv__GetInteractiveMarkers_Request; Response: visualization_msgs__srv__GetInteractiveMarkers_Response };
   }
@@ -2728,6 +5559,5 @@ declare module "rclbunjs" {
     "example_interfaces/action/Fibonacci": { Goal: example_interfaces__action__Fibonacci_Goal; Result: example_interfaces__action__Fibonacci_Result; Feedback: example_interfaces__action__Fibonacci_Feedback };
     "test_msgs/action/Fibonacci": { Goal: test_msgs__action__Fibonacci_Goal; Result: test_msgs__action__Fibonacci_Result; Feedback: test_msgs__action__Fibonacci_Feedback };
     "test_msgs/action/NestedMessage": { Goal: test_msgs__action__NestedMessage_Goal; Result: test_msgs__action__NestedMessage_Result; Feedback: test_msgs__action__NestedMessage_Feedback };
-    "tf2_msgs/action/LookupTransform": { Goal: tf2_msgs__action__LookupTransform_Goal; Result: tf2_msgs__action__LookupTransform_Result; Feedback: tf2_msgs__action__LookupTransform_Feedback };
   }
 }

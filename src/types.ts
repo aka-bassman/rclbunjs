@@ -1,6 +1,6 @@
 // Helpers over the type maps declared in index.ts (augmented by the generated
 // declarations from `bunx rclbunjs-typegen`).
-import type { ActionTypeMap, MessageTypeMap, ServiceTypeMap } from "./index.ts";
+import type { ActionTypeMap, MessageConstantsMap, MessageTypeMap, ServiceTypeMap } from "./index.ts";
 
 export type MessageTypeName = keyof MessageTypeMap & string;
 export type ServiceTypeName = keyof ServiceTypeMap & string;
@@ -14,6 +14,8 @@ export type RequestOf<T> = T extends keyof ServiceTypeMap ? (ServiceTypeMap[T] e
 export type ResponseOf<T> = T extends keyof ServiceTypeMap ? (ServiceTypeMap[T] extends { Response: infer R } ? R : any) : any;
 export type GoalOf<T> = T extends keyof ActionTypeMap ? (ActionTypeMap[T] extends { Goal: infer R } ? R : any) : any;
 export type ResultOf<T> = T extends keyof ActionTypeMap ? (ActionTypeMap[T] extends { Result: infer R } ? R : any) : any;
+/** Constants of a message struct ('pkg/msg/X', 'pkg/srv/X_Request', ...) as literal types. */
+export type ConstantsOf<T> = T extends keyof MessageConstantsMap ? MessageConstantsMap[T] : {};
 export type FeedbackOf<T> = T extends keyof ActionTypeMap ? (ActionTypeMap[T] extends { Feedback: infer R } ? R : any) : any;
 
 /** Message input: every field optional (missing fields get their default values). */

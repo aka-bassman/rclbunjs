@@ -1,6 +1,9 @@
-// Builds the `declare module "rclbunjs"` augmentation for installed interfaces.
+// Builds the `declare module "rclbunjs"` augmentation for installed interfaces:
+// one interface per message struct (with the comments of the .msg/.srv/.action
+// file as JSDoc), constants as literal types, and the type maps.
 import type { MessageDefinition, MessageDefinitionField } from "@foxglove/message-definition";
-import { listInterfacePackages, listInterfaces } from "./discovery.ts";
+import { listInterfacePackages, listInterfaces, readInterface, type InterfaceKind } from "./discovery.ts";
+import { jsdoc, parseInterfaceDocs, type StructDocs } from "./docs.ts";
 import { getActionType, getMessageType, getServiceType } from "./registry.ts";
 
 const TYPED: Record<string, string> = {
@@ -27,6 +30,40 @@ function fieldType(f: MessageDefinitionField): string {
   return `${base}[]`;
 }
 
+/** TypeScript literal type of a constant value. */
+function literal(v: unknown): string {
+  if (typeof v === "bigint") return `${v}n`;
+  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "number";
+  return JSON.stringify(v);
+}
+
+/** JSDoc tags for sizes, bounds and default values. */
+function fieldTags(f: MessageDefinitionField): string[] {
+  const tags: string[] = [];
+  if (f.isArray && f.arrayLength !== undefined) tags.push(`Fixed length: ${f.arrayLength}.`);
+  if (f.isArray && f.arrayUpperBound !== undefined) tags.push(`At most ${f.arrayUpperBound} elements.`);
+  if (f.upperBound !== undefined) tags.push(`At most ${f.upperBound} characters.`);
+  if (f.defaultValue !== undefined) {
+    const d = f.defaultValue;
+    tags.push(`@default ${Array.isArray(d) ? `[${d.map((x) => literal(x)).join(", ")}]` : literal(d)}`);
+  }
+  return tags;
+}
+
+const SUFFIXES: Record<InterfaceKind, string[]> = { msg: [""], srv: ["_Request", "_Response"], action: ["_Goal", "_Result", "_Feedback"] };
+
+/** Comments of an interface by struct name (pkg/kind/Name plus the section suffix). */
+function interfaceDocs(name: string, docs: Map<string, StructDocs>): void {
+  const [pkg, kind, short] = name.split("/") as [string, InterfaceKind, string];
+  const src = readInterface(pkg, kind, short);
+  if (!src || src.format !== "rosidl") return;
+  const parsed = parseInterfaceDocs(src.text, kind);
+  for (const suffix of SUFFIXES[kind]) {
+    const d = parsed.get(suffix);
+    if (d) docs.set(`${name}${suffix}`, d);
+  }
+}
+
 export function generateDeclarations(opts: { packages?: string[]; moduleName?: string } = {}) {
   const moduleName = opts.moduleName ?? "rclbunjs";
   const pkgs = opts.packages ?? listInterfacePackages();
@@ -35,6 +72,7 @@ export function generateDeclarations(opts: { packages?: string[]; moduleName?: s
   const srvs: string[] = [];
   const acts: string[] = [];
   const errors: string[] = [];
+  const docs = new Map<string, StructDocs>();
   const addDefs = (defs: MessageDefinition[]) => {
     for (const d of defs) if (d.name && !structs.has(d.name)) structs.set(d.name, d);
   };
@@ -42,6 +80,7 @@ export function generateDeclarations(opts: { packages?: string[]; moduleName?: s
     for (const name of listInterfaces(pkg)) {
       try {
         const kind = name.split("/")[1];
+        interfaceDocs(name, docs);
         if (kind === "msg") {
           addDefs(getMessageType(name).definitions);
           msgs.push(name);
@@ -66,20 +105,35 @@ export function generateDeclarations(opts: { packages?: string[]; moduleName?: s
     "",
     `declare module "${moduleName}" {`,
   ];
+  const withConstants: string[] = [];
   for (const [name, d] of [...structs].sort(([a], [b]) => a.localeCompare(b))) {
     const fields = d.definitions.filter((f) => !f.isConstant);
     const consts = d.definitions.filter((f) => f.isConstant);
-    lines.push(`  /** ${name} */`);
+    const doc = docs.get(name);
+    const member = (n: string) => doc?.members.get(n);
+    lines.push(jsdoc("  ", doc?.doc ? `${doc.doc}\n\n\`${name}\`` : `\`${name}\``).trimEnd());
     lines.push(`  interface ${ident(name)} {`);
-    for (const f of fields) lines.push(`    ${f.name}: ${fieldType(f)};`);
+    for (const f of fields) {
+      const block = jsdoc("    ", member(f.name), fieldTags(f));
+      if (block) lines.push(block.trimEnd());
+      lines.push(`    ${f.name}: ${fieldType(f)};`);
+    }
     lines.push("  }");
     if (consts.length) {
-      lines.push(`  /** constants of ${name} */`);
+      withConstants.push(name);
+      lines.push(`  /** Constants of \`${name}\` (also properties of \`require("${name}")\`). */`);
       lines.push(`  interface ${ident(name)}__Constants {`);
-      for (const c of consts) lines.push(`    readonly ${c.name}: ${JSON.stringify(typeof c.value === "bigint" ? Number(c.value) : c.value)};`);
+      for (const c of consts) {
+        const block = jsdoc("    ", member(c.name));
+        if (block) lines.push(block.trimEnd());
+        lines.push(`    readonly ${c.name}: ${literal(c.value)};`);
+      }
       lines.push("  }");
     }
   }
+  lines.push("  interface MessageConstantsMap {");
+  for (const n of withConstants) lines.push(`    "${n}": ${ident(n)}__Constants;`);
+  lines.push("  }");
   lines.push("  interface MessageTypeMap {");
   for (const m of msgs.sort()) lines.push(`    "${m}": ${ident(m)};`);
   lines.push("  }");

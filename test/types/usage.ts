@@ -77,6 +77,20 @@ const actionType: string | undefined = actionInfo?.actionType;
 void actionType;
 if (rclbun.features.actionEndpointInfo) void actionInfo?.feedbackTopicInfo.topic_type;
 
+// constants are typed properties of require() results (rclnodejs: GoalStatus.STATUS_SUCCEEDED)
+const GoalStatus = rclbun.require("action_msgs/msg/GoalStatus");
+const succeeded: 4 = GoalStatus.STATUS_SUCCEEDED;
+const fromConstants: 4 = GoalStatus.constants.STATUS_SUCCEEDED;
+void [succeeded, fromConstants];
+// @ts-expect-error no such constant
+void GoalStatus.STATUS_DONE;
+const int64Const: -40000000n = rclbun.require("test_msgs/msg/Constants").INT64_CONST;
+void int64Const;
+void rclbun.require("example_interfaces/srv/AddTwoInts").Request.create();
+void rclbun.require("example_interfaces/action/Fibonacci").Goal.create();
+// names unknown to the generated declarations stay loose
+void rclbun.require("my_pkg/msg/Thing" as string).ANY_CONSTANT;
+
 // loaned messages: fill in place and publish; subscriptions get views
 const twistPub = node.createPublisher("geometry_msgs/msg/Twist", "loaned");
 const loan: rclbun.LoanedMessage<rclbun.MessageTypeMap["geometry_msgs/msg/Twist"]> = twistPub.borrowLoanedMessage();

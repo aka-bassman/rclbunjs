@@ -125,6 +125,15 @@ bunx rclbunjs-typegen --packages my_msgs,geometry_msgs     # a subset
 Then include the generated file in your `tsconfig.json`. Message, request, response, goal and feedback types
 are inferred from the type name string.
 
+- The comments of the `.msg`/`.srv`/`.action` files become JSDoc on the interfaces and fields, with default
+  values (`@default`) and array bounds.
+- Constants get literal types. As in rclnodejs, they are properties of `require()` results:
+
+  ```ts
+  const GoalStatus = rclbun.require("action_msgs/msg/GoalStatus");
+  if (status === GoalStatus.STATUS_SUCCEEDED) { /* typed as 4 */ }
+  ```
+
 ## Differences from rclnodejs
 
 - `node.spin()` is non-blocking and needs no timeout. Each node has a background thread that waits in `rcl_wait`
