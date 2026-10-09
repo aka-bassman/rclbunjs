@@ -54,7 +54,7 @@ describe("lifecycle", () => {
   test("ros2 lifecycle CLI drives the bun node", async () => {
     const run = async (args: string) => (await Bun.$`ros2 lifecycle ${{ raw: args }}`.nothrow().quiet()).text();
     let nodes = "";
-    for (let i = 0; i < 10 && !nodes.includes("/lc_node"); i++) nodes = await run("nodes");
+    for (const end = Date.now() + 20000; !nodes.includes("/lc_node") && Date.now() < end; await Bun.sleep(250)) nodes = await run("nodes");
     expect(nodes).toContain("/lc_node");
     expect(await run("get /lc_node")).toContain("unconfigured [1]");
     expect(await run("set /lc_node configure")).toContain("Transitioning successful");

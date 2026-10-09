@@ -139,8 +139,12 @@ print('RESULT', list(rf.result().result.sequence), 'STATUS', rf.result().status,
     expect(out).toContain("ACCEPTED True");
     expect(out).toContain("RESULT [0, 1, 1, 2, 3, 5, 8, 13] STATUS 4 FB True");
     expect(rclbun.getActionNamesAndTypes(node)).toContainEqual({ name: "/bun_fib", types: [FIB] });
+    // A ros2 daemon started earlier in the suite (lifecycle test) sometimes keeps a graph without these
+    // endpoints while a fresh participant sees them (seen on Lyrical/Rolling x86): start a fresh daemon,
+    // then retry until its discovery completes.
+    await Bun.$`ros2 daemon stop`.nothrow().quiet();
     let list = "";
-    for (let i = 0; i < 10 && !list.includes("/bun_fib"); i++) {
+    for (const end = Date.now() + 20000; !list.includes("/bun_fib") && Date.now() < end; await Bun.sleep(250)) {
       list = (await Bun.$`ros2 action list -t`.nothrow().quiet()).text();
     }
     expect(list).toContain("/bun_fib [example_interfaces/action/Fibonacci]");
