@@ -76,3 +76,17 @@ const actionInfo: rclbun.ActionEndpointInfo | undefined = node.getActionServersI
 const actionType: string | undefined = actionInfo?.actionType;
 void actionType;
 if (rclbun.features.actionEndpointInfo) void actionInfo?.feedbackTopicInfo.topic_type;
+
+// loaned messages: fill in place and publish; subscriptions get views
+const twistPub = node.createPublisher("geometry_msgs/msg/Twist", "loaned");
+const loan: rclbun.LoanedMessage<rclbun.MessageTypeMap["geometry_msgs/msg/Twist"]> = twistPub.borrowLoanedMessage();
+loan.message.linear.x = 1;
+loan.message.set({ angular: { z: 0.5 } });
+const linearCopy: { x: number } = loan.message.toObject().linear;
+void linearCopy;
+twistPub.publish(loan);
+node.createSubscription("geometry_msgs/msg/Twist", "loaned", { loanedMessages: true }, (m) => {
+  const copy = m.toObject();
+  const sum: number = m.linear.x + copy.angular.z;
+  void sum;
+});

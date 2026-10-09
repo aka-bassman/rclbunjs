@@ -48,6 +48,15 @@ export interface EntityOptions {
    * message). Default false.
    */
   zeroCopy?: boolean;
+  /**
+   * Subscriptions: deliver each message as a view over C memory instead of a
+   * decoded object, taken as a middleware loan when possible (Fast DDS with
+   * fixed-size types and ROS_DISABLE_LOANED_MESSAGES=0), otherwise with
+   * rcl_take into a reused C message. The view is valid only during the
+   * synchronous part of the callback; use `msg.toObject()` to keep data.
+   * Fixed-size message types only. Default false.
+   */
+  loanedMessages?: boolean;
   /** Publishers: validate every published message (see validateMessage). Default false. */
   validateMessages?: boolean;
   /** Clients: validate every request. Default false. */

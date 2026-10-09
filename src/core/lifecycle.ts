@@ -6,7 +6,7 @@ import type { Context } from "./context.ts";
 import type { EntityOptions } from "./entity.ts";
 import { OperationError } from "./errors.ts";
 import { Node, type NodeOptions, type NodeOptionsInit } from "./node.ts";
-import { Publisher } from "./publisher.ts";
+import { LoanedMessage, Publisher } from "./publisher.ts";
 import type { KnownOr, MessageOf, MessageTypeName } from "../types.ts";
 import { getMessageType, type TypeName, type MessageType } from "../interfaces/registry.ts";
 
@@ -114,8 +114,17 @@ export class LifecyclePublisher<T = any> extends Publisher<T> {
   onDeactivate(): void { this.deactivate(); }
 
   override publish(msg: Parameters<Publisher<T>["publish"]>[0], options?: { validate?: boolean }): void {
-    if (!this.#active) return;
+    if (!this.#active) {
+      // an inactive publisher drops messages; a loan goes back right away
+      if (msg instanceof LoanedMessage) this.returnLoanedMessage(msg);
+      return;
+    }
     super.publish(msg, options);
+  }
+
+  override publishLoanedMessage(loan: LoanedMessage<T>): void {
+    if (!this.#active) return this.returnLoanedMessage(loan);
+    super.publishLoanedMessage(loan);
   }
 }
 

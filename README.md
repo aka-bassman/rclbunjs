@@ -38,7 +38,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Area | Supported |
 |---|---|
 | Context/Node | `init(argv)` with `--ros-args` (remapping, `-p`, `--params-file`), namespaces, domain id, node args |
-| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, `QoSOverridingOptions` (`qos_overrides.*` parameters), typed arrays / `plain` / `json` modes, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration) |
+| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, `QoSOverridingOptions` (`qos_overrides.*` parameters), typed arrays / `plain` / `json` modes, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration), loaned messages for fixed-size types |
 | Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers); service introspection via `configureIntrospection` (Jazzy+) |
 | Actions | `ActionClient` / `ActionServer` (feedback, cancel, result, goal accept/reject), wire-compatible with rclcpp/rclpy |
 | Parameters | declare/get/set/undeclare, descriptors (read-only, ranges), on/pre/post-set callbacks, CLI and YAML overrides, `/parameter_events`, the standard parameter services, `ParameterClient`, `ParameterEventHandler`, `ParameterWatcher` |
@@ -76,6 +76,43 @@ clouds, scans), `deserializeMessage(bytes, type, { zeroCopy: true })` and the su
 `{ zeroCopy: true }` return the arrays as views into one buffer per message instead of separate copies
 (`array.buffer` is then the whole message). `bun benchmark/codec.ts` measures the codec without ROS.
 
+## Loaned messages
+
+For fixed-size message types (no strings or sequences), a publisher can lend you the message memory: you
+write the fields in place and publish without serializing in JavaScript. Subscriptions can receive the
+same kind of view instead of a decoded object.
+
+```ts
+const pub = node.createPublisher("my_msgs/msg/Frame", "frames"); // e.g. uint8[1048576] data
+const loan = pub.borrowLoanedMessage();
+loan.message.seq = 1n;
+camera.readInto(loan.message.data); // a Uint8Array over the loaned memory
+pub.publish(loan); // loan.message is unusable afterwards
+
+node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true }, (frame) => {
+  process(frame.data); // valid only during the callback; frame.toObject() makes a copy
+});
+```
+
+- Numeric arrays are TypedArrays over the message memory, including `int64`/`uint64` (`BigInt64Array`) and
+  `bool` (`Uint8Array`) arrays. `msg.set({...})` assigns nested fields; `msg.toObject()` copies out.
+- Where the memory comes from depends on the middleware:
+  - Fast DDS (Jazzy and newer) lends memory to publishers of fixed-size types (`publisher.canLoanMessages`).
+    It lends to subscriptions only when the process starts with `ROS_DISABLE_LOANED_MESSAGES=0`.
+  - Humble's Fast DDS, Cyclone DDS (without shared memory) and Zenoh lend nothing. The same API then works on a C message
+    owned by rclbunjs, published with `rcl_publish` and taken with `rcl_take`, which still skips the
+    JavaScript CDR code.
+- Released views are detached, so a view used after its callback throws instead of reading memory that
+  went back to the middleware.
+
+`benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes. Median round trips on
+arm64 Docker:
+
+| | CDR path | loaned publish, view receive | loaned on both sides |
+|---|---|---|---|
+| Fast DDS | 1189 µs | 391 µs | 350 µs (7 µs in the receiver) |
+| Cyclone DDS (no loans) | 1144 µs | 470 µs | — |
+
 ## Typed messages
 
 Generate declarations for the interfaces installed in your environment:
@@ -109,6 +146,8 @@ RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh       # starts rmw_zenoh
 ROS_DISTRO=humble scripts/docker-test.sh                       # humble, jazzy, kilted, lyrical, rolling
 bunx tsc --noEmit && bunx tsc --noEmit -p test/types
 SOAK_MINUTES=60 scripts/docker-test.sh bun test/soak/soak.ts   # long-running stability / memory trend
+scripts/test-matrix.sh jazzy - cc lyrical rmw_zenoh_cpp cc     # several distro/RMW/shim combinations
+scripts/docker-test.sh bash -c 'scripts/build-test-msgs.sh && source /tmp/rclbun_test_msgs/install/setup.bash && bun benchmark/loaned.ts'
 ```
 
 `test/interop/gen_golden.py` regenerates the CDR golden vectors with rclpy.

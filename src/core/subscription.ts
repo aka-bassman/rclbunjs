@@ -6,6 +6,8 @@ import type { MessageType } from "../interfaces/registry.ts";
 import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
+import { openView, type ViewInfo } from "./message_view.ts";
+import { viewInfo } from "./loaned_message.ts";
 
 export class MessageInfo {
   constructor(
@@ -41,6 +43,10 @@ export class Subscription<T = any> extends Entity implements Waitable {
   readonly #callback: SubscriptionCallback<any>;
   readonly #wantsInfo: boolean;
   readonly #qos: QoS;
+  /** set for loanedMessages subscriptions */
+  readonly #view: ViewInfo | null;
+  /** loanedMessages without middleware loans: C message reused for every take */
+  #cmsg: Pointer | null = null;
   /** @internal */
   readonly _events: QoSEvent[];
   /** @internal set by the node: parks its wait thread before we mutate reader state */
@@ -57,6 +63,8 @@ export class Subscription<T = any> extends Entity implements Waitable {
     eventCallbacks?: EventCallbacks,
   ) {
     const qos = QoS.from(options.qos);
+    // compiled first: throws for types that are not fixed-size
+    const view = options.loanedMessages ? viewInfo(msgType) : null;
     const cf = options.contentFilter as ContentFilter | undefined;
     const fa = cstrArray((cf?.parameters ?? []).map(String));
     const h = check(
@@ -71,7 +79,14 @@ export class Subscription<T = any> extends Entity implements Waitable {
     this.#callback = callback;
     this.#wantsInfo = callback.length >= 2;
     this.#qos = qos;
+    this.#view = view;
+    if (view && !this.canLoanMessages) this.#cmsg = check(lib.rb_msg_alloc(msgType.typeSupport()), "allocate a message");
     this._events = createEvents(h, true, eventCallbacks);
+  }
+
+  /** True if the middleware lends received messages (used when loanedMessages is set). */
+  get canLoanMessages(): boolean {
+    return lib.rb_sub_can_loan(this.handle) === 1;
   }
 
   get qos(): QoS {
@@ -122,6 +137,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
 
   /** @internal take everything that is available and run the callback */
   execute(): void {
+    if (this.#view) return this.#executeViews(this.#view);
     for (let i = 0; i < MAX_TAKE && !this.isDestroyed(); i++) {
       const n = Number(checkRc(lib.rb_sub_take(this.handle, ptr(OUT)), `take on ${this.topic}`));
       if (n === 0) return;
@@ -138,11 +154,39 @@ export class Subscription<T = any> extends Entity implements Waitable {
     }
   }
 
+  #executeViews(info: ViewInfo): void {
+    const cmsg = this.#cmsg;
+    for (let i = 0; i < MAX_TAKE && !this.isDestroyed(); i++) {
+      let p: Pointer;
+      if (cmsg) {
+        if (checkRc(lib.rb_sub_take_c(this.handle, cmsg), `take on ${this.topic}`) === 0) return;
+        p = cmsg;
+      } else {
+        if (checkRc(lib.rb_sub_take_loaned(this.handle, ptr(OUT)), `take a loaned message on ${this.topic}`) === 0) return;
+        p = Number(OUT[0]) as Pointer;
+      }
+      const v = openView(info, p);
+      try {
+        if (this.#wantsInfo) {
+          lib.rb_sub_last_info(this.handle, ptr(INFO));
+          this.#callback(v.view, new MessageInfo(INFO[0]!, INFO[1]!, INFO[2]!, INFO[3]!, INFO[4] === 1n));
+        } else {
+          this.#callback(v.view);
+        }
+      } finally {
+        v.release();
+        if (!cmsg) lib.rb_sub_return_loaned(this.handle, p);
+      }
+    }
+  }
+
   /** @internal */
   _fini(): void {
     if (this.isDestroyed()) return;
     this.markDestroyed();
     for (const e of this._events) e.fini();
     lib.rb_sub_fini(this.handle);
+    if (this.#cmsg) lib.rb_msg_free(this.typeClass.typeSupport(), this.#cmsg);
+    this.#cmsg = null;
   }
 }

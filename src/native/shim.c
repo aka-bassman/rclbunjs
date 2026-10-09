@@ -39,6 +39,7 @@
 #include <rmw/validate_namespace.h>
 #include <rmw/validate_node_name.h>
 #include <rosidl_runtime_c/message_type_support_struct.h>
+#include <rosidl_typesupport_introspection_c/field_types.h>
 #include <rosidl_typesupport_introspection_c/identifier.h>
 #include <rosidl_typesupport_introspection_c/message_introspection.h>
 
@@ -805,6 +806,99 @@ const char* rb_sub_qos(void* sp) {
 }
 
 // ---------------------------------------------------------------------------
+// loaned messages: C messages in middleware memory (Fast DDS: fixed-size types;
+// subscriptions only when ROS_DISABLE_LOANED_MESSAGES=0)
+
+int rb_pub_can_loan(void* pp) { return rcl_publisher_can_loan_messages(&((rb_pub_t*)pp)->pub) ? 1 : 0; }
+
+// The loan comes uninitialized (Fast DDS); fill in the type's default values.
+// Only fixed-size types can be loaned, so init allocates nothing.
+void* rb_pub_borrow(void* pp, const void* ts) {
+  void* msg = NULL;
+  rcl_ret_t ret = rcl_borrow_loaned_message(&((rb_pub_t*)pp)->pub, ts, &msg);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_borrow_loaned_message", ret);
+    return NULL;
+  }
+  const rosidl_message_type_support_t* its =
+      get_message_typesupport_handle(ts, rosidl_typesupport_introspection_c__identifier);
+  if (its) {
+    const rosidl_typesupport_introspection_c__MessageMembers* mm = its->data;
+    memset(msg, 0, mm->size_of_);
+    mm->init_function(msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
+  } else {
+    rcutils_reset_error();
+  }
+  return msg;
+}
+
+// Publishing gives the loan back to the middleware, also when it fails.
+int rb_pub_publish_loaned(void* pp, void* msg) {
+  rcl_ret_t ret = rcl_publish_loaned_message(&((rb_pub_t*)pp)->pub, msg, NULL);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_publish_loaned_message", ret);
+    return -1;
+  }
+  return 0;
+}
+
+int rb_pub_return_loaned(void* pp, void* msg) {
+  rcl_ret_t ret = rcl_return_loaned_message_from_publisher(&((rb_pub_t*)pp)->pub, msg);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_return_loaned_message_from_publisher", ret);
+    return -1;
+  }
+  return 0;
+}
+
+// Publishes a C message (the fallback when the middleware cannot loan).
+int rb_pub_publish_c(void* pp, void* msg) {
+  rcl_ret_t ret = rcl_publish(&((rb_pub_t*)pp)->pub, msg, NULL);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_publish", ret);
+    return -1;
+  }
+  return 0;
+}
+
+int rb_sub_can_loan(void* sp) { return rcl_subscription_can_loan_messages(&((rb_sub_t*)sp)->sub) ? 1 : 0; }
+
+// 1 and the loan in *out, 0 if no message was available, <0 on error.
+int rb_sub_take_loaned(void* sp, void** out) {
+  rb_sub_t* s = sp;
+  *out = NULL;
+  rcl_ret_t ret = rcl_take_loaned_message(&s->sub, out, &s->info, NULL);
+  if (ret == RCL_RET_SUBSCRIPTION_TAKE_FAILED) return 0;
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_take_loaned_message", ret);
+    return -1;
+  }
+  return 1;
+}
+
+int rb_sub_return_loaned(void* sp, void* msg) {
+  rcl_ret_t ret = rcl_return_loaned_message_from_subscription(&((rb_sub_t*)sp)->sub, msg);
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_return_loaned_message_from_subscription", ret);
+    return -1;
+  }
+  return 0;
+}
+
+// Takes into a C message (the fallback when the middleware cannot loan); same
+// return values as rb_sub_take_loaned.
+int rb_sub_take_c(void* sp, void* msg) {
+  rb_sub_t* s = sp;
+  rcl_ret_t ret = rcl_take(&s->sub, msg, &s->info, NULL);
+  if (ret == RCL_RET_SUBSCRIPTION_TAKE_FAILED) return 0;
+  if (ret != RCL_RET_OK) {
+    rb_take_rcl_error("rcl_take", ret);
+    return -1;
+  }
+  return 1;
+}
+
+// ---------------------------------------------------------------------------
 // QoS events. kind: 0 deadline, 1 liveliness, 2 incompatible_qos,
 // 3 incompatible_type, 4 matched, 5 message_lost (subscription only)
 
@@ -1016,6 +1110,67 @@ void rb_cmsg_free(void* m) {
 int rb_cmsg_load(void* m, uint8_t* data, size_t len) { return rb_cmsg_from_cdr(m, data, len); }
 int64_t rb_cmsg_dump(void* m, uint8_t** out) { return rb_cmsg_to_cdr(m, out); }
 void* rb_cmsg_ptr(void* m) { return ((rb_cmsg_t*)m)->msg; }
+
+// Initialized C message of a type, for loaned-message fallbacks.
+void* rb_msg_alloc(const void* ts) {
+  const rosidl_message_type_support_t* its =
+      get_message_typesupport_handle(ts, rosidl_typesupport_introspection_c__identifier);
+  if (!its) {
+    rcutils_reset_error();
+    rb_set_error("no introspection typesupport available for message");
+    return NULL;
+  }
+  const rosidl_typesupport_introspection_c__MessageMembers* mm = its->data;
+  void* msg = calloc(1, mm->size_of_);
+  mm->init_function(msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
+  return msg;
+}
+
+void rb_msg_free(const void* ts, void* msg) {
+  const rosidl_message_type_support_t* its =
+      get_message_typesupport_handle(ts, rosidl_typesupport_introspection_c__identifier);
+  if (its) ((const rosidl_typesupport_introspection_c__MessageMembers*)its->data)->fini_function(msg);
+  free(msg);
+}
+
+static void js_layout(const rosidl_typesupport_introspection_c__MessageMembers* mm) {
+  js_lit("{\"size\":");
+  js_int((int64_t)mm->size_of_);
+  js_lit(",\"fields\":[");
+  for (uint32_t i = 0; i < mm->member_count_; i++) {
+    const rosidl_typesupport_introspection_c__MessageMember* f = &mm->members_[i];
+    if (i) js_lit(",");
+    js_lit("{\"name\":");
+    js_str(f->name_);
+    js_lit(",\"type\":");
+    js_int(f->type_id_);
+    js_lit(",\"offset\":");
+    js_int(f->offset_);
+    // array: 0 = not an array, N = fixed size N, -1 = sequence (bounded or not)
+    js_lit(",\"array\":");
+    js_int(!f->is_array_ ? 0 : (f->array_size_ > 0 && !f->is_upper_bound_) ? (int64_t)f->array_size_ : -1);
+    if (f->type_id_ == rosidl_typesupport_introspection_c__ROS_TYPE_MESSAGE && f->members_) {
+      js_lit(",\"message\":");
+      js_layout(f->members_->data);
+    }
+    js_lit("}");
+  }
+  js_lit("]}");
+}
+
+// C struct layout of a message type from its introspection typesupport (JSON).
+const char* rb_msg_layout(const void* ts) {
+  const rosidl_message_type_support_t* its =
+      get_message_typesupport_handle(ts, rosidl_typesupport_introspection_c__identifier);
+  if (!its) {
+    rcutils_reset_error();
+    rb_set_error("no introspection typesupport available for message");
+    return NULL;
+  }
+  js_reset();
+  js_layout(its->data);
+  return g_json.buf;
+}
 
 // ---------------------------------------------------------------------------
 // client

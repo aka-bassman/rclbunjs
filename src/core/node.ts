@@ -28,6 +28,7 @@ import { applyQoSOverrides } from "./qos_overriding_options.ts";
 import { ServiceResponse, Service, type ServiceRequestHandler } from "./service.ts";
 import { Subscription, type SubscriptionCallback } from "./subscription.ts";
 import { ObservableSubscription } from "./observable_subscription.ts";
+import type { MessageView } from "./message_view.ts";
 import { Time } from "./time.ts";
 import { GuardCondition, Rate, Timer, type TimerInfo } from "./timer.ts";
 import { Parameter, ParameterDescriptor, ParameterType } from "./parameter.ts";
@@ -356,6 +357,14 @@ export class Node {
     topic: string,
     callback: SubscriptionCallback<T>,
   ): Subscription<T>;
+  /** loanedMessages: the callback gets a view over C memory, valid during the call */
+  createSubscription<K extends KnownOr<MessageTypeName>, T = MessageOf<K>>(
+    typeClass: K | MessageType | Exclude<TypeName, string>,
+    topic: string,
+    options: EntityOptions & { loanedMessages: true },
+    callback: SubscriptionCallback<MessageView<T>>,
+    eventCallbacks?: EventCallbacks,
+  ): Subscription<T>;
   createSubscription<K extends KnownOr<MessageTypeName>, T = MessageOf<K>>(
     typeClass: K | MessageType | Exclude<TypeName, string>,
     topic: string,
@@ -388,6 +397,7 @@ export class Node {
     eventCallbacks?: EventCallbacks,
   ): ObservableSubscription<T> {
     let observable: ObservableSubscription<T> | undefined;
+    if (options?.loanedMessages) throw new TypeValidationError("loanedMessages views are valid only inside a subscription callback; observable subscriptions cannot use them");
     const sub = this.createSubscription<K, T>(typeClass, topic, options, (msg: T) => observable?._emit(msg), eventCallbacks);
     observable = new ObservableSubscription<T>(sub);
     return observable;

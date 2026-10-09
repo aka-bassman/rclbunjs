@@ -7,6 +7,11 @@ import type { Pointer } from "bun:ffi";
 import type { MessageArg } from "../types.ts";
 import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
 import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
+import { OperationError } from "./errors.ts";
+import { openView } from "./message_view.ts";
+import { LoanedMessage, viewInfo } from "./loaned_message.ts";
+
+export { LoanedMessage };
 
 export class Publisher<T = any> extends Entity {
   readonly typeClass: MessageType;
@@ -16,6 +21,7 @@ export class Publisher<T = any> extends Entity {
   #validationOptions: MessageValidationOptions;
   /** @internal */
   readonly _events: QoSEvent[];
+  readonly #loans = new Set<LoanedMessage<T>>();
 
   /** @internal */
   constructor(nodeHandle: Pointer, loggerName: string, msgType: MessageType, topic: string, options: EntityOptions, eventCallbacks?: EventCallbacks) {
@@ -42,8 +48,9 @@ export class Publisher<T = any> extends Entity {
    * Publishes a message object (or a bare value for single-`data` messages),
    * or raw CDR bytes (Uint8Array/Buffer). `validate` overrides validateMessages.
    */
-  publish(msg: MessageArg<T> | Uint8Array, options: { validate?: boolean } = {}): void {
+  publish(msg: MessageArg<T> | Uint8Array | LoanedMessage<T>, options: { validate?: boolean } = {}): void {
     this.assertAlive();
+    if (msg instanceof LoanedMessage) return this.publishLoanedMessage(msg);
     let bytes: Uint8Array;
     if (msg instanceof Uint8Array) {
       bytes = msg;
@@ -52,6 +59,62 @@ export class Publisher<T = any> extends Entity {
       bytes = this.typeClass.encode(msg);
     }
     checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), `publish on ${this.topic}`);
+  }
+
+  /**
+   * True if the middleware lends message memory for this publisher (Fast DDS with
+   * fixed-size types). borrowLoanedMessage() works either way.
+   */
+  get canLoanMessages(): boolean {
+    return lib.rb_pub_can_loan(this.handle) === 1;
+  }
+
+  /**
+   * Borrows a message to fill in place and publish without serializing it in
+   * JavaScript. The type must be fixed-size (no strings or sequences). When the
+   * middleware cannot loan, the message lives in a C message owned by rclbunjs and
+   * is published with rcl_publish.
+   */
+  borrowLoanedMessage(): LoanedMessage<T> {
+    this.assertAlive();
+    const info = viewInfo(this.typeClass);
+    const ts = this.typeClass.typeSupport();
+    const loaned = this.canLoanMessages;
+    const p = loaned ? check(lib.rb_pub_borrow(this.handle, ts), `borrow a message on ${this.topic}`) : check(lib.rb_msg_alloc(ts), "allocate a message");
+    const loan = new LoanedMessage<T>(this, p, loaned, openView<T>(info, p));
+    this.#loans.add(loan);
+    return loan;
+  }
+
+  /** Publishes a borrowed message; the loan is used up even if publishing fails. */
+  publishLoanedMessage(loan: LoanedMessage<T>): void {
+    this.assertAlive();
+    const p = this.#claim(loan);
+    if (loan.isLoaned) {
+      checkRc(lib.rb_pub_publish_loaned(this.handle, p), `publish a loaned message on ${this.topic}`);
+      return;
+    }
+    try {
+      checkRc(lib.rb_pub_publish_c(this.handle, p), `publish on ${this.topic}`);
+    } finally {
+      lib.rb_msg_free(this.typeClass.typeSupport(), p);
+    }
+  }
+
+  /** Gives a borrowed message back without publishing it. */
+  returnLoanedMessage(loan: LoanedMessage<T>): void {
+    this.#giveBack(this.#claim(loan), loan.isLoaned);
+  }
+
+  #claim(loan: LoanedMessage<T>): Pointer {
+    if (loan._publisher !== this) throw new OperationError("the loaned message belongs to another publisher");
+    this.#loans.delete(loan);
+    return loan._take();
+  }
+
+  #giveBack(p: Pointer, loaned: boolean): void {
+    if (loaned) checkRc(lib.rb_pub_return_loaned(this.handle, p), "return a loaned message");
+    else lib.rb_msg_free(this.typeClass.typeSupport(), p);
   }
 
   get willValidateMessage(): boolean {
@@ -88,6 +151,15 @@ export class Publisher<T = any> extends Entity {
   /** @internal */
   _fini(): void {
     if (this.isDestroyed()) return;
+    // loans must go back before the publisher is finalized
+    for (const loan of this.#loans) {
+      try {
+        this.#giveBack(loan._take(), loan.isLoaned);
+      } catch {
+        // teardown continues; the middleware reclaims loans with the writer
+      }
+    }
+    this.#loans.clear();
     this.markDestroyed();
     for (const e of this._events) e.fini();
     lib.rb_pub_fini(this.handle);

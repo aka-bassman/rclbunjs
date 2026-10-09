@@ -3,7 +3,7 @@ export type * from "./types.ts";
 import type { KnownOr, MessageOf, MessageTypeName } from "./types.ts";
 import { Context } from "./core/context.ts";
 import { Node, NodeOptions, type NodeOptionsInit } from "./core/node.ts";
-import { AbortError, TimeoutError } from "./core/errors.ts";
+import { AbortError, TimeoutError, TypeValidationError } from "./core/errors.ts";
 import type { EntityOptions } from "./core/entity.ts";
 import type { Subscription } from "./core/subscription.ts";
 import { QoS } from "./core/qos.ts";
@@ -23,7 +23,9 @@ export { Context } from "./core/context.ts";
 export { Node, NodeOptions } from "./core/node.ts";
 export type { NamesAndTypes, TopicEndpointInfo, ServiceEndpointInfo, NodeOptionsInit } from "./core/node.ts";
 export { ActionEndpointInfo } from "./core/node.ts";
-export { Publisher } from "./core/publisher.ts";
+export { Publisher, LoanedMessage } from "./core/publisher.ts";
+export { isFixedSizeMessage } from "./core/loaned_message.ts";
+export type { MessageView, MessageViewMethods } from "./core/message_view.ts";
 export { Subscription, MessageInfo } from "./core/subscription.ts";
 export type { ContentFilter, SubscriptionCallback } from "./core/subscription.ts";
 export { PublisherEventCallbacks, SubscriptionEventCallbacks } from "./core/event_handler.ts";
@@ -192,6 +194,7 @@ export function waitForMessage<K extends KnownOr<MessageTypeName>, T = MessageOf
     const onAbort = () => settle(new AbortError(`waitForMessage on '${topic}' aborted`, { entityType: "topic", entityName: topic }));
     if (options.signal?.aborted) return onAbort();
     try {
+      if (options.subscriptionOptions?.loanedMessages) throw new TypeValidationError("waitForMessage cannot use loanedMessages: views are valid only inside a subscription callback");
       const subOptions: EntityOptions = { ...options.subscriptionOptions, ...(options.qos !== undefined ? { qos: options.qos } : {}) };
       sub = node.createSubscription<K, T>(typeClass, topic, subOptions, (msg: T) => settle(null, msg));
     } catch (e) {
