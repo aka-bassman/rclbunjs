@@ -1,6 +1,7 @@
 // Loaned messages: message memory lent by the middleware (rcl_borrow_loaned_message /
 // rcl_take_loaned_message), presented as views (message_view.ts).
 import type { Pointer } from "bun:ffi";
+import { readFileSync } from "node:fs";
 import type { MessageType } from "../interfaces/registry.ts";
 import { json } from "../native/ffi.ts";
 import { lib } from "../native/loader.ts";
@@ -36,6 +37,40 @@ export function isFixedSizeMessage(type: MessageType): boolean {
     if (e instanceof TypeError) return false;
     throw e;
   }
+}
+
+let cyclone11: boolean | undefined;
+
+/**
+ * True with rmw_cyclonedds_cpp on Cyclone DDS 11 (Lyrical and later), whose loans
+ * (with shared memory) cannot be used as reported (rmw_cyclonedds 4.1/4.2):
+ * - rmw_take_loaned_message aborts the process unless the sample is a raw shared-memory
+ *   chunk: for serialized data (rclbunjs' publish(object), rosbag2), data from another
+ *   host, or the unregister notice when a publisher goes away, Cyclone allocates the
+ *   sample through the sertype's realloc_samples, which throws "not implemented";
+ * - for types with fixed-size arrays, ArrayValueType leaves m_is_self_contained
+ *   uninitialized, so a publisher can report loans for a type Cyclone does not treat as
+ *   memcpy-safe, and publishing the loan fails an assertion in dds_write.
+ * Subscriptions there take into a C message, and publishers of such types use one.
+ */
+export function cycloneDds11(): boolean {
+  if (cyclone11 === undefined) {
+    cyclone11 = false;
+    if (String(lib.rb_rmw_implementation()) === "rmw_cyclonedds_cpp") {
+      try {
+        const m = /libddsc\.so\.(\d+)/.exec(readFileSync("/proc/self/maps", "utf8"));
+        cyclone11 = !!m && Number(m[1]) >= 11;
+      } catch {
+        // no /proc (not Linux)
+      }
+    }
+  }
+  return cyclone11;
+}
+
+/** True if the type, or a type nested in it, has a fixed-size array. */
+export function hasFixedArray(type: MessageType): boolean {
+  return type.definitions.some((d) => d.definitions.some((f) => !f.isConstant && f.isArray && f.arrayLength !== undefined));
 }
 
 /**

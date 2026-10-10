@@ -49,7 +49,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Graph | topic/service/node/action listings (also per node), publisher/subscription/client/service counts, topic endpoint info with QoS and type hash; service endpoint info and action client/server counts (Lyrical+); action endpoint info (Rolling) |
 | Validation | `validateMessage` / `assertValidMessage` / `createMessageValidator`, `getMessageSchema`, `getFieldNames`, `getFieldType`; `validator` for topic/node/namespace names |
 | Utilities | `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
-| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire and content filters are not available; rmw_zenoh also gets slower with every entity created and destroyed in a process (about +4 ms per create/destroy cycle per 1000 cycles), keeps a service request until it is answered, and its memory grows with service calls (about 0.5 KB per call over the first 100k); rclpy behaves the same |
+| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire and content filters are not available; rmw_zenoh also gets slower with every entity created and destroyed in a process (about +4 ms per create/destroy cycle per 1000 cycles), keeps a service request until it is answered, and its memory grows with service calls (about 0.5 KB per call over the first 100k); rclpy behaves the same. Cyclone DDS over iceoryx shared memory works (see Loaned messages), but processes that start later never learn the names of nodes already running, so the `ros2 node`/`param`/`lifecycle` CLI cannot find them (rclpy nodes alike) |
 | Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout` with configurable `rosoutQos`, log files), logger levels, `~/get_logger_levels` / `~/set_logger_levels` (`enableLoggerService`) |
 
@@ -96,11 +96,19 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
 
 - Numeric arrays are TypedArrays over the message memory, including `int64`/`uint64` (`BigInt64Array`) and
   `bool` (`Uint8Array`) arrays. `msg.set({...})` assigns nested fields; `msg.toObject()` copies out.
-- Where the memory comes from depends on the middleware:
-  - Fast DDS (Jazzy and newer) lends memory to publishers of fixed-size types (`publisher.canLoanMessages`).
-    It lends to subscriptions only when the process starts with `ROS_DISABLE_LOANED_MESSAGES=0`.
-  - Humble's Fast DDS, Cyclone DDS (without shared memory) and Zenoh lend nothing. The same API then works on a C message
-    owned by rclbunjs, published with `rcl_publish` and taken with `rcl_take`, which still skips the
+- Where the memory comes from depends on the middleware. Subscriptions get loans only when the process starts
+  with `ROS_DISABLE_LOANED_MESSAGES=0` (rcl's default, all distros).
+  - Fast DDS (Jazzy and newer) lends memory to publishers of fixed-size types (`publisher.canLoanMessages`),
+    and to subscriptions.
+  - Cyclone DDS with iceoryx shared memory (`CYCLONEDDS_URI` with `SharedMemory/Enable`, and `iox-roudi`
+    running) lends to publishers and subscriptions on Humble, Jazzy and Kilted.
+  - On Lyrical and Rolling (Cyclone DDS 11, `PubSubMessageExchange type="iox"`), rclbunjs uses publisher loans
+    only for types without fixed-size arrays and takes no loans, because of rmw_cyclonedds 4.x bugs: a loaned take
+    of anything but a raw shared-memory sample aborts the process (e.g. when a publisher goes away; rclcpp aborts
+    the same way), and for types with fixed-size arrays it can offer loans that Cyclone then rejects with an
+    assertion. Services do not work over shared memory there, with any client library.
+  - Humble's Fast DDS, Cyclone DDS without shared memory, and Zenoh lend nothing. The same API then works on a C
+    message owned by rclbunjs, published with `rcl_publish` and taken with `rcl_take`, which still skips the
     JavaScript CDR code.
 - Released views are detached, so a view used after its callback throws instead of reading memory that
   went back to the middleware.
@@ -114,6 +122,7 @@ the receiver's time from take to ack in parentheses):
 | Fast DDS, x86_64 (Ryzen 7 5700U) | 2395 µs (550 µs) | 1106 µs (201 µs) | 766 µs (25 µs) |
 | Cyclone DDS (no loans), arm64 | 1144 µs (62 µs) | 470 µs (27 µs) | — |
 | Cyclone DDS (no loans), x86_64 | 2352 µs (334 µs) | 1770 µs (178 µs) | — |
+| Cyclone DDS + iceoryx (Jazzy), x86_64 | 1766 µs (476 µs) | 693 µs (195 µs) | 309 µs (9 µs) |
 
 ## Typed messages
 
@@ -156,6 +165,7 @@ bun test test/unit                 # codec & logic tests, no ROS needed
 scripts/docker-test.sh             # integration tests in a ROS 2 container (rclpy/ros2 CLI interop)
 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh
 RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh       # starts rmw_zenohd in the container
+RCLBUN_CYCLONE_SHM=1 scripts/docker-test.sh                    # Cyclone DDS over iceoryx (Linux hosts only: RouDi needs /dev/shm ACLs)
 ROS_DISTRO=humble scripts/docker-test.sh                       # humble, jazzy, kilted, lyrical, rolling
 bunx tsc --noEmit && bunx tsc --noEmit -p test/types
 SOAK_MINUTES=60 scripts/docker-test.sh bun test/soak/soak.ts   # long-running stability / memory trend

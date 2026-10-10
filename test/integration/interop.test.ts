@@ -2,6 +2,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as rclbun from "../../src/index.ts";
 
+// Cyclone DDS over shared memory (RCLBUN_CYCLONE_SHM=1) does not deliver the transient-local
+// ros_discovery_info history to late joiners, so the ros2 CLI never learns node names
+// (rclpy nodes alike); the CLI test is skipped there.
+const cycloneShm = /SharedMemory|PubSubMessageExchange/.test(process.env.CYCLONEDDS_URI ?? "");
+
 let node: rclbun.Node;
 beforeAll(async () => {
   await rclbun.init();
@@ -96,7 +101,7 @@ print('SUM', f.result().sum)
     expect(out).toContain("SUM 42");
   }, 40000);
 
-  test("ros2 CLI sees the node and its topics", async () => {
+  test.skipIf(cycloneShm)("ros2 CLI sees the node and its topics", async () => {
     node.createPublisher("std_msgs/msg/String", "cli_visible");
     // a fresh CLI participant may return before discovery completes: retry
     const poll = async (args: string[], want: string) => {

@@ -5,7 +5,10 @@ import * as rclbun from "../../src/index.ts";
 // Loaned messages. Fast DDS (Jazzy+) lends memory to publishers of fixed-size types,
 // and to subscriptions only with ROS_DISABLE_LOANED_MESSAGES=0; Humble's Fast DDS,
 // Cyclone (without shared memory) and Zenoh lend nothing, so the same API runs on
-// shim-owned C messages there.
+// shim-owned C messages there. Cyclone with shared memory (RCLBUN_CYCLONE_SHM=1 in
+// scripts/docker-test.sh) lends too, except to subscriptions on Cyclone 11 (Lyrical+),
+// where rmw_cyclonedds aborts on a loaned take, and for types with fixed-size arrays
+// there.
 
 let node: rclbun.Node;
 beforeAll(async () => {
@@ -23,7 +26,14 @@ const until = async (cond: () => boolean, ms = 5000) => {
 
 const POSE = "geometry_msgs/msg/PoseWithCovariance";
 const BASIC = "test_msgs/msg/BasicTypes";
-const lends = (process.env.RMW_IMPLEMENTATION ?? "rmw_fastrtps_cpp") === "rmw_fastrtps_cpp" && process.env.ROS_DISTRO !== "humble";
+const rmw = process.env.RMW_IMPLEMENTATION ?? "rmw_fastrtps_cpp";
+const fastdds = rmw === "rmw_fastrtps_cpp" && process.env.ROS_DISTRO !== "humble";
+const cycloneShm = rmw === "rmw_cyclonedds_cpp" && /SharedMemory|PubSubMessageExchange/.test(process.env.CYCLONEDDS_URI ?? "");
+const cyclone11 = ["lyrical", "rolling"].includes(process.env.ROS_DISTRO ?? "");
+/** publisher loans; `arrays`: the type has fixed-size arrays */
+const pubLends = (arrays: boolean) => fastdds || (cycloneShm && !(cyclone11 && arrays));
+/** subscription loans with ROS_DISABLE_LOANED_MESSAGES=0 */
+const subLends = fastdds || (cycloneShm && !cyclone11);
 
 const basic = {
   bool_value: true,
@@ -44,7 +54,7 @@ const basic = {
 describe("loaned messages", () => {
   test("publish in place; plain and view subscriptions receive it", async () => {
     const pub = node.createPublisher(POSE, "loaned_pose");
-    expect(pub.canLoanMessages).toBe(lends);
+    expect(pub.canLoanMessages).toBe(pubLends(true));
     let decoded: any;
     let copy: any;
     let kept: any;
@@ -56,7 +66,7 @@ describe("loaned messages", () => {
     expect(await until(() => pub.subscriptionCount === 2)).toBe(true);
 
     const loan = pub.borrowLoanedMessage();
-    expect(loan.isLoaned).toBe(lends);
+    expect(loan.isLoaned).toBe(pubLends(true));
     expect(loan.message.pose.orientation.w).toBe(1); // defaults are filled in
     loan.message.pose.position.x = 1.5;
     loan.message.covariance[35] = 9;
@@ -175,7 +185,7 @@ describe("loaned messages", () => {
       .map((l) => JSON.parse(l));
     expect(got.map((g) => g.int32)).toEqual([1, 2, 3]);
     expect(got.map((g) => g.int64)).toEqual(["-1", "-2", "-3"]);
-    for (const g of got) expect(g.canLoan).toBe(lends);
+    for (const g of got) expect(g.canLoan).toBe(subLends);
   }, 30000);
 
   test("rclpy receives loaned messages and publishes to a view subscription", async () => {

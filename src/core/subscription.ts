@@ -7,7 +7,7 @@ import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
 import { openView, type ViewInfo } from "./message_view.ts";
-import { viewInfo } from "./loaned_message.ts";
+import { cycloneDds11, viewInfo } from "./loaned_message.ts";
 
 export class MessageInfo {
   constructor(
@@ -84,9 +84,12 @@ export class Subscription<T = any> extends Entity implements Waitable {
     this._events = createEvents(h, true, eventCallbacks);
   }
 
-  /** True if the middleware lends received messages (used when loanedMessages is set). */
+  /**
+   * True if the middleware lends received messages (used when loanedMessages is set).
+   * Never with rmw_cyclonedds on Cyclone DDS 11 (see cycloneDds11()).
+   */
   get canLoanMessages(): boolean {
-    return lib.rb_sub_can_loan(this.handle) === 1;
+    return lib.rb_sub_can_loan(this.handle) === 1 && !cycloneDds11();
   }
 
   get qos(): QoS {

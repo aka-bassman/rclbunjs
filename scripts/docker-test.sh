@@ -19,7 +19,19 @@ PRE=""
 if [ "${RMW_IMPLEMENTATION:-}" = rmw_zenoh_cpp ]; then
   PRE="(/opt/ros/${ROS_DISTRO}/lib/rmw_zenoh_cpp/rmw_zenohd >/tmp/rmw_zenohd.log 2>&1 &) && sleep 1 && "
 fi
-exec docker run --rm --network none \
+# RCLBUN_CYCLONE_SHM=1: Cyclone DDS over iceoryx shared memory (RouDi in the container).
+# RouDi needs POSIX ACLs on /dev/shm, which Docker Desktop's kernel lacks: use a Linux host.
+SHM=()
+if [ "${RCLBUN_CYCLONE_SHM:-}" = 1 ]; then
+  case "$ROS_DISTRO" in
+    humble|jazzy|kilted) CYCLONEDDS_URI='<CycloneDDS><Domain><SharedMemory><Enable>true</Enable></SharedMemory></Domain></CycloneDDS>' ;;
+    *) CYCLONEDDS_URI='<CycloneDDS><Domain><General><Interfaces><PubSubMessageExchange type="iox"/></Interfaces></General></Domain></CycloneDDS>' ;;
+  esac
+  SHM=(--shm-size=1g -e CYCLONEDDS_URI="$CYCLONEDDS_URI")
+  RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}"
+  PRE="(iox-roudi >/tmp/roudi.log 2>&1 &) && sleep 1 && "
+fi
+exec docker run --rm --network none ${SHM[@]+"${SHM[@]}"} \
   -e ROS_DOMAIN_ID="$((RANDOM % 100 + 1))" ${PASS[@]+"${PASS[@]}"} \
   ${RMW_IMPLEMENTATION:+-e RMW_IMPLEMENTATION="$RMW_IMPLEMENTATION"} \
   -v "$ROOT:/app" -w /app "$IMAGE" \

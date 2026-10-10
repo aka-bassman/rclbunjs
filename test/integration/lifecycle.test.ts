@@ -1,5 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as rclbun from "../../src/index.ts";
+
+// Cyclone DDS over shared memory (RCLBUN_CYCLONE_SHM=1) does not deliver the transient-local
+// ros_discovery_info history to late joiners, so the ros2 CLI never learns node names
+// (rclpy nodes alike); the CLI test is skipped there.
+const cycloneShm = /SharedMemory|PubSubMessageExchange/.test(process.env.CYCLONEDDS_URI ?? "");
 const { lifecycle } = rclbun;
 
 let node: rclbun.lifecycle.LifecycleNode;
@@ -51,7 +56,7 @@ describe("lifecycle", () => {
     node.registerOnConfigure(() => lifecycle.CallbackReturnCode.SUCCESS);
   });
 
-  test("ros2 lifecycle CLI drives the bun node", async () => {
+  test.skipIf(cycloneShm)("ros2 lifecycle CLI drives the bun node", async () => {
     const run = async (args: string) => (await Bun.$`ros2 lifecycle ${{ raw: args }}`.nothrow().quiet()).text();
     let nodes = "";
     for (const end = Date.now() + 20000; !nodes.includes("/lc_node") && Date.now() < end; await Bun.sleep(250)) nodes = await run("nodes");

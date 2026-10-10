@@ -9,7 +9,7 @@ import { assertValidMessage, type MessageValidationOptions } from "./message_val
 import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
 import { OperationError } from "./errors.ts";
 import { openView } from "./message_view.ts";
-import { LoanedMessage, viewInfo } from "./loaned_message.ts";
+import { cycloneDds11, hasFixedArray, LoanedMessage, viewInfo } from "./loaned_message.ts";
 
 export { LoanedMessage };
 
@@ -63,10 +63,11 @@ export class Publisher<T = any> extends Entity {
 
   /**
    * True if the middleware lends message memory for this publisher (Fast DDS with
-   * fixed-size types). borrowLoanedMessage() works either way.
+   * fixed-size types, Cyclone DDS with shared memory). Not for types with fixed-size
+   * arrays on Cyclone DDS 11 (see cycloneDds11()). borrowLoanedMessage() works either way.
    */
   get canLoanMessages(): boolean {
-    return lib.rb_pub_can_loan(this.handle) === 1;
+    return lib.rb_pub_can_loan(this.handle) === 1 && !(cycloneDds11() && hasFixedArray(this.typeClass));
   }
 
   /**

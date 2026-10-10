@@ -1,6 +1,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
 import * as rclbun from "../../src/index.ts";
+
+// Cyclone DDS over shared memory (RCLBUN_CYCLONE_SHM=1) does not deliver the transient-local
+// ros_discovery_info history to late joiners, so the ros2 CLI never learns node names
+// (rclpy nodes alike); the CLI test is skipped there.
+const cycloneShm = /SharedMemory|PubSubMessageExchange/.test(process.env.CYCLONEDDS_URI ?? "");
+
 const { Parameter, ParameterType: PT, ParameterDescriptor, FloatingPointRange, IntegerRange } = rclbun;
 
 const until = async (cond: () => boolean | Promise<boolean>, ms = 10000) => {
@@ -100,7 +106,7 @@ describe("remote access", () => {
     return r.stdout.toString() + r.stderr.toString();
   };
 
-  test("ros2 param CLI against the bun node", async () => {
+  test.skipIf(cycloneShm)("ros2 param CLI against the bun node", async () => {
     node.declareParameter(new Parameter("cli_param", PT.PARAMETER_INTEGER, 10n));
     const cli = async (args: string) => (await Bun.$`ros2 param ${{ raw: args }} --no-daemon`.nothrow().quiet()).text();
     // discovery of a fresh CLI participant can take a moment
