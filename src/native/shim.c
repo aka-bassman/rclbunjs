@@ -1123,8 +1123,26 @@ void* rb_msg_alloc(const void* ts) {
   }
   const rosidl_typesupport_introspection_c__MessageMembers* mm = its->data;
   void* msg = calloc(1, mm->size_of_);
+  if (!msg) {
+    rb_set_error("out of memory allocating a message");
+    return NULL;
+  }
   mm->init_function(msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
   return msg;
+}
+
+// Back to the type's default values, as rb_msg_alloc returns it (for reuse).
+void rb_msg_reset(const void* ts, void* msg) {
+  const rosidl_message_type_support_t* its =
+      get_message_typesupport_handle(ts, rosidl_typesupport_introspection_c__identifier);
+  if (!its) {
+    rcutils_reset_error();
+    return;
+  }
+  const rosidl_typesupport_introspection_c__MessageMembers* mm = its->data;
+  mm->fini_function(msg);
+  memset(msg, 0, mm->size_of_);
+  mm->init_function(msg, ROSIDL_RUNTIME_C_MSG_INIT_ALL);
 }
 
 void rb_msg_free(const void* ts, void* msg) {
@@ -1447,10 +1465,12 @@ const char* rb_message_type_hash(const void* ts) {
 #if !defined(RB_DISTRO_HUMBLE)
   const rosidl_message_type_support_t* t = ts;
   if (t && t->get_type_hash_func) {
+    // rcutils allocates with glibc; free() here is Bun's allocator under TinyCC
+    rcutils_allocator_t a = rcutils_get_default_allocator();
     char* str = NULL;
-    if (rosidl_stringify_type_hash(t->get_type_hash_func(t), rcutils_get_default_allocator(), &str) == RCUTILS_RET_OK) {
+    if (rosidl_stringify_type_hash(t->get_type_hash_func(t), a, &str) == RCUTILS_RET_OK) {
       js_lit(str);
-      free(str);
+      a.deallocate(str, a.state);
     }
   }
 #else

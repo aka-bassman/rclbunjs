@@ -146,6 +146,7 @@ export const symbols = {
   rb_sub_return_loaned: { returns: I32, args: [P, P] },
   rb_sub_take_c: { returns: I32, args: [P, P] },
   rb_msg_alloc: { returns: P, args: [P] },
+  rb_msg_reset: { returns: VOID, args: [P, P] },
   rb_msg_free: { returns: VOID, args: [P, P] },
   rb_msg_layout: { returns: CSTR, args: [P] },
   rb_graph_service_endpoint_info: { returns: CSTR, args: [P, I32, P, I32] },

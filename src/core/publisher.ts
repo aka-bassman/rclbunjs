@@ -13,6 +13,9 @@ import { cycloneDds11, hasFixedArray, LoanedMessage, viewInfo } from "./loaned_m
 
 export { LoanedMessage };
 
+// C messages a publisher keeps for reuse when the middleware cannot loan
+const SPARE_MAX = 4;
+
 export class Publisher<T = any> extends Entity {
   readonly typeClass: MessageType;
   readonly loggerName: string;
@@ -22,6 +25,8 @@ export class Publisher<T = any> extends Entity {
   /** @internal */
   readonly _events: QoSEvent[];
   readonly #loans = new Set<LoanedMessage<T>>();
+  /** C messages given back by publish/return, reused by the next borrow without a loan */
+  readonly #spare: Pointer[] = [];
 
   /** @internal */
   constructor(nodeHandle: Pointer, loggerName: string, msgType: MessageType, topic: string, options: EntityOptions, eventCallbacks?: EventCallbacks) {
@@ -72,16 +77,17 @@ export class Publisher<T = any> extends Entity {
 
   /**
    * Borrows a message to fill in place and publish without serializing it in
-   * JavaScript. The type must be fixed-size (no strings or sequences). When the
-   * middleware cannot loan, the message lives in a C message owned by rclbunjs and
-   * is published with rcl_publish.
+   * JavaScript. The type must be fixed-size (no strings or sequences). It starts
+   * with the type's default values. When the middleware cannot loan, the message
+   * lives in a C message owned by rclbunjs (reused for later borrows) and is
+   * published with rcl_publish.
    */
   borrowLoanedMessage(): LoanedMessage<T> {
     this.assertAlive();
     const info = viewInfo(this.typeClass);
     const ts = this.typeClass.typeSupport();
     const loaned = this.canLoanMessages;
-    const p = loaned ? check(lib.rb_pub_borrow(this.handle, ts), `borrow a message on ${this.topic}`) : check(lib.rb_msg_alloc(ts), "allocate a message");
+    const p = loaned ? check(lib.rb_pub_borrow(this.handle, ts), `borrow a message on ${this.topic}`) : this.#cMessage(ts);
     const loan = new LoanedMessage<T>(this, p, loaned, openView<T>(info, p));
     this.#loans.add(loan);
     return loan;
@@ -98,7 +104,7 @@ export class Publisher<T = any> extends Entity {
     try {
       checkRc(lib.rb_pub_publish_c(this.handle, p), `publish on ${this.topic}`);
     } finally {
-      lib.rb_msg_free(this.typeClass.typeSupport(), p);
+      this.#giveBack(p, false);
     }
   }
 
@@ -113,8 +119,16 @@ export class Publisher<T = any> extends Entity {
     return loan._take();
   }
 
+  #cMessage(ts: Pointer): Pointer {
+    const p = this.#spare.pop();
+    if (p === undefined) return check(lib.rb_msg_alloc(ts), "allocate a message");
+    lib.rb_msg_reset(ts, p);
+    return p;
+  }
+
   #giveBack(p: Pointer, loaned: boolean): void {
     if (loaned) checkRc(lib.rb_pub_return_loaned(this.handle, p), "return a loaned message");
+    else if (this.#spare.length < SPARE_MAX) this.#spare.push(p);
     else lib.rb_msg_free(this.typeClass.typeSupport(), p);
   }
 
@@ -161,6 +175,8 @@ export class Publisher<T = any> extends Entity {
       }
     }
     this.#loans.clear();
+    for (const p of this.#spare) lib.rb_msg_free(this.typeClass.typeSupport(), p);
+    this.#spare.length = 0;
     this.markDestroyed();
     for (const e of this._events) e.fini();
     lib.rb_pub_fini(this.handle);

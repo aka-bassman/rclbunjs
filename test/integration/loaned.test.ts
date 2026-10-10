@@ -125,6 +125,34 @@ describe("loaned messages", () => {
     other.publish(b);
   });
 
+  test("every borrow starts from the defaults, also when a C message is reused", async () => {
+    const pub = node.createPublisher(POSE, "loaned_reuse");
+    const got: any[] = [];
+    node.createSubscription(POSE, "loaned_reuse", {}, (m: any) => got.push(m));
+    expect(await until(() => pub.subscriptionCount === 1)).toBe(true);
+    // more loans out at once than the publisher keeps for reuse, all given back
+    const many = Array.from({ length: 6 }, () => pub.borrowLoanedMessage());
+    many.forEach((l, i) => (l.message.pose.position.x = 100 + i));
+    pub.publish(many[0]!);
+    for (const l of many.slice(1)) pub.returnLoanedMessage(l);
+    for (let i = 1; i <= 6; i++) {
+      const loan = pub.borrowLoanedMessage();
+      expect(loan.message.pose.position.x).toBe(0);
+      expect(loan.message.pose.orientation.w).toBe(1);
+      expect(loan.message.covariance[35]).toBe(0);
+      loan.message.pose.position.x = i;
+      loan.message.pose.orientation.w = -1;
+      loan.message.covariance[35] = i;
+      pub.publish(loan);
+    }
+    expect(await until(() => got.length === 7)).toBe(true);
+    expect(got.map((m) => m.pose.position.x)).toEqual([100, 1, 2, 3, 4, 5, 6]);
+    expect(got.map((m) => m.covariance[35])).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(got.slice(1).every((m) => m.pose.orientation.w === -1)).toBe(true);
+    pub.returnLoanedMessage(pub.borrowLoanedMessage());
+    node.destroyPublisher(pub); // frees the kept C messages
+  });
+
   test("inactive lifecycle publishers return loans; views do not leave callbacks", async () => {
     const lc = rclbun.createLifecycleNode("loaned_lc");
     const pub = lc.createLifecyclePublisher(POSE, "loaned_lc_pose");

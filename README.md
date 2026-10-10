@@ -109,7 +109,8 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
     assertion. Services do not work over shared memory there, with any client library.
   - Humble's Fast DDS, Cyclone DDS without shared memory, and Zenoh lend nothing. The same API then works on a C
     message owned by rclbunjs, published with `rcl_publish` and taken with `rcl_take`, which still skips the
-    JavaScript CDR code.
+    JavaScript CDR code. Publishers and subscriptions reuse these C messages instead of allocating one per message.
+- A borrowed message always starts with the type's default values, whether it was lent or reused.
 - Released views are detached, so a view used after its callback throws instead of reading memory that
   went back to the middleware.
 
