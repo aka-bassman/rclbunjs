@@ -6,7 +6,7 @@ import type { MessageType } from "../interfaces/registry.ts";
 import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
-import { openView, type ViewInfo } from "./message_view.ts";
+import { openView, ReusedViews, type ViewInfo } from "./message_view.ts";
 import { cycloneDds11, viewInfo } from "./loaned_message.ts";
 
 export class MessageInfo {
@@ -47,6 +47,11 @@ export class Subscription<T = any> extends Entity implements Waitable {
   readonly #view: ViewInfo | null;
   /** loanedMessages without middleware loans: C message reused for every take */
   #cmsg: Pointer | null = null;
+  /** loanedMessages with reuseViews */
+  readonly #views: ReusedViews | null;
+  /** ArrayBuffer over the shim's serialized take buffer, kept while its address and size allow */
+  #takeBuf: ArrayBuffer | null = null;
+  #takeAt = 0;
   /** @internal */
   readonly _events: QoSEvent[];
   /** @internal set by the node: parks its wait thread before we mutate reader state */
@@ -80,6 +85,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
     this.#wantsInfo = callback.length >= 2;
     this.#qos = qos;
     this.#view = view;
+    this.#views = view && options.reuseViews === true ? new ReusedViews(view) : null;
     if (view && !this.canLoanMessages) this.#cmsg = check(lib.rb_msg_alloc(msgType.typeSupport()), "allocate a message");
     this._events = createEvents(h, true, eventCallbacks);
   }
@@ -144,7 +150,14 @@ export class Subscription<T = any> extends Entity implements Waitable {
     for (let i = 0; i < MAX_TAKE && !this.isDestroyed(); i++) {
       const n = Number(checkRc(lib.rb_sub_take(this.handle, ptr(OUT)), `take on ${this.topic}`));
       if (n === 0) return;
-      const view = new Uint8Array(toArrayBuffer(Number(OUT[0]) as Pointer, 0, n));
+      // a new ArrayBuffer per take would count n bytes against the GC each time; the
+      // bytes are copied out below, so one buffer over the take memory can be reused
+      const at = Number(OUT[0]);
+      if (at !== this.#takeAt || this.#takeBuf!.byteLength < n) {
+        this.#takeBuf = toArrayBuffer(at as Pointer, 0, n);
+        this.#takeAt = at;
+      }
+      const view = new Uint8Array(this.#takeBuf!, 0, n);
       const msg = this.isRaw
         ? view.slice()
         : convertForDelivery(this.options.zeroCopy ? this.typeClass.decode(view.slice(), ZERO_COPY) : this.typeClass.decode(view), this.options);
@@ -168,7 +181,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
         if (checkRc(lib.rb_sub_take_loaned(this.handle, ptr(OUT)), `take a loaned message on ${this.topic}`) === 0) return;
         p = Number(OUT[0]) as Pointer;
       }
-      const v = openView(info, p);
+      const v = this.#views ? this.#views.open(p) : openView(info, p);
       try {
         if (this.#wantsInfo) {
           lib.rb_sub_last_info(this.handle, ptr(INFO));
@@ -191,5 +204,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
     lib.rb_sub_fini(this.handle);
     if (this.#cmsg) lib.rb_msg_free(this.typeClass.typeSupport(), this.#cmsg);
     this.#cmsg = null;
+    this.#views?.clear();
+    this.#takeBuf = null;
   }
 }

@@ -113,6 +113,12 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
 - A borrowed message always starts with the type's default values, whether it was lent or reused.
 - Released views are detached, so a view used after its callback throws instead of reading memory that
   went back to the middleware.
+- Each view is a new `ArrayBuffer` over the message memory, and Bun's garbage collector counts it as an
+  allocation of that size: with 1 MiB messages it collects every few messages (pauses of about 0.5 ms).
+  `reuseViews: true`, a publisher or subscription option, keeps one view per message memory instead, so nothing
+  is allocated per message. The price is the safety net above: a view or array used after its callback,
+  `publish` or return is no longer caught. It reads or writes whatever that memory holds by then (a later message,
+  or a sample other processes are reading), and can crash the process once the publisher or subscription is gone.
 
 `benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes (median round trip, and
 the receiver's time from take to ack in parentheses):
@@ -124,6 +130,15 @@ the receiver's time from take to ack in parentheses):
 | Cyclone DDS (no loans), arm64 | 1144 µs (62 µs) | 470 µs (27 µs) | — |
 | Cyclone DDS (no loans), x86_64 | 2352 µs (334 µs) | 1770 µs (178 µs) | — |
 | Cyclone DDS + iceoryx (Jazzy), x86_64 | 1766 µs (476 µs) | 693 µs (195 µs) | 309 µs (9 µs) |
+
+With `reuseViews` on both sides the medians drop a little and the tail much more (round trip, median / 90th
+percentile, two runs each, arm64):
+
+| | default | `reuseViews` |
+|---|---|---|
+| Fast DDS, loaned publish, view receive | 436–443 / 2879–9823 µs | 378–388 / 434–464 µs |
+| Fast DDS, loaned on both sides | 401–422 / 3004–8934 µs | 346–347 / 393–395 µs |
+| Cyclone DDS (no loans), C messages on both sides | 549–1018 / 2573–4357 µs | 455–463 / 512–525 µs |
 
 ## Typed messages
 

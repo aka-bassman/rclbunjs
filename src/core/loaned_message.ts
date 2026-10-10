@@ -78,7 +78,8 @@ export function hasFixedArray(type: MessageType): boolean {
  * middleware memory when the middleware can loan (Fast DDS with fixed-size
  * types), otherwise in a C message owned by rclbunjs. Publish it with
  * `publisher.publish(loan)` or give it back with `publisher.returnLoanedMessage(loan)`;
- * after either, `message` and arrays taken from it no longer work.
+ * after either, `message` and arrays taken from it no longer work (with the
+ * publisher option `reuseViews` they keep working on memory that is no longer yours).
  */
 export class LoanedMessage<T = any> {
   /** The message, edited in place. */

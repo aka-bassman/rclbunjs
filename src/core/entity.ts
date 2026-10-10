@@ -57,6 +57,15 @@ export interface EntityOptions {
    * Fixed-size message types only. Default false.
    */
   loanedMessages?: boolean;
+  /**
+   * Publishers (borrowLoanedMessage) and loanedMessages subscriptions: keep one
+   * view per message memory instead of detaching it after each message. Faster
+   * for large messages (no garbage-collector pressure per message), but a view or
+   * array used after its callback, publish or return is no longer caught: it
+   * reads or writes whatever that memory holds by then, and can crash the
+   * process once the publisher or subscription is destroyed. Default false.
+   */
+  reuseViews?: boolean;
   /** Publishers: validate every published message (see validateMessage). Default false. */
   validateMessages?: boolean;
   /** Clients: validate every request. Default false. */

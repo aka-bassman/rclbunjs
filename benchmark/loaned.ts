@@ -12,6 +12,7 @@
 //   loan/take  borrowLoanedMessage() -> fill in place -> rcl_publish_loaned_message; the echo reads a
 //              view over its own C message (rcl_take copies out of the middleware)
 //   loan/loan  same, and the echo also takes a loan (ROS_DISABLE_LOANED_MESSAGES=0)
+//   ... reuse  the same two with reuseViews on both sides (views are not detached per message)
 import { join } from "node:path";
 import * as rclbun from "../src/index.ts";
 
@@ -27,11 +28,11 @@ for (let i = 0; i < frame.length; i++) frame[i] = i & 255;
 let pending: ((v: { x: number; y: number }) => void) | null = null;
 node.createSubscription("geometry_msgs/msg/Vector3", "lb_ack", { qos }, (m: any) => pending?.(m));
 
-async function run(label: string, echoMode: string, echoEnv: Record<string, string>, send: (seq: bigint) => void) {
+async function run(label: string, echoMode: string, echoEnv: Record<string, string>, send: (seq: bigint) => void, pubOptions: { reuseViews?: boolean } = {}) {
   const child = Bun.spawn(["bun", join(import.meta.dir, "loaned_echo.ts"), echoMode], { env: { ...process.env, ...echoEnv }, stdout: "pipe", stderr: "inherit" });
   const reader = child.stdout.getReader();
   const first = JSON.parse(new TextDecoder().decode((await reader.read()).value).split("\n")[0]!);
-  const pub = node.createPublisher(FRAME, "lb_frame", { qos });
+  const pub = node.createPublisher(FRAME, "lb_frame", { qos, ...pubOptions });
   while (pub.subscriptionCount < 1) await Bun.sleep(10);
   await Bun.sleep(300);
   const rtt: number[] = [];
@@ -87,6 +88,8 @@ const results = [
   await run("cdr", "cdr", {}, sendCdr),
   await run("loan/take", "view", { ROS_DISABLE_LOANED_MESSAGES: "1" }, sendLoan),
   await run("loan/loan", "view", { ROS_DISABLE_LOANED_MESSAGES: "0" }, sendLoan),
+  await run("loan/take reuse", "view_reuse", { ROS_DISABLE_LOANED_MESSAGES: "1" }, sendLoan, { reuseViews: true }),
+  await run("loan/loan reuse", "view_reuse", { ROS_DISABLE_LOANED_MESSAGES: "0" }, sendLoan, { reuseViews: true }),
 ];
 console.table(results);
 console.log(JSON.stringify({ rmw: rclbun.RMWUtils.getRMWName(), distro: process.env.ROS_DISTRO, results }));

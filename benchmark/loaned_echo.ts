@@ -1,6 +1,6 @@
 // Child of benchmark/loaned.ts: receives 1 MiB frames and acks each one with
 // { x: seq (0 if the bytes are wrong), y: callback time in µs }.
-// argv[2]: "cdr" (decoded, zeroCopy) or "view" (loanedMessages).
+// argv[2]: "cdr" (decoded, zeroCopy), "view" (loanedMessages) or "view_reuse" (with reuseViews).
 import * as rclbun from "../src/index.ts";
 
 const mode = process.argv[2];
@@ -16,9 +16,9 @@ let turn = 0;
 const reply = (x: number) => ack.publish({ x, y: (performance.now() - turn) * 1000 });
 const onView = (m: any) => reply(check(m.seq, m.data));
 const sub =
-  mode === "view"
-    ? node.createSubscription("rclbun_test_msgs/msg/FixedFrame", "lb_frame", { qos, loanedMessages: true }, onView)
-    : node.createSubscription("rclbun_test_msgs/msg/FixedFrame", "lb_frame", { qos, zeroCopy: true }, onView);
+  mode === "cdr"
+    ? node.createSubscription("rclbun_test_msgs/msg/FixedFrame", "lb_frame", { qos, zeroCopy: true }, onView)
+    : node.createSubscription("rclbun_test_msgs/msg/FixedFrame", "lb_frame", { qos, loanedMessages: true, reuseViews: mode === "view_reuse" }, onView);
 const execute = sub.execute.bind(sub);
 sub.execute = () => {
   turn = performance.now();

@@ -209,3 +209,34 @@ export function openView<T>(info: ViewInfo, p: Pointer): { view: MessageView<T>;
     release: () => void ab.transfer(0),
   };
 }
+
+const keep = () => {};
+// Addresses a ReusedViews remembers; middleware loans cycle through a small pool,
+// and an entity that sees more distinct addresses than this starts over.
+const MAX_REUSED = 64;
+
+/**
+ * @internal Views for publishers and subscriptions created with `reuseViews`: one
+ * view per message address, kept instead of detached. An ArrayBuffer over n bytes
+ * counts as n bytes of allocation for the garbage collector, so a fresh 1 MiB view
+ * per message triggers a collection every few messages.
+ */
+export class ReusedViews {
+  readonly #views = new Map<number, MessageViewMethods<unknown>>();
+
+  constructor(readonly info: ViewInfo) {}
+
+  open<T>(p: Pointer): { view: MessageView<T>; release(): void } {
+    let view = this.#views.get(p as number);
+    if (!view) {
+      if (this.#views.size >= MAX_REUSED) this.#views.clear();
+      view = new this.info.View(new DataView(toArrayBuffer(p, 0, this.info.size)), 0);
+      this.#views.set(p as number, view);
+    }
+    return { view: view as MessageView<T>, release: keep };
+  }
+
+  clear(): void {
+    this.#views.clear();
+  }
+}

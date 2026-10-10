@@ -8,7 +8,7 @@ import type { MessageArg } from "../types.ts";
 import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
 import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
 import { OperationError } from "./errors.ts";
-import { openView } from "./message_view.ts";
+import { openView, ReusedViews } from "./message_view.ts";
 import { cycloneDds11, hasFixedArray, LoanedMessage, viewInfo } from "./loaned_message.ts";
 
 export { LoanedMessage };
@@ -27,6 +27,8 @@ export class Publisher<T = any> extends Entity {
   readonly #loans = new Set<LoanedMessage<T>>();
   /** C messages given back by publish/return, reused by the next borrow without a loan */
   readonly #spare: Pointer[] = [];
+  readonly #reuseViews: boolean;
+  #views: ReusedViews | null = null;
 
   /** @internal */
   constructor(nodeHandle: Pointer, loggerName: string, msgType: MessageType, topic: string, options: EntityOptions, eventCallbacks?: EventCallbacks) {
@@ -38,6 +40,7 @@ export class Publisher<T = any> extends Entity {
     this.#qos = qos;
     this.#validate = options.validateMessages === true;
     this.#validationOptions = options.validationOptions ?? { strict: true, checkTypes: true };
+    this.#reuseViews = options.reuseViews === true;
     this._events = createEvents(h, false, eventCallbacks);
   }
 
@@ -88,7 +91,8 @@ export class Publisher<T = any> extends Entity {
     const ts = this.typeClass.typeSupport();
     const loaned = this.canLoanMessages;
     const p = loaned ? check(lib.rb_pub_borrow(this.handle, ts), `borrow a message on ${this.topic}`) : this.#cMessage(ts);
-    const loan = new LoanedMessage<T>(this, p, loaned, openView<T>(info, p));
+    const view = this.#reuseViews ? (this.#views ??= new ReusedViews(info)).open<T>(p) : openView<T>(info, p);
+    const loan = new LoanedMessage<T>(this, p, loaned, view);
     this.#loans.add(loan);
     return loan;
   }
@@ -177,6 +181,7 @@ export class Publisher<T = any> extends Entity {
     this.#loans.clear();
     for (const p of this.#spare) lib.rb_msg_free(this.typeClass.typeSupport(), p);
     this.#spare.length = 0;
+    this.#views?.clear();
     this.markDestroyed();
     for (const e of this._events) e.fini();
     lib.rb_pub_fini(this.handle);

@@ -153,6 +153,41 @@ describe("loaned messages", () => {
     node.destroyPublisher(pub); // frees the kept C messages
   });
 
+  test("reuseViews keeps views attached and reuses them", async () => {
+    const pub = node.createPublisher(POSE, "loaned_reuse_views", { reuseViews: true });
+    const got: any[] = [];
+    const views = new Set<object>();
+    let kept: any;
+    const sub = node.createSubscription(POSE, "loaned_reuse_views", { loanedMessages: true, reuseViews: true }, (m) => {
+      got.push(m.toObject());
+      views.add(m);
+      kept = m;
+    });
+    expect(await until(() => pub.subscriptionCount === 1)).toBe(true);
+    const messages = new Set<object>();
+    for (let i = 1; i <= 20; i++) {
+      const loan = pub.borrowLoanedMessage();
+      expect(loan.message.pose.position.x).toBe(0); // reset on every borrow
+      expect(loan.message.covariance[0]).toBe(0);
+      loan.message.pose.position.x = i;
+      loan.message.covariance[0] = i;
+      messages.add(loan.message);
+      pub.publish(loan);
+      expect(loan.isValid).toBe(false);
+      expect(() => loan.message.pose.position.x).not.toThrow(); // not detached
+      expect(await until(() => got.length === i)).toBe(true);
+    }
+    expect(got.map((m) => m.pose.position.x)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    expect(got.map((m) => m.covariance[0])).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    expect(() => kept.pose.position.x).not.toThrow();
+    // a C message (no loans) is the same memory every time; loans cycle through a pool
+    if (!pub.canLoanMessages) expect(messages.size).toBe(1);
+    if (!sub.canLoanMessages) expect(views.size).toBe(1);
+    expect(messages.size).toBeLessThan(20);
+    expect(views.size).toBeLessThan(20);
+    node.destroyPublisher(pub);
+  });
+
   test("inactive lifecycle publishers return loans; views do not leave callbacks", async () => {
     const lc = rclbun.createLifecycleNode("loaned_lc");
     const pub = lc.createLifecyclePublisher(POSE, "loaned_lc_pose");

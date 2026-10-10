@@ -3,7 +3,7 @@
 import { describe, expect, test } from "bun:test";
 import { ptr } from "bun:ffi";
 import { RangeValidationError, TypeValidationError } from "../../src/core/errors.ts";
-import { compileView, openView, type Layout } from "../../src/core/message_view.ts";
+import { compileView, openView, ReusedViews, type Layout } from "../../src/core/message_view.ts";
 
 // type ids: rosidl_typesupport_introspection_c/field_types.h
 const F32 = 1, F64 = 2, CHAR = 4, BOOL = 6, U8 = 8, I16 = 11, U32 = 12, I64 = 15, U64 = 14, STR = 16, MSG = 18;
@@ -154,5 +154,23 @@ describe("message views", () => {
     expect(() => v.view.width).toThrow(TypeError);
     expect(data.length).toBe(0);
     expect(mem[0]).toBe(BigInt(3) << 32n); // the memory itself is untouched
+  });
+
+  test("reused views: one per address, never detached", () => {
+    const views = new ReusedViews({ size: frame.size, View: Frame });
+    const mems = Array.from({ length: 70 }, () => new BigUint64Array(19));
+    const a = views.open<any>(ptr(mems[0]!));
+    const data = a.view.data;
+    a.view.width = 7;
+    a.release();
+    expect(a.view.width).toBe(7); // still attached
+    const again = views.open<any>(ptr(mems[0]!));
+    expect(again.view).toBe(a.view);
+    expect(again.view.data).toBe(data);
+    expect(views.open<any>(ptr(mems[1]!)).view).not.toBe(a.view);
+    // more distinct addresses than it keeps: it starts over
+    for (const m of mems) views.open(ptr(m));
+    expect(views.open<any>(ptr(mems[0]!)).view).not.toBe(a.view);
+    views.clear();
   });
 });
