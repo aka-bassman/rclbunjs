@@ -127,8 +127,10 @@ bunx rclbunjs-typegen --packages my_msgs,geometry_msgs     # a subset
 Then include the generated file in your `tsconfig.json`. Message, request, response, goal and feedback types
 are inferred from the type name string.
 
-- The comments of the `.msg`/`.srv`/`.action` files become JSDoc on the interfaces and fields, with default
-  values (`@default`) and array bounds.
+- The comments of the `.msg`/`.srv`/`.action` files become JSDoc on the interfaces and fields, grouped the way
+  rosidl does it (the same text it writes into the generated `.idl`; a `[unit]` in a field comment becomes
+  `Unit:`), with default values (`@default`) and array bounds. Interfaces that only have an `.idl` file get their
+  `@verbatim` comments and `@unit` annotations.
 - Constants get literal types. As in rclnodejs, they are properties of `require()` results:
 
   ```ts

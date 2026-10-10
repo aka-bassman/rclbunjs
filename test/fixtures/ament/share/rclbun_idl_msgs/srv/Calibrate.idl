@@ -1,0 +1,19 @@
+module rclbun_idl_msgs {
+  module srv {
+    @verbatim (language="comment", text=
+      "Starts a calibration.")
+    struct Calibrate_Request {
+      @verbatim (language="comment", text=
+        "Seconds to sample.")
+      float duration;
+    };
+    struct Calibrate_Response {
+      boolean success;
+
+      @verbatim (language="comment", text=
+        "Why it failed," "\n"
+        "if it did.")
+      string message;
+    };
+  };
+};

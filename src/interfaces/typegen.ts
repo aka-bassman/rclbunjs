@@ -1,9 +1,10 @@
 // Builds the `declare module "rclbunjs"` augmentation for installed interfaces:
 // one interface per message struct (with the comments of the .msg/.srv/.action
-// file as JSDoc), constants as literal types, and the type maps.
+// file, or the comment annotations of an .idl-only interface, as JSDoc),
+// constants as literal types, and the type maps.
 import type { MessageDefinition, MessageDefinitionField } from "@foxglove/message-definition";
 import { listInterfacePackages, listInterfaces, readInterface, type InterfaceKind } from "./discovery.ts";
-import { jsdoc, parseInterfaceDocs, type StructDocs } from "./docs.ts";
+import { jsdoc, parseIdlDocs, parseInterfaceDocs, type StructDocs } from "./docs.ts";
 import { getActionType, getMessageType, getServiceType } from "./registry.ts";
 
 const TYPED: Record<string, string> = {
@@ -37,9 +38,10 @@ function literal(v: unknown): string {
   return JSON.stringify(v);
 }
 
-/** JSDoc tags for sizes, bounds and default values. */
-function fieldTags(f: MessageDefinitionField): string[] {
+/** JSDoc tags for the unit, sizes, bounds and default values. */
+function fieldTags(f: MessageDefinitionField, unit?: string): string[] {
   const tags: string[] = [];
+  if (unit !== undefined) tags.push(`Unit: ${unit}.`);
   if (f.isArray && f.arrayLength !== undefined) tags.push(`Fixed length: ${f.arrayLength}.`);
   if (f.isArray && f.arrayUpperBound !== undefined) tags.push(`At most ${f.arrayUpperBound} elements.`);
   if (f.upperBound !== undefined) tags.push(`At most ${f.upperBound} characters.`);
@@ -56,10 +58,10 @@ const SUFFIXES: Record<InterfaceKind, string[]> = { msg: [""], srv: ["_Request",
 function interfaceDocs(name: string, docs: Map<string, StructDocs>): void {
   const [pkg, kind, short] = name.split("/") as [string, InterfaceKind, string];
   const src = readInterface(pkg, kind, short);
-  if (!src || src.format !== "rosidl") return;
-  const parsed = parseInterfaceDocs(src.text, kind);
+  if (!src) return;
+  const parsed = src.format === "idl" ? parseIdlDocs(src.text) : parseInterfaceDocs(src.text, kind);
   for (const suffix of SUFFIXES[kind]) {
-    const d = parsed.get(suffix);
+    const d = parsed.get(src.format === "idl" ? `${short}${suffix}` : suffix);
     if (d) docs.set(`${name}${suffix}`, d);
   }
 }
@@ -114,7 +116,7 @@ export function generateDeclarations(opts: { packages?: string[]; moduleName?: s
     lines.push(jsdoc("  ", doc?.doc ? `${doc.doc}\n\n\`${name}\`` : `\`${name}\``).trimEnd());
     lines.push(`  interface ${ident(name)} {`);
     for (const f of fields) {
-      const block = jsdoc("    ", member(f.name), fieldTags(f));
+      const block = jsdoc("    ", member(f.name), fieldTags(f, doc?.units.get(f.name)));
       if (block) lines.push(block.trimEnd());
       lines.push(`    ${f.name}: ${fieldType(f)};`);
     }

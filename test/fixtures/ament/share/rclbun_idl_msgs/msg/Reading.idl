@@ -1,0 +1,37 @@
+// Hand-written IDL with no .msg: the documentation is in @verbatim comment
+// annotations, as rosidl_adapter writes them. This comment is not documentation.
+
+module rclbun_idl_msgs {
+  module msg {
+    typedef double double__3[3];
+    module Reading_Constants {
+      @verbatim (language="comment", text=
+        "The sensor is warming up.")
+      const uint8 STATE_WARMUP = 0;
+      const uint8 STATE_READY = 1;
+      @verbatim (language="comment", text="Name of the \"default\" sensor.")
+      const string DEFAULT_SENSOR = "imu; front";
+      const int64 MIN_TICKS = -9007199254740993;
+    };
+    @verbatim (language="comment", text=
+      "A sensor reading." "\n"
+      "" "\n"
+      "Values are in SI units.")
+    struct Reading {
+      @verbatim (language="comment", text=
+        "Acceleration per axis.")
+      @unit (value="m/s^2")
+      double__3 accel;
+
+      // a plain comment is not documentation
+      sequence<float, 8> samples;
+
+      @default (value=1)
+      @verbatim (language="comment", text=
+        "One of the STATE_* constants.")
+      uint8 state;
+
+      string<16> label;
+    };
+  };
+};

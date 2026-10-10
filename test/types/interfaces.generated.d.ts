@@ -2,9 +2,12 @@
 import "rclbunjs";
 
 declare module "rclbunjs" {
-  /** `action_msgs/msg/GoalInfo` */
+  /**
+   * Goal ID
+   *
+   * `action_msgs/msg/GoalInfo`
+   */
   interface action_msgs__msg__GoalInfo {
-    /** Goal ID */
     goal_id: unique_identifier_msgs__msg__UUID;
     /** Time when the goal was accepted */
     stamp: builtin_interfaces__msg__Time;
@@ -43,9 +46,12 @@ declare module "rclbunjs" {
     /** The goal was terminated by the action server without an external request. */
     readonly STATUS_ABORTED: 6;
   }
-  /** `action_msgs/msg/GoalStatusArray` */
+  /**
+   * An array of goal statuses.
+   *
+   * `action_msgs/msg/GoalStatusArray`
+   */
   interface action_msgs__msg__GoalStatusArray {
-    /** An array of goal statuses. */
     status_list: action_msgs__msg__GoalStatus[];
   }
   /**
@@ -135,50 +141,54 @@ declare module "rclbunjs" {
     readonly PENDING: 0;
     /** The goal is currently being processed by the action server. */
     readonly ACTIVE: 1;
-    /** The goal received a cancel request after it started executing */
+    /**
+     * The goal received a cancel request after it started executing
+     *   and has since completed its execution (Terminal State).
+     */
     readonly PREEMPTED: 2;
     /**
-     * and has since completed its execution (Terminal State).
      * The goal was achieved successfully by the action server
+     *   (Terminal State).
      */
     readonly SUCCEEDED: 3;
     /**
-     * (Terminal State).
      * The goal was aborted during execution by the action server due
+     *    to some failure (Terminal State).
      */
     readonly ABORTED: 4;
     /**
-     * to some failure (Terminal State).
      * The goal was rejected by the action server without being processed,
+     *    because the goal was unattainable or invalid (Terminal State).
      */
     readonly REJECTED: 5;
     /**
-     * because the goal was unattainable or invalid (Terminal State).
      * The goal received a cancel request after it started executing
+     *    and has not yet completed execution.
      */
     readonly PREEMPTING: 6;
     /**
-     * and has not yet completed execution.
      * The goal received a cancel request before it started executing, but
+     *    the action server has not yet confirmed that the goal is canceled.
      */
     readonly RECALLING: 7;
     /**
-     * the action server has not yet confirmed that the goal is canceled.
      * The goal received a cancel request before it started executing
+     *    and was successfully cancelled (Terminal State).
      */
     readonly RECALLED: 8;
     /**
-     * and was successfully cancelled (Terminal State).
      * An action client can determine that a goal is LOST. This should not
+     *    be sent over the wire by an action server.
      */
     readonly LOST: 9;
   }
-  /** `actionlib_msgs/msg/GoalStatusArray` */
+  /**
+   * Stores the statuses for goals that are currently being tracked
+   * by an action server
+   *
+   * `actionlib_msgs/msg/GoalStatusArray`
+   */
   interface actionlib_msgs__msg__GoalStatusArray {
-    /**
-     * Stores the statuses for goals that are currently being tracked
-     * by an action server
-     */
     header: std_msgs__msg__Header;
     status_list: actionlib_msgs__msg__GoalStatus[];
   }
@@ -220,16 +230,22 @@ declare module "rclbunjs" {
   /** `composition_interfaces/srv/ListNodes_Request` */
   interface composition_interfaces__srv__ListNodes_Request {
   }
-  /** `composition_interfaces/srv/ListNodes_Response` */
+  /**
+   * List of full node names including namespace.
+   *
+   * `composition_interfaces/srv/ListNodes_Response`
+   */
   interface composition_interfaces__srv__ListNodes_Response {
-    /** List of full node names including namespace. */
     full_node_names: string[];
     /** corresponding unique ids (must have same length as full_node_names). */
     unique_ids: bigint[];
   }
-  /** `composition_interfaces/srv/LoadNode_Request` */
+  /**
+   * The ROS package in which the composable node can be found.
+   *
+   * `composition_interfaces/srv/LoadNode_Request`
+   */
   interface composition_interfaces__srv__LoadNode_Request {
-    /** The ROS package in which the composable node can be found. */
     package_name: string;
     /** A plugin within the ROS package "package_name". */
     plugin_name: string;
@@ -261,9 +277,12 @@ declare module "rclbunjs" {
     /** key/value arguments that are specific to a type of container process. */
     extra_arguments: rcl_interfaces__msg__Parameter[];
   }
-  /** `composition_interfaces/srv/LoadNode_Response` */
+  /**
+   * True if the node was successfully loaded.
+   *
+   * `composition_interfaces/srv/LoadNode_Response`
+   */
   interface composition_interfaces__srv__LoadNode_Response {
-    /** True if the node was successfully loaded. */
     success: boolean;
     /** Human readable error message if success is false, else empty string. */
     error_message: string;
@@ -272,24 +291,31 @@ declare module "rclbunjs" {
     /** A unique identifier for the loaded node. */
     unique_id: bigint;
   }
-  /** `composition_interfaces/srv/UnloadNode_Request` */
+  /**
+   * Container specific unique id of a loaded node.
+   *
+   * `composition_interfaces/srv/UnloadNode_Request`
+   */
   interface composition_interfaces__srv__UnloadNode_Request {
-    /** Container specific unique id of a loaded node. */
     unique_id: bigint;
   }
-  /** `composition_interfaces/srv/UnloadNode_Response` */
+  /**
+   * True if the node existed and was unloaded.
+   *
+   * `composition_interfaces/srv/UnloadNode_Response`
+   */
   interface composition_interfaces__srv__UnloadNode_Response {
-    /** True if the node existed and was unloaded. */
     success: boolean;
     /** Human readable error message if success is false, else empty string. */
     error_message: string;
   }
-  /** `diagnostic_msgs/msg/DiagnosticArray` */
+  /**
+   * This message is used to send diagnostic information about the state of the robot.
+   *
+   * `diagnostic_msgs/msg/DiagnosticArray`
+   */
   interface diagnostic_msgs__msg__DiagnosticArray {
-    /**
-     * This message is used to send diagnostic information about the state of the robot.
-     * for timestamp
-     */
+    /** for timestamp */
     header: std_msgs__msg__Header;
     /** an array of components being reported on */
     status: diagnostic_msgs__msg__DiagnosticStatus[];
@@ -319,9 +345,12 @@ declare module "rclbunjs" {
     readonly ERROR: 2;
     readonly STALE: 3;
   }
-  /** `diagnostic_msgs/msg/KeyValue` */
+  /**
+   * What to label this value when viewing.
+   *
+   * `diagnostic_msgs/msg/KeyValue`
+   */
   interface diagnostic_msgs__msg__KeyValue {
-    /** What to label this value when viewing. */
     key: string;
     /** A value to track over time. */
     value: string;
@@ -371,39 +400,50 @@ declare module "rclbunjs" {
     passed: number;
     status: diagnostic_msgs__msg__DiagnosticStatus[];
   }
-  /** `example_interfaces/action/Fibonacci_Feedback` */
+  /**
+   * Feedback
+   *
+   * `example_interfaces/action/Fibonacci_Feedback`
+   */
   interface example_interfaces__action__Fibonacci_Feedback {
-    /** Feedback */
     sequence: Int32Array | number[];
   }
-  /** `example_interfaces/action/Fibonacci_Goal` */
+  /**
+   * Goal
+   *
+   * `example_interfaces/action/Fibonacci_Goal`
+   */
   interface example_interfaces__action__Fibonacci_Goal {
-    /** Goal */
     order: number;
   }
-  /** `example_interfaces/action/Fibonacci_Result` */
+  /**
+   * Result
+   *
+   * `example_interfaces/action/Fibonacci_Result`
+   */
   interface example_interfaces__action__Fibonacci_Result {
-    /** Result */
     sequence: Int32Array | number[];
   }
-  /** `example_interfaces/msg/Bool` */
+  /**
+   * This is an example message of using a primitive datatype, bool.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Bool`
+   */
   interface example_interfaces__msg__Bool {
-    /**
-     * This is an example message of using a primitive datatype, bool.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: boolean;
   }
-  /** `example_interfaces/msg/Byte` */
+  /**
+   * This is an example message of using a primitive datatype, byte.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Byte`
+   */
   interface example_interfaces__msg__Byte {
-    /**
-     * This is an example message of using a primitive datatype, byte.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -414,19 +454,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/ByteMultiArray`
    */
   interface example_interfaces__msg__ByteMultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Uint8Array | number[];
   }
-  /** `example_interfaces/msg/Char` */
+  /**
+   * This is an example message of using a primitive datatype, char.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Char`
+   */
   interface example_interfaces__msg__Char {
-    /**
-     * This is an example message of using a primitive datatype, char.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -437,14 +482,15 @@ declare module "rclbunjs" {
    */
   interface example_interfaces__msg__Empty {
   }
-  /** `example_interfaces/msg/Float32` */
+  /**
+   * This is an example message of using a primitive datatype, float32.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Float32`
+   */
   interface example_interfaces__msg__Float32 {
-    /**
-     * This is an example message of using a primitive datatype, float32.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -455,19 +501,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Float32MultiArray`
    */
   interface example_interfaces__msg__Float32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Float32Array | number[];
   }
-  /** `example_interfaces/msg/Float64` */
+  /**
+   * This is an example message of using a primitive datatype, float64.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Float64`
+   */
   interface example_interfaces__msg__Float64 {
-    /**
-     * This is an example message of using a primitive datatype, float64.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -478,19 +529,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Float64MultiArray`
    */
   interface example_interfaces__msg__Float64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Float64Array | number[];
   }
-  /** `example_interfaces/msg/Int16` */
+  /**
+   * This is an example message of using a primitive datatype, int16.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Int16`
+   */
   interface example_interfaces__msg__Int16 {
-    /**
-     * This is an example message of using a primitive datatype, int16.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -501,19 +557,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Int16MultiArray`
    */
   interface example_interfaces__msg__Int16MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Int16Array | number[];
   }
-  /** `example_interfaces/msg/Int32` */
+  /**
+   * This is an example message of using a primitive datatype, int32.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Int32`
+   */
   interface example_interfaces__msg__Int32 {
-    /**
-     * This is an example message of using a primitive datatype, int32.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -524,19 +585,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Int32MultiArray`
    */
   interface example_interfaces__msg__Int32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Int32Array | number[];
   }
-  /** `example_interfaces/msg/Int64` */
+  /**
+   * This is an example message of using a primitive datatype, int64.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Int64`
+   */
   interface example_interfaces__msg__Int64 {
-    /**
-     * This is an example message of using a primitive datatype, int64.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: bigint;
   }
   /**
@@ -547,19 +613,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Int64MultiArray`
    */
   interface example_interfaces__msg__Int64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: bigint[];
   }
-  /** `example_interfaces/msg/Int8` */
+  /**
+   * This is an example message of using a primitive datatype, in8.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/Int8`
+   */
   interface example_interfaces__msg__Int8 {
-    /**
-     * This is an example message of using a primitive datatype, in8.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -570,7 +641,11 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/Int8MultiArray`
    */
   interface example_interfaces__msg__Int8MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Int8Array | number[];
@@ -598,29 +673,56 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/MultiArrayLayout`
    */
   interface example_interfaces__msg__MultiArrayLayout {
-    /** Array of dimension properties */
+    /**
+     * The multiarray declares a generic multi-dimensional array of a
+     * particular data type.  Dimensions are ordered from outer most
+     * to inner most.
+     *
+     * Accessors should ALWAYS be written in terms of dimension stride
+     * and specified outer-most dimension first.
+     *
+     * multiarray(i,j,k) = data[data_offset + dim_stride[1]*i + dim_stride[2]*j + k]
+     *
+     * A standard, 3-channel 640x480 image with interleaved color channels
+     * would be specified as:
+     *
+     * dim[0].label  = "height"
+     * dim[0].size   = 480
+     * dim[0].stride = 3*640*480 = 921600  (note dim[0] stride is just size of image)
+     * dim[1].label  = "width"
+     * dim[1].size   = 640
+     * dim[1].stride = 3*640 = 1920
+     * dim[2].label  = "channel"
+     * dim[2].size   = 3
+     * dim[2].stride = 3
+     *
+     * multiarray(i,j,k) refers to the ith row, jth column, and kth channel.
+     * Array of dimension properties
+     */
     dim: example_interfaces__msg__MultiArrayDimension[];
     /** padding bytes at front of data */
     data_offset: number;
   }
-  /** `example_interfaces/msg/String` */
+  /**
+   * This is an example message of using a primitive datatype, string.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/String`
+   */
   interface example_interfaces__msg__String {
-    /**
-     * This is an example message of using a primitive datatype, string.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: string;
   }
-  /** `example_interfaces/msg/UInt16` */
+  /**
+   * This is an example message of using a primitive datatype, uint16.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/UInt16`
+   */
   interface example_interfaces__msg__UInt16 {
-    /**
-     * This is an example message of using a primitive datatype, uint16.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -631,19 +733,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/UInt16MultiArray`
    */
   interface example_interfaces__msg__UInt16MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Uint16Array | number[];
   }
-  /** `example_interfaces/msg/UInt32` */
+  /**
+   * This is an example message of using a primitive datatype, uint32.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/UInt32`
+   */
   interface example_interfaces__msg__UInt32 {
-    /**
-     * This is an example message of using a primitive datatype, uint32.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -654,19 +761,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/UInt32MultiArray`
    */
   interface example_interfaces__msg__UInt32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Uint32Array | number[];
   }
-  /** `example_interfaces/msg/UInt64` */
+  /**
+   * This is an example message of using a primitive datatype, unint64.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/UInt64`
+   */
   interface example_interfaces__msg__UInt64 {
-    /**
-     * This is an example message of using a primitive datatype, unint64.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: bigint;
   }
   /**
@@ -677,19 +789,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/UInt64MultiArray`
    */
   interface example_interfaces__msg__UInt64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: bigint[];
   }
-  /** `example_interfaces/msg/UInt8` */
+  /**
+   * This is an example message of using a primitive datatype, uint8.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/UInt8`
+   */
   interface example_interfaces__msg__UInt8 {
-    /**
-     * This is an example message of using a primitive datatype, uint8.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: number;
   }
   /**
@@ -700,19 +817,24 @@ declare module "rclbunjs" {
    * `example_interfaces/msg/UInt8MultiArray`
    */
   interface example_interfaces__msg__UInt8MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: example_interfaces__msg__MultiArrayLayout;
     /** array of data */
     data: Uint8Array | number[];
   }
-  /** `example_interfaces/msg/WString` */
+  /**
+   * This is an example message of using a primitive datatype, wstring.
+   * If you want to test with this that's fine, but if you are deploying
+   * it into a system you should create a semantically meaningful message type.
+   * If you want to embed it in another message, use the primitive data type instead.
+   *
+   * `example_interfaces/msg/WString`
+   */
   interface example_interfaces__msg__WString {
-    /**
-     * This is an example message of using a primitive datatype, wstring.
-     * If you want to test with this that's fine, but if you are deploying
-     * it into a system you should create a semantically meaningful message type.
-     * If you want to embed it in another message, use the primitive data type instead.
-     */
     data: string;
   }
   /** `example_interfaces/srv/AddTwoInts_Request` */
@@ -758,15 +880,21 @@ declare module "rclbunjs" {
     /** informational, e.g. for error messages. */
     message: string;
   }
-  /** `geometry_msgs/msg/Accel` */
+  /**
+   * This expresses acceleration in free space broken into its linear and angular parts.
+   *
+   * `geometry_msgs/msg/Accel`
+   */
   interface geometry_msgs__msg__Accel {
-    /** This expresses acceleration in free space broken into its linear and angular parts. */
     linear: geometry_msgs__msg__Vector3;
     angular: geometry_msgs__msg__Vector3;
   }
-  /** `geometry_msgs/msg/AccelStamped` */
+  /**
+   * An accel with reference coordinate frame and timestamp
+   *
+   * `geometry_msgs/msg/AccelStamped`
+   */
   interface geometry_msgs__msg__AccelStamped {
-    /** An accel with reference coordinate frame and timestamp */
     header: std_msgs__msg__Header;
     accel: geometry_msgs__msg__Accel;
   }
@@ -787,23 +915,35 @@ declare module "rclbunjs" {
      */
     covariance: Float64Array | number[];
   }
-  /** `geometry_msgs/msg/AccelWithCovarianceStamped` */
+  /**
+   * This represents an estimated accel with reference coordinate frame and timestamp.
+   *
+   * `geometry_msgs/msg/AccelWithCovarianceStamped`
+   */
   interface geometry_msgs__msg__AccelWithCovarianceStamped {
-    /** This represents an estimated accel with reference coordinate frame and timestamp. */
     header: std_msgs__msg__Header;
     accel: geometry_msgs__msg__AccelWithCovariance;
   }
-  /** `geometry_msgs/msg/Inertia` */
+  /**
+   * Mass
+   *
+   * `geometry_msgs/msg/Inertia`
+   */
   interface geometry_msgs__msg__Inertia {
-    /** Mass [kg] */
     m: number;
-    /** Center of mass [m] */
+    /**
+     * Center of mass
+     *
+     * Unit: m.
+     */
     com: geometry_msgs__msg__Vector3;
     /**
-     * Inertia Tensor [kg-m^2] about the center of mass
+     * Inertia Tensor about the center of mass
      *     | ixx ixy ixz |
      * I = | ixy iyy iyz |
      *     | ixz iyz izz |
+     *
+     * Unit: kg-m^2.
      */
     ixx: number;
     ixy: number;
@@ -821,9 +961,12 @@ declare module "rclbunjs" {
     header: std_msgs__msg__Header;
     inertia: geometry_msgs__msg__Inertia;
   }
-  /** `geometry_msgs/msg/Point` */
+  /**
+   * This contains the position of a point in free space
+   *
+   * `geometry_msgs/msg/Point`
+   */
   interface geometry_msgs__msg__Point {
-    /** This contains the position of a point in free space */
     x: number;
     y: number;
     z: number;
@@ -906,6 +1049,10 @@ declare module "rclbunjs" {
    * `geometry_msgs/msg/Pose2D`
    */
   interface geometry_msgs__msg__Pose2D {
+    /**
+     * In general our recommendation is to use a full 3D representation of everything and for 2D specific applications make the appropriate projections into the plane for their calculations but optimally will preserve the 3D information during processing.
+     * If we have parallel copies of 2D datatypes every UI and other pipeline will end up needing to have dual interfaces to plot everything. And you will end up with not being able to use 3D tools for 2D use cases even if they're completely valid, as you'd have to reimplement it with different inputs and outputs. It's not particularly hard to plot the 2D pose or compute the yaw error for the Pose message and there are already tools and libraries that can do this for you.# This expresses a position and orientation on a 2D manifold.
+     */
     x: number;
     y: number;
     theta: number;
@@ -1059,6 +1206,11 @@ declare module "rclbunjs" {
    * `geometry_msgs/msg/Vector3`
    */
   interface geometry_msgs__msg__Vector3 {
+    /**
+     * This is semantically different than a point.
+     * A vector is always anchored at the origin.
+     * When a transform is applied to a vector, only the rotational component is applied.
+     */
     x: number;
     y: number;
     z: number;
@@ -1069,6 +1221,10 @@ declare module "rclbunjs" {
    * `geometry_msgs/msg/Vector3Stamped`
    */
   interface geometry_msgs__msg__Vector3Stamped {
+    /**
+     * Note that this follows vector semantics with it always anchored at the origin,
+     * so the rotational elements of a transform are the only parts applied when transforming.
+     */
     header: std_msgs__msg__Header;
     vector: geometry_msgs__msg__Vector3;
   }
@@ -1139,7 +1295,11 @@ declare module "rclbunjs" {
   }
   /** Constants of `lifecycle_msgs/msg/State` (also properties of `require("lifecycle_msgs/msg/State")`). */
   interface lifecycle_msgs__msg__State__Constants {
-    /** Indicates state has not yet been set. */
+    /**
+     * These are the primary states. State changes can only be requested when the
+     * node is in one of these states.
+     * Indicates state has not yet been set.
+     */
     readonly PRIMARY_STATE_UNKNOWN: 0;
     /**
      * This is the life cycle state the node is in immediately after being
@@ -1160,6 +1320,8 @@ declare module "rclbunjs" {
      */
     readonly PRIMARY_STATE_FINALIZED: 4;
     /**
+     * Temporary intermediate states. When a transition is requested, the node
+     * changes its state into one of these states.
      * In this transition state the node's onConfigure callback will be called to
      * allow the node to load its configuration and conduct any required setup.
      */
@@ -1195,7 +1357,11 @@ declare module "rclbunjs" {
    * `lifecycle_msgs/msg/Transition`
    */
   interface lifecycle_msgs__msg__Transition {
-    /** The transition id from above definitions. */
+    /**
+     * Fields
+     *
+     * The transition id from above definitions.
+     */
     id: number;
     /** A text label of the transition. */
     label: string;
@@ -1203,6 +1369,9 @@ declare module "rclbunjs" {
   /** Constants of `lifecycle_msgs/msg/Transition` (also properties of `require("lifecycle_msgs/msg/Transition")`). */
   interface lifecycle_msgs__msg__Transition__Constants {
     /**
+     * Reserved, publicly available transitions.
+     * When a node is in one of these primary states, these transitions can be
+     * invoked.
      * This transition will instantiate the node, but will not run any code beyond
      * the constructor.
      */
@@ -1245,7 +1414,7 @@ declare module "rclbunjs" {
     /** This transition will simply cause the deallocation of the node. */
     readonly TRANSITION_DESTROY: 8;
     /**
-     * Reserved [10-69], private transitions
+     * Reserved, private transitions
      * These transitions are not publicly available and cannot be invoked by a user.
      * The following transitions are implicitly invoked based on the callback
      * feedback of the intermediate transition states.
@@ -1268,7 +1437,13 @@ declare module "rclbunjs" {
     readonly TRANSITION_ON_ERROR_SUCCESS: 60;
     readonly TRANSITION_ON_ERROR_FAILURE: 61;
     readonly TRANSITION_ON_ERROR_ERROR: 62;
-    /** The transition callback successfully performed its required functionality. */
+    /**
+     * Reserved. Transition callback success values.
+     * These return values ought to be set as a return value for each callback.
+     * Depending on which return value, the transition will be executed correctly or
+     * fallback/error callbacks will be triggered.
+     * The transition callback successfully performed its required functionality.
+     */
     readonly TRANSITION_CALLBACK_SUCCESS: 97;
     /** The transition callback failed to perform its required functionality. */
     readonly TRANSITION_CALLBACK_FAILURE: 98;
@@ -1278,18 +1453,24 @@ declare module "rclbunjs" {
      */
     readonly TRANSITION_CALLBACK_ERROR: 99;
   }
-  /** `lifecycle_msgs/msg/TransitionDescription` */
+  /**
+   * The transition id and label of this description.
+   *
+   * `lifecycle_msgs/msg/TransitionDescription`
+   */
   interface lifecycle_msgs__msg__TransitionDescription {
-    /** The transition id and label of this description. */
     transition: lifecycle_msgs__msg__Transition;
     /** The current state from which this transition transitions. */
     start_state: lifecycle_msgs__msg__State;
     /** The desired target state of this transition. */
     goal_state: lifecycle_msgs__msg__State;
   }
-  /** `lifecycle_msgs/msg/TransitionEvent` */
+  /**
+   * The time point at which this event occurred.
+   *
+   * `lifecycle_msgs/msg/TransitionEvent`
+   */
   interface lifecycle_msgs__msg__TransitionEvent {
-    /** The time point at which this event occurred. */
     timestamp: bigint;
     /** The id and label of this transition event. */
     transition: lifecycle_msgs__msg__Transition;
@@ -1298,13 +1479,14 @@ declare module "rclbunjs" {
     /** The end state of this transition event. */
     goal_state: lifecycle_msgs__msg__State;
   }
-  /** `lifecycle_msgs/srv/ChangeState_Request` */
+  /**
+   * The requested transition.
+   *
+   * This change state service will fail if the transition is not possible.
+   *
+   * `lifecycle_msgs/srv/ChangeState_Request`
+   */
   interface lifecycle_msgs__srv__ChangeState_Request {
-    /**
-     * The requested transition.
-     *
-     * This change state service will fail if the transition is not possible.
-     */
     transition: lifecycle_msgs__msg__Transition;
   }
   /** `lifecycle_msgs/srv/ChangeState_Response` */
@@ -1315,25 +1497,34 @@ declare module "rclbunjs" {
   /** `lifecycle_msgs/srv/GetAvailableStates_Request` */
   interface lifecycle_msgs__srv__GetAvailableStates_Request {
   }
-  /** `lifecycle_msgs/srv/GetAvailableStates_Response` */
+  /**
+   * Array of possible states that can be transitioned to.
+   *
+   * `lifecycle_msgs/srv/GetAvailableStates_Response`
+   */
   interface lifecycle_msgs__srv__GetAvailableStates_Response {
-    /** Array of possible states that can be transitioned to. */
     available_states: lifecycle_msgs__msg__State[];
   }
   /** `lifecycle_msgs/srv/GetAvailableTransitions_Request` */
   interface lifecycle_msgs__srv__GetAvailableTransitions_Request {
   }
-  /** `lifecycle_msgs/srv/GetAvailableTransitions_Response` */
+  /**
+   * An array of the possible start_state-goal_state transitions
+   *
+   * `lifecycle_msgs/srv/GetAvailableTransitions_Response`
+   */
   interface lifecycle_msgs__srv__GetAvailableTransitions_Response {
-    /** An array of the possible start_state-goal_state transitions */
     available_transitions: lifecycle_msgs__msg__TransitionDescription[];
   }
   /** `lifecycle_msgs/srv/GetState_Request` */
   interface lifecycle_msgs__srv__GetState_Request {
   }
-  /** `lifecycle_msgs/srv/GetState_Response` */
+  /**
+   * The current state-machine state of the node.
+   *
+   * `lifecycle_msgs/srv/GetState_Response`
+   */
   interface lifecycle_msgs__srv__GetState_Response {
-    /** The current state-machine state of the node. */
     current_state: lifecycle_msgs__msg__State;
   }
   /**
@@ -1377,11 +1568,23 @@ declare module "rclbunjs" {
   interface nav_msgs__msg__MapMetaData {
     /** The time at which the map was loaded */
     map_load_time: builtin_interfaces__msg__Time;
-    /** The map resolution [m/cell] */
+    /**
+     * The map resolution
+     *
+     * Unit: m/cell.
+     */
     resolution: number;
-    /** Map width [cells] */
+    /**
+     * Map width
+     *
+     * Unit: cells.
+     */
     width: number;
-    /** Map height [cells] */
+    /**
+     * Map height
+     *
+     * Unit: cells.
+     */
     height: number;
     /**
      * The origin of the map [m, m, rad].  This is the real-world pose of the
@@ -1389,9 +1592,12 @@ declare module "rclbunjs" {
      */
     origin: geometry_msgs__msg__Pose;
   }
-  /** `nav_msgs/msg/OccupancyGrid` */
+  /**
+   * This represents a 2-D grid map
+   *
+   * `nav_msgs/msg/OccupancyGrid`
+   */
   interface nav_msgs__msg__OccupancyGrid {
-    /** This represents a 2-D grid map */
     header: std_msgs__msg__Header;
     /** MetaData for the map */
     info: nav_msgs__msg__MapMetaData;
@@ -1468,9 +1674,12 @@ declare module "rclbunjs" {
    */
   interface nav_msgs__srv__GetMap_Request {
   }
-  /** `nav_msgs/srv/GetMap_Response` */
+  /**
+   * The current map hosted by this map service.
+   *
+   * `nav_msgs/srv/GetMap_Response`
+   */
   interface nav_msgs__srv__GetMap_Response {
-    /** The current map hosted by this map service. */
     map: nav_msgs__msg__OccupancyGrid;
   }
   /**
@@ -1489,21 +1698,29 @@ declare module "rclbunjs" {
      */
     tolerance: number;
   }
-  /** `nav_msgs/srv/GetPlan_Response` */
+  /**
+   * Array of poses from start to goal if one was successfully found.
+   *
+   * `nav_msgs/srv/GetPlan_Response`
+   */
   interface nav_msgs__srv__GetPlan_Response {
-    /** Array of poses from start to goal if one was successfully found. */
     plan: nav_msgs__msg__Path;
   }
-  /** `nav_msgs/srv/LoadMap_Request` */
+  /**
+   * URL of map resource
+   * Can be an absolute path to a file: file:///path/to/maps/floor1.yaml
+   * Or, relative to a ROS package: package://my_ros_package/maps/floor2.yaml
+   *
+   * `nav_msgs/srv/LoadMap_Request`
+   */
   interface nav_msgs__srv__LoadMap_Request {
-    /**
-     * URL of map resource
-     * Can be an absolute path to a file: file:///path/to/maps/floor1.yaml
-     * Or, relative to a ROS package: package://my_ros_package/maps/floor2.yaml
-     */
     map_url: string;
   }
-  /** `nav_msgs/srv/LoadMap_Response` */
+  /**
+   * Result code defintions
+   *
+   * `nav_msgs/srv/LoadMap_Response`
+   */
   interface nav_msgs__srv__LoadMap_Response {
     /** Returned map is only valid if result equals RESULT_SUCCESS */
     map: nav_msgs__msg__OccupancyGrid;
@@ -1511,7 +1728,6 @@ declare module "rclbunjs" {
   }
   /** Constants of `nav_msgs/srv/LoadMap_Response` (also properties of `require("nav_msgs/srv/LoadMap_Response")`). */
   interface nav_msgs__srv__LoadMap_Response__Constants {
-    /** Result code defintions */
     readonly RESULT_SUCCESS: 0;
     readonly RESULT_MAP_DOES_NOT_EXIST: 1;
     readonly RESULT_INVALID_MAP_DATA: 2;
@@ -1596,9 +1812,12 @@ declare module "rclbunjs" {
      */
     step: bigint;
   }
-  /** `rcl_interfaces/msg/ListParametersResult` */
+  /**
+   * The resulting parameters under the given prefixes.
+   *
+   * `rcl_interfaces/msg/ListParametersResult`
+   */
   interface rcl_interfaces__msg__ListParametersResult {
-    /** The resulting parameters under the given prefixes. */
     names: string[];
     /**
      * The resulting prefixes under the given prefixes.
@@ -1621,7 +1840,11 @@ declare module "rclbunjs" {
    * `rcl_interfaces/msg/Log`
    */
   interface rcl_interfaces__msg__Log {
-    /** Timestamp when this message was generated by the node. */
+    /**
+     * Fields
+     *
+     * Timestamp when this message was generated by the node.
+     */
     stamp: builtin_interfaces__msg__Time;
     /** Corresponding log level, see above definitions. */
     level: number;
@@ -1703,6 +1926,7 @@ declare module "rclbunjs" {
     /** Description of the parameter, visible from introspection tools. */
     description: string;
     /**
+     * Parameter constraints
      * Plain English description of additional constraints which cannot be expressed
      * with the available constraints, e.g. "only prime numbers".
      *
@@ -1723,6 +1947,10 @@ declare module "rclbunjs" {
      */
     dynamic_typing: boolean;
     /**
+     * If any of the following sequences are not empty, then the constraint inside of
+     * them apply to this parameter.
+     *
+     * FloatingPointRange and IntegerRange are mutually exclusive.
      * FloatingPointRange consists of a from_value, a to_value, and a step.
      *
      * At most 1 elements.
@@ -1798,7 +2026,11 @@ declare module "rclbunjs" {
   interface rcl_interfaces__msg__ParameterValue {
     /** The type of this parameter, which corresponds to the appropriate field below. */
     type: number;
-    /** Boolean value, can be either true or false. */
+    /**
+     * "Variant" style storage of the parameter value. Only the value corresponding
+     * the type field will have valid information.
+     * Boolean value, can be either true or false.
+     */
     bool_value: boolean;
     /**
      * Integer value ranging from -9,223,372,036,854,775,808 to
@@ -1820,19 +2052,23 @@ declare module "rclbunjs" {
     /** An array of string values. */
     string_array_value: string[];
   }
-  /** `rcl_interfaces/msg/SetLoggerLevelsResult` */
+  /**
+   * True when succeed, false when failed.
+   *
+   * `rcl_interfaces/msg/SetLoggerLevelsResult`
+   */
   interface rcl_interfaces__msg__SetLoggerLevelsResult {
-    /** True when succeed, false when failed. */
     successful: boolean;
     /** Reason why the setting was either successful or a failure. */
     reason: string;
   }
-  /** `rcl_interfaces/msg/SetParametersResult` */
+  /**
+   * A true value of the same index indicates that the parameter was set
+   * successfully. A false value indicates the change was rejected.
+   *
+   * `rcl_interfaces/msg/SetParametersResult`
+   */
   interface rcl_interfaces__msg__SetParametersResult {
-    /**
-     * A true value of the same index indicates that the parameter was set
-     * successfully. A false value indicates the change was rejected.
-     */
     successful: boolean;
     /**
      * Reason why the setting was a failure. On success, the contents of this field
@@ -1840,31 +2076,39 @@ declare module "rclbunjs" {
      */
     reason: string;
   }
-  /** `rcl_interfaces/srv/DescribeParameters_Request` */
+  /**
+   * A list of parameters of which to get the descriptor.
+   *
+   * `rcl_interfaces/srv/DescribeParameters_Request`
+   */
   interface rcl_interfaces__srv__DescribeParameters_Request {
-    /** A list of parameters of which to get the descriptor. */
     names: string[];
   }
-  /** `rcl_interfaces/srv/DescribeParameters_Response` */
+  /**
+   * A list of the descriptors of all parameters requested in the same order
+   * as they were requested. This list has the same length as the list of
+   * parameters requested.
+   *
+   * `rcl_interfaces/srv/DescribeParameters_Response`
+   */
   interface rcl_interfaces__srv__DescribeParameters_Response {
-    /**
-     * A list of the descriptors of all parameters requested in the same order
-     * as they were requested. This list has the same length as the list of
-     * parameters requested.
-     */
     descriptors: rcl_interfaces__msg__ParameterDescriptor[];
   }
-  /** `rcl_interfaces/srv/GetLoggerLevels_Request` */
+  /**
+   * A list of logger names to get.
+   *
+   * `rcl_interfaces/srv/GetLoggerLevels_Request`
+   */
   interface rcl_interfaces__srv__GetLoggerLevels_Request {
-    /** A list of logger names to get. */
     names: string[];
   }
-  /** `rcl_interfaces/srv/GetLoggerLevels_Response` */
+  /**
+   * List of logger levels which is the same order as the provided names. If a
+   * logger was not yet set, the value will have 'unknown' as the value.
+   *
+   * `rcl_interfaces/srv/GetLoggerLevels_Response`
+   */
   interface rcl_interfaces__srv__GetLoggerLevels_Response {
-    /**
-     * List of logger levels which is the same order as the provided names. If a
-     * logger was not yet set, the value will have 'unknown' as the value.
-     */
     levels: rcl_interfaces__msg__LoggerLevel[];
   }
   /**
@@ -1881,34 +2125,41 @@ declare module "rclbunjs" {
     /** A list of parameter names to get. */
     names: string[];
   }
-  /** `rcl_interfaces/srv/GetParameters_Response` */
+  /**
+   * List of values which is the same length and order as the provided names. If a
+   * parameter was not yet set, the value will have PARAMETER_NOT_SET as the
+   * type.
+   *
+   * `rcl_interfaces/srv/GetParameters_Response`
+   */
   interface rcl_interfaces__srv__GetParameters_Response {
-    /**
-     * List of values which is the same length and order as the provided names. If a
-     * parameter was not yet set, the value will have PARAMETER_NOT_SET as the
-     * type.
-     */
     values: rcl_interfaces__msg__ParameterValue[];
   }
-  /** `rcl_interfaces/srv/GetParameterTypes_Request` */
+  /**
+   * A list of parameter names.
+   * TODO(wjwwood): link to parameter naming rules.
+   *
+   * `rcl_interfaces/srv/GetParameterTypes_Request`
+   */
   interface rcl_interfaces__srv__GetParameterTypes_Request {
-    /**
-     * A list of parameter names.
-     * TODO(wjwwood): link to parameter naming rules.
-     */
     names: string[];
   }
-  /** `rcl_interfaces/srv/GetParameterTypes_Response` */
+  /**
+   * List of types which is the same length and order as the provided names.
+   *
+   * The type enum is defined in ParameterType.msg. ParameterType.PARAMETER_NOT_SET
+   * indicates that the parameter is not currently set.
+   *
+   * `rcl_interfaces/srv/GetParameterTypes_Response`
+   */
   interface rcl_interfaces__srv__GetParameterTypes_Response {
-    /**
-     * List of types which is the same length and order as the provided names.
-     *
-     * The type enum is defined in ParameterType.msg. ParameterType.PARAMETER_NOT_SET
-     * indicates that the parameter is not currently set.
-     */
     types: Uint8Array | number[];
   }
-  /** `rcl_interfaces/srv/ListParameters_Request` */
+  /**
+   * Recursively get parameters with unlimited depth.
+   *
+   * `rcl_interfaces/srv/ListParameters_Request`
+   */
   interface rcl_interfaces__srv__ListParameters_Request {
     /** The list of parameter prefixes to query. */
     prefixes: string[];
@@ -1921,46 +2172,64 @@ declare module "rclbunjs" {
   }
   /** Constants of `rcl_interfaces/srv/ListParameters_Request` (also properties of `require("rcl_interfaces/srv/ListParameters_Request")`). */
   interface rcl_interfaces__srv__ListParameters_Request__Constants {
-    /** Recursively get parameters with unlimited depth. */
     readonly DEPTH_RECURSIVE: 0n;
   }
-  /** `rcl_interfaces/srv/ListParameters_Response` */
+  /**
+   * The list of parameter names and their prefixes.
+   *
+   * `rcl_interfaces/srv/ListParameters_Response`
+   */
   interface rcl_interfaces__srv__ListParameters_Response {
-    /** The list of parameter names and their prefixes. */
     result: rcl_interfaces__msg__ListParametersResult;
   }
-  /** `rcl_interfaces/srv/SetLoggerLevels_Request` */
+  /**
+   * A list of loggers to set.
+   *
+   * `rcl_interfaces/srv/SetLoggerLevels_Request`
+   */
   interface rcl_interfaces__srv__SetLoggerLevels_Request {
-    /** A list of loggers to set. */
     levels: rcl_interfaces__msg__LoggerLevel[];
   }
-  /** `rcl_interfaces/srv/SetLoggerLevels_Response` */
+  /**
+   * Indicates whether setting each logger succeeded or not and why.
+   *
+   * `rcl_interfaces/srv/SetLoggerLevels_Response`
+   */
   interface rcl_interfaces__srv__SetLoggerLevels_Response {
-    /** Indicates whether setting each logger succeeded or not and why. */
     results: rcl_interfaces__msg__SetLoggerLevelsResult[];
   }
-  /** `rcl_interfaces/srv/SetParameters_Request` */
+  /**
+   * A list of parameters to set.
+   *
+   * `rcl_interfaces/srv/SetParameters_Request`
+   */
   interface rcl_interfaces__srv__SetParameters_Request {
-    /** A list of parameters to set. */
     parameters: rcl_interfaces__msg__Parameter[];
   }
-  /** `rcl_interfaces/srv/SetParameters_Response` */
+  /**
+   * Indicates whether setting each parameter succeeded or not and why.
+   *
+   * `rcl_interfaces/srv/SetParameters_Response`
+   */
   interface rcl_interfaces__srv__SetParameters_Response {
-    /** Indicates whether setting each parameter succeeded or not and why. */
     results: rcl_interfaces__msg__SetParametersResult[];
   }
-  /** `rcl_interfaces/srv/SetParametersAtomically_Request` */
+  /**
+   * A list of parameters to set atomically.
+   *
+   * This call will either set all values, or none of the values.
+   *
+   * `rcl_interfaces/srv/SetParametersAtomically_Request`
+   */
   interface rcl_interfaces__srv__SetParametersAtomically_Request {
-    /**
-     * A list of parameters to set atomically.
-     *
-     * This call will either set all values, or none of the values.
-     */
     parameters: rcl_interfaces__msg__Parameter[];
   }
-  /** `rcl_interfaces/srv/SetParametersAtomically_Response` */
+  /**
+   * Indicates whether setting all of the parameters succeeded or not and why.
+   *
+   * `rcl_interfaces/srv/SetParametersAtomically_Response`
+   */
   interface rcl_interfaces__srv__SetParametersAtomically_Response {
-    /** Indicates whether setting all of the parameters succeeded or not and why. */
     result: rcl_interfaces__msg__SetParametersResult;
   }
   /** `rmw_dds_common/msg/Gid` */
@@ -1997,18 +2266,22 @@ declare module "rclbunjs" {
     feedback: rosgraph_msgs__msg__Topic;
     status: rosgraph_msgs__msg__Topic;
   }
-  /** `rosgraph_msgs/msg/Clock` */
+  /**
+   * This message communicates the current time.
+   *
+   * For more information, see https://design.ros2.org/articles/clock_and_time.html.
+   *
+   * `rosgraph_msgs/msg/Clock`
+   */
   interface rosgraph_msgs__msg__Clock {
-    /**
-     * This message communicates the current time.
-     *
-     * For more information, see https://design.ros2.org/articles/clock_and_time.html.
-     */
     clock: builtin_interfaces__msg__Time;
   }
-  /** `rosgraph_msgs/msg/Graph` */
+  /**
+   * Represents a ROS node graph, which is only a collection of nodes
+   *
+   * `rosgraph_msgs/msg/Graph`
+   */
   interface rosgraph_msgs__msg__Graph {
-    /** Represents a ROS node graph, which is only a collection of nodes */
     nodes: rosgraph_msgs__msg__Node[];
   }
   /**
@@ -2128,13 +2401,13 @@ declare module "rclbunjs" {
     /** Observed QoS of the endpoint */
     qos: rosgraph_msgs__msg__QoSProfile;
   }
-  /** `rosgraph_msgs/msg/TypeHash` */
+  /**
+   * RIHS spec version
+   *
+   * `rosgraph_msgs/msg/TypeHash`
+   */
   interface rosgraph_msgs__msg__TypeHash {
-    /**
-     * RIHS spec version
-     *
-     * @default 1
-     */
+    /** @default 1 */
     version: number;
     /**
      * ROSIDL_TYPE_HASH_SIZE == 32
@@ -2143,14 +2416,7 @@ declare module "rclbunjs" {
      */
     value: Uint8Array | number[];
   }
-  /**
-   * Constants are chosen to match the enums in the linux kernel
-   * defined in include/linux/power_supply.h as of version 3.7
-   * The one difference is for style reasons the constants are
-   * all uppercase not mixed case.
-   *
-   * `sensor_msgs/msg/BatteryState`
-   */
+  /** `sensor_msgs/msg/BatteryState` */
   interface sensor_msgs__msg__BatteryState {
     header: std_msgs__msg__Header;
     /** Voltage in Volts (Mandatory) */
@@ -2175,24 +2441,30 @@ declare module "rclbunjs" {
     power_supply_technology: number;
     /** True if the battery is present */
     present: boolean;
-    /** An array of individual cell voltages for each cell in the pack */
+    /**
+     * An array of individual cell voltages for each cell in the pack
+     * If individual voltages unknown but number of cells known set each to NaN
+     */
     cell_voltage: Float32Array | number[];
     /**
-     * If individual voltages unknown but number of cells known set each to NaN
      * An array of individual cell temperatures for each cell in the pack
+     * If individual temperatures unknown but number of cells known set each to NaN
      */
     cell_temperature: Float32Array | number[];
-    /**
-     * If individual temperatures unknown but number of cells known set each to NaN
-     * The location into which the battery is inserted. (slot number or plug)
-     */
+    /** The location into which the battery is inserted. (slot number or plug) */
     location: string;
     /** The best approximation of the battery serial number */
     serial_number: string;
   }
   /** Constants of `sensor_msgs/msg/BatteryState` (also properties of `require("sensor_msgs/msg/BatteryState")`). */
   interface sensor_msgs__msg__BatteryState__Constants {
-    /** Power supply status constants */
+    /**
+     * Constants are chosen to match the enums in the linux kernel
+     * defined in include/linux/power_supply.h as of version 3.7
+     * The one difference is for style reasons the constants are
+     * all uppercase not mixed case.
+     * Power supply status constants
+     */
     readonly POWER_SUPPLY_STATUS_UNKNOWN: 0;
     readonly POWER_SUPPLY_STATUS_CHARGING: 1;
     readonly POWER_SUPPLY_STATUS_DISCHARGING: 2;
@@ -2252,18 +2524,37 @@ declare module "rclbunjs" {
    * using image_geometry.
    *
    * If the camera is uncalibrated, the matrices D, K, R, P should be left
-   * zeroed out. In particular, clients may assume that K[0] == 0.0
+   * zeroed out. In particular, clients may assume that K == 0.0
    * indicates an uncalibrated camera.
    *
    * `sensor_msgs/msg/CameraInfo`
    */
   interface sensor_msgs__msg__CameraInfo {
     /**
+     *                     Image acquisition info                          #
+     *
      * Time of image acquisition, camera coordinate frame ID
      * Header timestamp should be acquisition time of image
+     * Header frame_id should be optical frame of camera
+     * origin of frame should be optical center of camera
+     * +x should point to the right in the image
+     * +y should point down in the image
+     * +z should point into the plane of the image
      */
     header: std_msgs__msg__Header;
     /**
+     *                      Calibration Parameters                         #
+     *
+     * These are fixed during camera calibration. Their values will be the #
+     * same in all messages until the camera is recalibrated. Note that    #
+     * self-calibrating systems may "recalibrate" frequently.              #
+     *                                                                     #
+     * The internal parameters can be used to warp a raw (distorted) image #
+     * to:                                                                 #
+     *   1. An undistorted image (requires D and K)                        #
+     *   2. A rectified image (requires D, K, R)                           #
+     * The projection matrix P projects 3D points into the rectified image.#
+     *
      * The image dimensions with which the camera was calibrated.
      * Normally this will be the full camera resolution in pixels.
      */
@@ -2334,6 +2625,12 @@ declare module "rclbunjs" {
      */
     p: Float64Array | number[];
     /**
+     *                      Operational Parameters                         #
+     *
+     * These define the image region actually captured by the camera       #
+     * driver. Although they affect the geometry of the output image, they #
+     * may be changed freely without recalibrating the camera.             #
+     *
      * Binning refers here to any camera setting which combines rectangular
      *  neighborhoods of pixels into larger "super-pixels." It reduces the
      *  resolution of the output image to
@@ -2391,9 +2688,49 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/CompressedImage`
    */
   interface sensor_msgs__msg__CompressedImage {
-    /** Header timestamp should be acquisition time of image */
+    /**
+     * Header timestamp should be acquisition time of image
+     * Header frame_id should be optical frame of camera
+     * origin of frame should be optical center of cameara
+     * +x should point to the right in the image
+     * +y should point down in the image
+     * +z should point into to plane of the image
+     */
     header: std_msgs__msg__Header;
-    /** Specifies the format of the data */
+    /**
+     * Specifies the format of the data
+     * Acceptable values differ by the image transport used:
+     * - compressed_image_transport:
+     *     ORIG_PIXFMT; CODEC compressed
+     *   where:
+     *   - ORIG_PIXFMT is pixel format of the raw image, i.e.
+     *     the content of sensor_msgs/Image/encoding with
+     *     values from include/sensor_msgs/image_encodings.h
+     *   - CODEC is one of [jpeg, png, tiff]
+     *   - COMPRESSED_PIXFMT is only appended for color images
+     *     and is the pixel format used by the compression
+     *     algorithm. Valid values for jpeg encoding are:
+     *     [bgr8, rgb8]. Valid values for png encoding are:
+     *     [bgr8, rgb8, bgr16, rgb16].
+     *   If the field is empty or does not correspond to the
+     *   above pattern, the image is treated as bgr8 or mono8
+     *   jpeg image (depending on the number of channels).
+     * - compressed_depth_image_transport:
+     *     ORIG_PIXFMT; compressedDepth CODEC
+     *   where:
+     *   - ORIG_PIXFMT is pixel format of the raw image, i.e.
+     *     the content of sensor_msgs/Image/encoding with
+     *     values from include/sensor_msgs/image_encodings.h
+     *     It is usually one of [16UC1, 32FC1].
+     *   - CODEC is one of [png, rvl]
+     *   If the field is empty or does not correspond to the
+     *   above pattern, the image is treated as png image.
+     * - Other image transports can store whatever values they
+     *   need for successful decoding of the image. Refer to
+     *   documentation of the other transports for details.
+     *
+     * Unit: COMPRESSED_PIXFMT.
+     */
     format: string;
     /** Compressed image buffer */
     data: Uint8Array | number[];
@@ -2408,7 +2745,10 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/FluidPressure`
    */
   interface sensor_msgs__msg__FluidPressure {
-    /** timestamp of the measurement */
+    /**
+     * timestamp of the measurement
+     * frame_id is the location of the pressure sensor
+     */
     header: std_msgs__msg__Header;
     /** Absolute pressure reading in Pascals. */
     fluid_pressure: number;
@@ -2433,7 +2773,10 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/Illuminance`
    */
   interface sensor_msgs__msg__Illuminance {
-    /** timestamp is the time the illuminance was measured */
+    /**
+     * timestamp is the time the illuminance was measured
+     * frame_id is the location and direction of the reading
+     */
     header: std_msgs__msg__Header;
     /** Measurement of the Photometric Illuminance in Lux. */
     illuminance: number;
@@ -2447,13 +2790,29 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/Image`
    */
   interface sensor_msgs__msg__Image {
-    /** Header timestamp should be acquisition time of image */
+    /**
+     * Header timestamp should be acquisition time of image
+     * Header frame_id should be optical frame of camera
+     * origin of frame should be optical center of cameara
+     * +x should point to the right in the image
+     * +y should point down in the image
+     * +z should point into to plane of the image
+     * If the frame_id here and the frame_id of the CameraInfo
+     * message associated with the image conflict
+     * the behavior is undefined
+     */
     header: std_msgs__msg__Header;
     /** image height, that is, number of rows */
     height: number;
     /** image width, that is, number of columns */
     width: number;
-    /** Encoding of pixels -- channel meaning, ordering, size */
+    /**
+     * The legal values for encoding are in file include/sensor_msgs/image_encodings.hpp
+     * If you want to standardize a new string format, join
+     * ros-users@lists.ros.org and send an email proposing a new encoding.
+     * Encoding of pixels -- channel meaning, ordering, size
+     * taken from the list of strings in include/sensor_msgs/image_encodings.hpp
+     */
     encoding: string;
     /** is this data bigendian? */
     is_bigendian: number;
@@ -2545,7 +2904,11 @@ declare module "rclbunjs" {
     /** The buttons measurements from a joystick. */
     buttons: Int32Array | number[];
   }
-  /** `sensor_msgs/msg/JoyFeedback` */
+  /**
+   * Declare of the type of feedback
+   *
+   * `sensor_msgs/msg/JoyFeedback`
+   */
   interface sensor_msgs__msg__JoyFeedback {
     type: number;
     /**
@@ -2561,14 +2924,16 @@ declare module "rclbunjs" {
   }
   /** Constants of `sensor_msgs/msg/JoyFeedback` (also properties of `require("sensor_msgs/msg/JoyFeedback")`). */
   interface sensor_msgs__msg__JoyFeedback__Constants {
-    /** Declare of the type of feedback */
     readonly TYPE_LED: 0;
     readonly TYPE_RUMBLE: 1;
     readonly TYPE_BUZZER: 2;
   }
-  /** `sensor_msgs/msg/JoyFeedbackArray` */
+  /**
+   * This message publishes values for multiple feedback at once.
+   *
+   * `sensor_msgs/msg/JoyFeedbackArray`
+   */
   interface sensor_msgs__msg__JoyFeedbackArray {
-    /** This message publishes values for multiple feedback at once. */
     array: sensor_msgs__msg__JoyFeedback[];
   }
   /**
@@ -2578,7 +2943,10 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/LaserEcho`
    */
   interface sensor_msgs__msg__LaserEcho {
-    /** Multiple values of ranges or intensities. */
+    /**
+     * Multiple values of ranges or intensities.
+     * Each array represents data from the same angle increment.
+     */
     echoes: Float32Array | number[];
   }
   /**
@@ -2591,31 +2959,72 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/LaserScan`
    */
   interface sensor_msgs__msg__LaserScan {
-    /** timestamp in the header is the acquisition time of */
-    header: std_msgs__msg__Header;
-    /** start angle of the scan [rad] */
-    angle_min: number;
-    /** end angle of the scan [rad] */
-    angle_max: number;
-    /** angular distance between measurements [rad] */
-    angle_increment: number;
-    /** time between measurements [seconds] - if your scanner */
-    time_increment: number;
     /**
+     * timestamp in the header is the acquisition time of
+     * the first ray in the scan.
+     *
+     * in frame frame_id, angles are measured around
+     * the positive Z axis (counterclockwise, if Z is up)
+     * with zero angle being forward along the x axis
+     */
+    header: std_msgs__msg__Header;
+    /**
+     * start angle of the scan
+     *
+     * Unit: rad.
+     */
+    angle_min: number;
+    /**
+     * end angle of the scan
+     *
+     * Unit: rad.
+     */
+    angle_max: number;
+    /**
+     * angular distance between measurements
+     *
+     * Unit: rad.
+     */
+    angle_increment: number;
+    /**
+     * time between measurements - if your scanner
      * is moving, this will be used in interpolating position
      * of 3d points
-     * time between scans [seconds]
+     *
+     * Unit: seconds.
+     */
+    time_increment: number;
+    /**
+     * time between scans
+     *
+     * Unit: seconds.
      */
     scan_time: number;
-    /** minimum range value [m] */
+    /**
+     * minimum range value
+     *
+     * Unit: m.
+     */
     range_min: number;
-    /** maximum range value [m] */
+    /**
+     * maximum range value
+     *
+     * Unit: m.
+     */
     range_max: number;
-    /** range data [m] */
+    /**
+     * range data
+     * (Note: values < range_min or > range_max should be discarded)
+     *
+     * Unit: m.
+     */
     ranges: Float32Array | number[];
     /**
-     * (Note: values < range_min or > range_max should be discarded)
-     * intensity data [device-specific units].  If your
+     * intensity data.  If your
+     * device does not provide intensities, please leave
+     * the array empty.
+     *
+     * Unit: device-specific units.
      */
     intensities: Float32Array | number[];
   }
@@ -2632,12 +3041,23 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/MagneticField`
    */
   interface sensor_msgs__msg__MagneticField {
-    /** timestamp is the time the */
+    /**
+     * timestamp is the time the
+     * field was measured
+     * frame_id is the location and orientation
+     * of the field measurement
+     */
     header: std_msgs__msg__Header;
-    /** x, y, and z components of the */
+    /**
+     * x, y, and z components of the
+     * field vector in Tesla
+     * If your sensor does not output 3 axes,
+     * put NaNs in the components not reported.
+     */
     magnetic_field: geometry_msgs__msg__Vector3;
     /**
      * Row major about x, y, z axes
+     * 0 is interpreted as variance unknown
      *
      * Fixed length: 9.
      */
@@ -2683,33 +3103,74 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/MultiEchoLaserScan`
    */
   interface sensor_msgs__msg__MultiEchoLaserScan {
-    /** timestamp in the header is the acquisition time of */
-    header: std_msgs__msg__Header;
-    /** start angle of the scan [rad] */
-    angle_min: number;
-    /** end angle of the scan [rad] */
-    angle_max: number;
-    /** angular distance between measurements [rad] */
-    angle_increment: number;
-    /** time between measurements [seconds] - if your scanner */
-    time_increment: number;
     /**
+     * timestamp in the header is the acquisition time of
+     * the first ray in the scan.
+     *
+     * in frame frame_id, angles are measured around
+     * the positive Z axis (counterclockwise, if Z is up)
+     * with zero angle being forward along the x axis
+     */
+    header: std_msgs__msg__Header;
+    /**
+     * start angle of the scan
+     *
+     * Unit: rad.
+     */
+    angle_min: number;
+    /**
+     * end angle of the scan
+     *
+     * Unit: rad.
+     */
+    angle_max: number;
+    /**
+     * angular distance between measurements
+     *
+     * Unit: rad.
+     */
+    angle_increment: number;
+    /**
+     * time between measurements - if your scanner
      * is moving, this will be used in interpolating position
      * of 3d points
-     * time between scans [seconds]
+     *
+     * Unit: seconds.
+     */
+    time_increment: number;
+    /**
+     * time between scans
+     *
+     * Unit: seconds.
      */
     scan_time: number;
-    /** minimum range value [m] */
-    range_min: number;
-    /** maximum range value [m] */
-    range_max: number;
-    /** range data [m] */
-    ranges: sensor_msgs__msg__LaserEcho[];
     /**
+     * minimum range value
+     *
+     * Unit: m.
+     */
+    range_min: number;
+    /**
+     * maximum range value
+     *
+     * Unit: m.
+     */
+    range_max: number;
+    /**
+     * range data
      * (Note: NaNs, values < range_min or > range_max should be discarded)
      * +Inf measurements are out of range
      * -Inf measurements are too close to determine exact distance.
-     * intensity data [device-specific units].  If your
+     *
+     * Unit: m.
+     */
+    ranges: sensor_msgs__msg__LaserEcho[];
+    /**
+     * intensity data.  If your
+     * device does not provide intensities, please leave
+     * the array empty.
+     *
+     * Unit: device-specific units.
      */
     intensities: sensor_msgs__msg__LaserEcho[];
   }
@@ -2734,22 +3195,33 @@ declare module "rclbunjs" {
     header: std_msgs__msg__Header;
     /** Satellite fix status information. */
     status: sensor_msgs__msg__NavSatStatus;
-    /** Latitude [degrees]. Positive is north of equator; negative is south. */
+    /**
+     * Latitude. Positive is north of equator; negative is south.
+     *
+     * Unit: degrees.
+     */
     latitude: number;
-    /** Longitude [degrees]. Positive is east of prime meridian; negative is west. */
+    /**
+     * Longitude. Positive is east of prime meridian; negative is west.
+     *
+     * Unit: degrees.
+     */
     longitude: number;
     /**
-     * Altitude [m]. Positive is above the WGS 84 ellipsoid
+     * Altitude. Positive is above the WGS 84 ellipsoid
      * (quiet NaN if no altitude is available).
+     *
+     * Unit: m.
      */
     altitude: number;
     /**
-     * Position covariance [m^2] defined relative to a tangential plane
+     * Position covariance defined relative to a tangential plane
      * through the reported position. The components are East, North, and
      * Up (ENU), in row-major order.
      *
      * Beware: this coordinate system exhibits singularities at the poles.
      *
+     * Unit: m^2.
      * Fixed length: 9.
      */
     position_covariance: Float64Array | number[];
@@ -2757,6 +3229,12 @@ declare module "rclbunjs" {
   }
   /** Constants of `sensor_msgs/msg/NavSatFix` (also properties of `require("sensor_msgs/msg/NavSatFix")`). */
   interface sensor_msgs__msg__NavSatFix__Constants {
+    /**
+     * If the covariance of the fix is known, fill it in completely. If the
+     * GPS receiver provides the variance of each measurement, put them
+     * along the diagonal. If only Dilution of Precision is available,
+     * estimate an approximate covariance from that.
+     */
     readonly COVARIANCE_TYPE_UNKNOWN: 0;
     readonly COVARIANCE_TYPE_APPROXIMATED: 1;
     readonly COVARIANCE_TYPE_DIAGONAL_KNOWN: 2;
@@ -2792,7 +3270,11 @@ declare module "rclbunjs" {
     readonly STATUS_SBAS_FIX: 1;
     /** with ground-based augmentation */
     readonly STATUS_GBAS_FIX: 2;
-    /** Remember service is a bitfield, so checking (service & SERVICE_UNKNOWN) will not work. Use == instead. */
+    /**
+     * Bits defining which Global Navigation Satellite System signals were
+     * used by the receiver.
+     * Remember service is a bitfield, so checking (service & SERVICE_UNKNOWN) will not work. Use == instead.
+     */
     readonly SERVICE_UNKNOWN: 0;
     readonly SERVICE_GPS: 1;
     readonly SERVICE_GLONASS: 2;
@@ -2807,7 +3289,11 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/PointCloud`
    */
   interface sensor_msgs__msg__PointCloud {
-    /** Time of sensor data acquisition, coordinate frame ID. */
+    /**
+     * This message holds a collection of 3d points, plus optional additional
+     * information about each point.
+     * Time of sensor data acquisition, coordinate frame ID.
+     */
     header: std_msgs__msg__Header;
     /**
      * Array of 3d points. Each Point32 should be interpreted as a 3d point
@@ -2855,7 +3341,12 @@ declare module "rclbunjs" {
     /** True if there are no invalid points */
     is_dense: boolean;
   }
-  /** `sensor_msgs/msg/PointField` */
+  /**
+   * This message holds the description of one point entry in the
+   * PointCloud2 message format.
+   *
+   * `sensor_msgs/msg/PointField`
+   */
   interface sensor_msgs__msg__PointField {
     /**
      * Common PointField names are x, y, z, intensity, rgb, rgba
@@ -2871,10 +3362,6 @@ declare module "rclbunjs" {
   }
   /** Constants of `sensor_msgs/msg/PointField` (also properties of `require("sensor_msgs/msg/PointField")`). */
   interface sensor_msgs__msg__PointField__Constants {
-    /**
-     * This message holds the description of one point entry in the
-     * PointCloud2 message format.
-     */
     readonly INT8: 1;
     readonly UINT8: 2;
     readonly INT16: 3;
@@ -2898,19 +3385,58 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/Range`
    */
   interface sensor_msgs__msg__Range {
-    /** timestamp in the header is the time the ranger */
+    /**
+     * timestamp in the header is the time the ranger
+     * returned the distance reading
+     */
     header: std_msgs__msg__Header;
-    /** the type of radiation used by the sensor */
+    /**
+     * the type of radiation used by the sensor
+     * (sound, IR, etc)
+     *
+     * Unit: enum.
+     */
     radiation_type: number;
-    /** the size of the arc that the distance reading is */
+    /**
+     * the size of the arc that the distance reading is
+     * valid for
+     * the object causing the range reading may have
+     * been anywhere within -field_of_view/2 and
+     * field_of_view/2 at the measured range.
+     * 0 angle corresponds to the x-axis of the sensor.
+     *
+     * Unit: rad.
+     */
     field_of_view: number;
-    /** minimum range value [m] */
+    /**
+     * minimum range value
+     *
+     * Unit: m.
+     */
     min_range: number;
-    /** maximum range value [m] */
+    /**
+     * maximum range value
+     * Fixed distance rangers require min_range==max_range
+     *
+     * Unit: m.
+     */
     max_range: number;
-    /** range data [m] */
+    /**
+     * range data
+     * (Note: values < range_min or > range_max should be discarded)
+     * Fixed distance rangers only output -Inf or +Inf.
+     * -Inf represents a detection within fixed distance.
+     * (Detection too close to the sensor to quantify)
+     * +Inf represents no detection within the fixed distance.
+     * (Object out of range)
+     *
+     * Unit: m.
+     */
     range: number;
-    /** variance of the range sensor */
+    /**
+     * variance of the range sensor
+     * 0 is interpreted as variance unknown
+     */
     variance: number;
   }
   /** Constants of `sensor_msgs/msg/Range` (also properties of `require("sensor_msgs/msg/Range")`). */
@@ -2933,17 +3459,17 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/RegionOfInterest`
    */
   interface sensor_msgs__msg__RegionOfInterest {
-    /** Leftmost pixel of the ROI */
+    /**
+     * Leftmost pixel of the ROI
+     * (0 if the ROI includes the left edge of the image)
+     */
     x_offset: number;
     /**
-     * (0 if the ROI includes the left edge of the image)
      * Topmost pixel of the ROI
+     * (0 if the ROI includes the top edge of the image)
      */
     y_offset: number;
-    /**
-     * (0 if the ROI includes the top edge of the image)
-     * Height of ROI
-     */
+    /** Height of ROI */
     height: number;
     /** Width of ROI */
     width: number;
@@ -2963,9 +3489,17 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/RelativeHumidity`
    */
   interface sensor_msgs__msg__RelativeHumidity {
-    /** timestamp of the measurement */
+    /**
+     * timestamp of the measurement
+     * frame_id is the location of the humidity sensor
+     */
     header: std_msgs__msg__Header;
-    /** Expression of the relative humidity */
+    /**
+     * Expression of the relative humidity
+     * from 0.0 to 1.0.
+     * 0.0 is no partial pressure of water vapor
+     * 1.0 represents partial pressure of saturation
+     */
     relative_humidity: number;
     /** 0 is interpreted as variance unknown */
     variance: number;
@@ -2976,7 +3510,10 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/Temperature`
    */
   interface sensor_msgs__msg__Temperature {
-    /** timestamp is the time the temperature was measured */
+    /**
+     * timestamp is the time the temperature was measured
+     * frame_id is the location of the temperature reading
+     */
     header: std_msgs__msg__Header;
     /** Measurement of the Temperature in Degrees Celsius. */
     temperature: number;
@@ -2989,7 +3526,10 @@ declare module "rclbunjs" {
    * `sensor_msgs/msg/TimeReference`
    */
   interface sensor_msgs__msg__TimeReference {
-    /** stamp is system time for which measurement was valid */
+    /**
+     * stamp is system time for which measurement was valid
+     * frame_id is not used
+     */
     header: std_msgs__msg__Header;
     /** corresponding time from this external source */
     time_ref: builtin_interfaces__msg__Time;
@@ -3067,18 +3607,18 @@ declare module "rclbunjs" {
     /** Fixed length: 3. */
     vertex_indices: Uint32Array | number[];
   }
-  /** `shape_msgs/msg/Plane` */
+  /**
+   * Representation of a plane, using the plane equation ax + by + cz + d = 0.
+   *
+   * a := coef[0]
+   * b := coef[1]
+   * c := coef[2]
+   * d := coef[3]
+   *
+   * `shape_msgs/msg/Plane`
+   */
   interface shape_msgs__msg__Plane {
-    /**
-     * Representation of a plane, using the plane equation ax + by + cz + d = 0.
-     *
-     * a := coef[0]
-     * b := coef[1]
-     * c := coef[2]
-     * d := coef[3]
-     *
-     * Fixed length: 4.
-     */
+    /** Fixed length: 4. */
     coef: Float64Array | number[];
   }
   /**
@@ -3106,16 +3646,38 @@ declare module "rclbunjs" {
     readonly CYLINDER: 3;
     readonly CONE: 4;
     readonly PRISM: 5;
-    /** For type BOX, the X, Y, and Z dimensions are the length of the corresponding sides of the box. */
+    /**
+     * The meaning of the shape dimensions: each constant defines the index in the 'dimensions' array.
+     * For type BOX, the X, Y, and Z dimensions are the length of the corresponding sides of the box.
+     */
     readonly BOX_X: 0;
     readonly BOX_Y: 1;
     readonly BOX_Z: 2;
     /** For the SPHERE type, only one component is used, and it gives the radius of the sphere. */
     readonly SPHERE_RADIUS: 0;
+    /**
+     * For the CYLINDER and CONE types, the center line is oriented along the Z axis.
+     * Therefore the CYLINDER_HEIGHT (CONE_HEIGHT) component of dimensions gives the
+     * height of the cylinder (cone).
+     * The CYLINDER_RADIUS (CONE_RADIUS) component of dimensions gives the radius of
+     * the base of the cylinder (cone).
+     * Cone and cylinder primitives are defined to be circular. The tip of the cone
+     * is pointing up, along +Z axis.
+     */
     readonly CYLINDER_HEIGHT: 0;
     readonly CYLINDER_RADIUS: 1;
     readonly CONE_HEIGHT: 0;
     readonly CONE_RADIUS: 1;
+    /**
+     * For the type PRISM, the center line is oriented along Z axis.
+     * The PRISM_HEIGHT component of dimensions gives the
+     * height of the prism.
+     * The polygon defines the Z axis centered base of the prism.
+     * The prism is constructed by extruding the base in +Z and -Z
+     * directions by half of the PRISM_HEIGHT
+     * Only x and y fields of the points are used in the polygon.
+     * Points of the polygon are ordered counter-clockwise.
+     */
     readonly PRISM_HEIGHT: 0;
   }
   /**
@@ -3225,7 +3787,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/ByteMultiArray`
    */
   interface std_msgs__msg__ByteMultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Uint8Array | number[];
@@ -3271,7 +3837,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Float32MultiArray`
    */
   interface std_msgs__msg__Float32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Float32Array | number[];
@@ -3296,7 +3866,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Float64MultiArray`
    */
   interface std_msgs__msg__Float64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Float64Array | number[];
@@ -3334,7 +3908,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Int16MultiArray`
    */
   interface std_msgs__msg__Int16MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Int16Array | number[];
@@ -3359,7 +3937,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Int32MultiArray`
    */
   interface std_msgs__msg__Int32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Int32Array | number[];
@@ -3384,7 +3966,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Int64MultiArray`
    */
   interface std_msgs__msg__Int64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: bigint[];
@@ -3409,7 +3995,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/Int8MultiArray`
    */
   interface std_msgs__msg__Int8MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Int8Array | number[];
@@ -3439,7 +4029,32 @@ declare module "rclbunjs" {
    * `std_msgs/msg/MultiArrayLayout`
    */
   interface std_msgs__msg__MultiArrayLayout {
-    /** Array of dimension properties */
+    /**
+     * The multiarray declares a generic multi-dimensional array of a
+     * particular data type.  Dimensions are ordered from outer most
+     * to inner most.
+     *
+     * Accessors should ALWAYS be written in terms of dimension stride
+     * and specified outer-most dimension first.
+     *
+     * multiarray(i,j,k) = data[data_offset + dim_stride[1]*i + dim_stride[2]*j + k]
+     *
+     * A standard, 3-channel 640x480 image with interleaved color channels
+     * would be specified as:
+     *
+     * dim[0].label  = "height"
+     * dim[0].size   = 480
+     * dim[0].stride = 3*640*480 = 921600  (note dim[0] stride is just size of image)
+     * dim[1].label  = "width"
+     * dim[1].size   = 640
+     * dim[1].stride = 3*640 = 1920
+     * dim[2].label  = "channel"
+     * dim[2].size   = 3
+     * dim[2].stride = 3
+     *
+     * multiarray(i,j,k) refers to the ith row, jth column, and kth channel.
+     * Array of dimension properties
+     */
     dim: std_msgs__msg__MultiArrayDimension[];
     /** padding bytes at front of data */
     data_offset: number;
@@ -3475,7 +4090,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/UInt16MultiArray`
    */
   interface std_msgs__msg__UInt16MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Uint16Array | number[];
@@ -3500,7 +4119,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/UInt32MultiArray`
    */
   interface std_msgs__msg__UInt32MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Uint32Array | number[];
@@ -3525,7 +4148,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/UInt64MultiArray`
    */
   interface std_msgs__msg__UInt64MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: bigint[];
@@ -3550,7 +4177,11 @@ declare module "rclbunjs" {
    * `std_msgs/msg/UInt8MultiArray`
    */
   interface std_msgs__msg__UInt8MultiArray {
-    /** specification of data layout */
+    /**
+     * Please look at the MultiArrayLayout message definition for
+     * documentation on all multiarrays.
+     * specification of data layout
+     */
     layout: std_msgs__msg__MultiArrayLayout;
     /** array of data */
     data: Uint8Array | number[];
@@ -3583,12 +4214,13 @@ declare module "rclbunjs" {
     /** informational, e.g. for error messages */
     message: string;
   }
-  /** `stereo_msgs/msg/DisparityImage` */
+  /**
+   * Separate header for compatibility with current TimeSynchronizer.
+   * Likely to be removed in a later release, use image.header instead.
+   *
+   * `stereo_msgs/msg/DisparityImage`
+   */
   interface stereo_msgs__msg__DisparityImage {
-    /**
-     * Separate header for compatibility with current TimeSynchronizer.
-     * Likely to be removed in a later release, use image.header instead.
-     */
     header: std_msgs__msg__Header;
     /**
      * Floating point disparity image. The disparities are pre-adjusted for any
@@ -3622,49 +4254,67 @@ declare module "rclbunjs" {
      */
     delta_d: number;
   }
-  /** `test_msgs/action/Fibonacci_Feedback` */
+  /**
+   * feedback
+   *
+   * `test_msgs/action/Fibonacci_Feedback`
+   */
   interface test_msgs__action__Fibonacci_Feedback {
-    /** feedback */
     sequence: Int32Array | number[];
   }
-  /** `test_msgs/action/Fibonacci_Goal` */
+  /**
+   * goal definition
+   *
+   * `test_msgs/action/Fibonacci_Goal`
+   */
   interface test_msgs__action__Fibonacci_Goal {
-    /** goal definition */
     order: number;
   }
-  /** `test_msgs/action/Fibonacci_Result` */
+  /**
+   * result definition
+   *
+   * `test_msgs/action/Fibonacci_Result`
+   */
   interface test_msgs__action__Fibonacci_Result {
-    /** result definition */
     sequence: Int32Array | number[];
   }
-  /** `test_msgs/action/NestedMessage_Feedback` */
+  /**
+   * feedback
+   *
+   * `test_msgs/action/NestedMessage_Feedback`
+   */
   interface test_msgs__action__NestedMessage_Feedback {
-    /** feedback */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** `test_msgs/action/NestedMessage_Goal` */
+  /**
+   * goal definition
+   *
+   * `test_msgs/action/NestedMessage_Goal`
+   */
   interface test_msgs__action__NestedMessage_Goal {
-    /** goal definition */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** `test_msgs/action/NestedMessage_Result` */
+  /**
+   * result definition
+   *
+   * `test_msgs/action/NestedMessage_Result`
+   */
   interface test_msgs__action__NestedMessage_Result {
-    /** result definition */
     nested_field_no_pkg: test_msgs__msg__Builtins;
     nested_field: test_msgs__msg__BasicTypes;
     nested_different_pkg: builtin_interfaces__msg__Time;
   }
-  /** `test_msgs/msg/Arrays` */
+  /**
+   * Arrays of different types
+   *
+   * `test_msgs/msg/Arrays`
+   */
   interface test_msgs__msg__Arrays {
-    /**
-     * Arrays of different types
-     *
-     * Fixed length: 3.
-     */
+    /** Fixed length: 3. */
     bool_values: boolean[];
     /** Fixed length: 3. */
     byte_values: Uint8Array | number[];
@@ -3787,13 +4437,13 @@ declare module "rclbunjs" {
     int64_value: bigint;
     uint64_value: bigint;
   }
-  /** `test_msgs/msg/BoundedPlainSequences` */
+  /**
+   * Bounded sequences of different POD types
+   *
+   * `test_msgs/msg/BoundedPlainSequences`
+   */
   interface test_msgs__msg__BoundedPlainSequences {
-    /**
-     * Bounded sequences of different POD types
-     *
-     * At most 3 elements.
-     */
+    /** At most 3 elements. */
     bool_values: boolean[];
     /** At most 3 elements. */
     byte_values: Uint8Array | number[];
@@ -3893,13 +4543,13 @@ declare module "rclbunjs" {
     /** Regression test: check alignment of basic field after a sequence field is correct */
     alignment_check: number;
   }
-  /** `test_msgs/msg/BoundedSequences` */
+  /**
+   * Bounded sequences of different types
+   *
+   * `test_msgs/msg/BoundedSequences`
+   */
   interface test_msgs__msg__BoundedSequences {
-    /**
-     * Bounded sequences of different types
-     *
-     * At most 3 elements.
-     */
+    /** At most 3 elements. */
     bool_values: boolean[];
     /** At most 3 elements. */
     byte_values: Uint8Array | number[];
@@ -4062,13 +4712,13 @@ declare module "rclbunjs" {
   /** `test_msgs/msg/Empty` */
   interface test_msgs__msg__Empty {
   }
-  /** `test_msgs/msg/MultiNested` */
+  /**
+   * Mulitple levels of nested messages
+   *
+   * `test_msgs/msg/MultiNested`
+   */
   interface test_msgs__msg__MultiNested {
-    /**
-     * Mulitple levels of nested messages
-     *
-     * Fixed length: 3.
-     */
+    /** Fixed length: 3. */
     array_of_arrays: test_msgs__msg__Arrays[];
     /** Fixed length: 3. */
     array_of_bounded_sequences: test_msgs__msg__BoundedSequences[];
@@ -4133,9 +4783,12 @@ declare module "rclbunjs" {
   interface test_msgs__msg__Strings__Constants {
     readonly STRING_CONST: "Hello world!";
   }
-  /** `test_msgs/msg/UnboundedSequences` */
+  /**
+   * Unbounded sequences of different types
+   *
+   * `test_msgs/msg/UnboundedSequences`
+   */
   interface test_msgs__msg__UnboundedSequences {
-    /** Unbounded sequences of different types */
     bool_values: boolean[];
     byte_values: Uint8Array | number[];
     char_values: Uint8Array | number[];
@@ -4459,12 +5112,13 @@ declare module "rclbunjs" {
   /** `test_msgs/srv/Empty_Response` */
   interface test_msgs__srv__Empty_Response {
   }
-  /** `trajectory_msgs/msg/JointTrajectory` */
+  /**
+   * The header is used to specify the coordinate frame and the reference time for
+   * the trajectory durations
+   *
+   * `trajectory_msgs/msg/JointTrajectory`
+   */
   interface trajectory_msgs__msg__JointTrajectory {
-    /**
-     * The header is used to specify the coordinate frame and the reference time for
-     * the trajectory durations
-     */
     header: std_msgs__msg__Header;
     /**
      * The names of the active joints in each trajectory point. These names are
@@ -4512,16 +5166,28 @@ declare module "rclbunjs" {
     /** Desired time from the trajectory start to arrive at this trajectory point. */
     time_from_start: builtin_interfaces__msg__Duration;
   }
-  /** `trajectory_msgs/msg/MultiDOFJointTrajectory` */
+  /**
+   * The header is used to specify the coordinate frame and the reference time for the trajectory durations
+   *
+   * `trajectory_msgs/msg/MultiDOFJointTrajectory`
+   */
   interface trajectory_msgs__msg__MultiDOFJointTrajectory {
-    /** The header is used to specify the coordinate frame and the reference time for the trajectory durations */
     header: std_msgs__msg__Header;
+    /**
+     * A representation of a multi-dof joint trajectory (each point is a transformation)
+     * Each point along the trajectory will include an array of positions/velocities/accelerations
+     * that has the same length as the array of joint names, and has the same order of joints as
+     * the joint names array.
+     */
     joint_names: string[];
     points: trajectory_msgs__msg__MultiDOFJointTrajectoryPoint[];
   }
-  /** `trajectory_msgs/msg/MultiDOFJointTrajectoryPoint` */
+  /**
+   * Each multi-dof joint can specify a transform (up to 6 DOF).
+   *
+   * `trajectory_msgs/msg/MultiDOFJointTrajectoryPoint`
+   */
   interface trajectory_msgs__msg__MultiDOFJointTrajectoryPoint {
-    /** Each multi-dof joint can specify a transform (up to 6 DOF). */
     transforms: geometry_msgs__msg__Transform[];
     /** There can be a velocity specified for the origin of the joint. */
     velocities: geometry_msgs__msg__Twist[];
@@ -4588,6 +5254,22 @@ declare module "rclbunjs" {
   }
   /** Constants of `type_description_interfaces/msg/FieldType` (also properties of `require("type_description_interfaces/msg/FieldType")`). */
   interface type_description_interfaces__msg__FieldType__Constants {
+    /**
+     * A constant for each type supported according to:
+     *   http://design.ros2.org/articles/legacy_interface_definition.html
+     * and:
+     *   http://design.ros2.org/articles/idl_interface_definition.html
+     * Order is loosely coupled to the order of appearance in the IDL 4.2 spec:
+     *  https://www.omg.org/spec/IDL/4.2
+     * Layout of constants across the 0-255 decimal values in the uint8:
+     *
+     * - 000    : Reserved for "not set"
+     * - 001-048: Primitive types, strings, and reserved space for future primitive types
+     * - 049-096: Fixed sized array of primitive and string types
+     * - 097-144: Bounded Sequences of primitive and string types
+     * - 145-192: Unbounded Sequences of primitive and string types
+     * - 193-255: Reserved space for future array/sequence-like types
+     */
     readonly FIELD_TYPE_NOT_SET: 0;
     /** Nested type defined in other .msg/.idl files. */
     readonly FIELD_TYPE_NESTED_TYPE: 1;
@@ -4753,9 +5435,12 @@ declare module "rclbunjs" {
      */
     raw_file_contents: string;
   }
-  /** `type_description_interfaces/srv/GetTypeDescription_Request` */
+  /**
+   * ROS interface type name, in PACKAGE/NAMESPACE/TYPENAME format.
+   *
+   * `type_description_interfaces/srv/GetTypeDescription_Request`
+   */
   interface type_description_interfaces__srv__GetTypeDescription_Request {
-    /** ROS interface type name, in PACKAGE/NAMESPACE/TYPENAME format. */
     type_name: string;
     /** REP-2011 RIHS hash string. */
     type_hash: string;
@@ -4766,12 +5451,13 @@ declare module "rclbunjs" {
      */
     include_type_sources: boolean;
   }
-  /** `type_description_interfaces/srv/GetTypeDescription_Response` */
+  /**
+   * True if the type description information is available and populated in the response.
+   * If false, all other fields except `failure_reason` are considered undefined.
+   *
+   * `type_description_interfaces/srv/GetTypeDescription_Response`
+   */
   interface type_description_interfaces__srv__GetTypeDescription_Response {
-    /**
-     * True if the type description information is available and populated in the response.
-     * If false, all other fields except `failure_reason` are considered undefined.
-     */
     successful: boolean;
     /**
      * If `successful` is false, contains a reason for failure.
@@ -4823,7 +5509,11 @@ declare module "rclbunjs" {
     outline_color: std_msgs__msg__ColorRGBA;
     /** Whether or not to fill in the shape with color. */
     filled: number;
-    /** Fill color; in the range: [0.0-1.0] */
+    /**
+     * Fill color; in the range:
+     *
+     * Unit: 0.0-1.0.
+     */
     fill_color: std_msgs__msg__ColorRGBA;
     /**
      * How long the object should last before being automatically deleted.
@@ -4845,16 +5535,17 @@ declare module "rclbunjs" {
     readonly ADD: 0;
     readonly REMOVE: 1;
   }
-  /** `visualization_msgs/msg/InteractiveMarker` */
+  /**
+   * Time/frame info.
+   * If header.time is set to 0, the marker will be retransformed into
+   * its frame on each timestep. You will receive the pose feedback
+   * in the same frame.
+   * Otherwise, you might receive feedback in a different frame.
+   * For rviz, this will be the current 'fixed frame' set by the user.
+   *
+   * `visualization_msgs/msg/InteractiveMarker`
+   */
   interface visualization_msgs__msg__InteractiveMarker {
-    /**
-     * Time/frame info.
-     * If header.time is set to 0, the marker will be retransformed into
-     * its frame on each timestep. You will receive the pose feedback
-     * in the same frame.
-     * Otherwise, you might receive feedback in a different frame.
-     * For rviz, this will be the current 'fixed frame' set by the user.
-     */
     header: std_msgs__msg__Header;
     /** Initial pose. Also, defines the pivot point for rotations. */
     pose: geometry_msgs__msg__Pose;
@@ -4960,13 +5651,20 @@ declare module "rclbunjs" {
     readonly ROTATE_3D: 8;
     readonly MOVE_ROTATE_3D: 9;
   }
-  /** `visualization_msgs/msg/InteractiveMarkerFeedback` */
+  /**
+   * Time/frame info.
+   *
+   * `visualization_msgs/msg/InteractiveMarkerFeedback`
+   */
   interface visualization_msgs__msg__InteractiveMarkerFeedback {
-    /** Time/frame info. */
     header: std_msgs__msg__Header;
     /** Identifying string. Must be unique in the topic namespace. */
     client_id: string;
-    /** Specifies which interactive marker and control this message refers to */
+    /**
+     * Feedback message sent back from the GUI, e.g.
+     * when the status of an interactive marker was modified by the user.
+     * Specifies which interactive marker and control this message refers to
+     */
     marker_name: string;
     control_name: string;
     event_type: number;
@@ -5005,12 +5703,13 @@ declare module "rclbunjs" {
     readonly MOUSE_DOWN: 4;
     readonly MOUSE_UP: 5;
   }
-  /** `visualization_msgs/msg/InteractiveMarkerInit` */
+  /**
+   * Identifying string. Must be unique in the topic namespace
+   * that this server works on.
+   *
+   * `visualization_msgs/msg/InteractiveMarkerInit`
+   */
   interface visualization_msgs__msg__InteractiveMarkerInit {
-    /**
-     * Identifying string. Must be unique in the topic namespace
-     * that this server works on.
-     */
     server_id: string;
     /**
      * Sequence number.
@@ -5049,7 +5748,11 @@ declare module "rclbunjs" {
      */
     seq_num: bigint;
     type: number;
-    /** Markers to be added or updated */
+    /**
+     * Note: No guarantees on the order of processing.
+     *       Contents must be kept consistent by sender.
+     * Markers to be added or updated
+     */
     markers: visualization_msgs__msg__InteractiveMarker[];
     /** Poses of markers that should be moved */
     poses: visualization_msgs__msg__InteractiveMarkerPose[];
@@ -5103,7 +5806,11 @@ declare module "rclbunjs" {
     pose: geometry_msgs__msg__Pose;
     /** Scale of the object; 1,1,1 means default (usually 1 meter square). */
     scale: geometry_msgs__msg__Vector3;
-    /** Color of the object; in the range: [0.0-1.0] */
+    /**
+     * Color of the object; in the range:
+     *
+     * Unit: 0.0-1.0.
+     */
     color: std_msgs__msg__ColorRGBA;
     /**
      * How long the object should last before being automatically deleted.
@@ -5122,9 +5829,11 @@ declare module "rclbunjs" {
     colors: std_msgs__msg__ColorRGBA[];
     /**
      * Texture resource is a special URI that can either reference a texture file in
-     * a format acceptable to (resource retriever)[https://docs.ros.org/en/rolling/p/resource_retriever/]
+     * a format acceptable to (resource retriever)
      * or an embedded texture via a string matching the format:
      *   "embedded://texture_name"
+     *
+     * Unit: https://docs.ros.org/en/rolling/p/resource_retriever/.
      */
     texture_resource: string;
     /**
@@ -5132,7 +5841,11 @@ declare module "rclbunjs" {
      * This will be used iff texture_resource is set to embedded.
      */
     texture: sensor_msgs__msg__CompressedImage;
-    /** Location of each vertex within the texture; in the range: [0.0-1.0] */
+    /**
+     * Location of each vertex within the texture; in the range:
+     *
+     * Unit: 0.0-1.0.
+     */
     uv_coordinates: visualization_msgs__msg__UVCoordinate[];
     /** Only used for text markers */
     text: string;
@@ -5249,26 +5962,28 @@ declare module "rclbunjs" {
     /** This stores the raw text of the mesh file. */
     data: Uint8Array | number[];
   }
-  /** `visualization_msgs/msg/UVCoordinate` */
+  /**
+   * Location of the pixel as a ratio of the width of a 2D texture.
+   * Values should be in range:.
+   *
+   * `visualization_msgs/msg/UVCoordinate`
+   */
   interface visualization_msgs__msg__UVCoordinate {
-    /**
-     * Location of the pixel as a ratio of the width of a 2D texture.
-     * Values should be in range: [0.0-1.0].
-     */
     u: number;
     v: number;
   }
   /** `visualization_msgs/srv/GetInteractiveMarkers_Request` */
   interface visualization_msgs__srv__GetInteractiveMarkers_Request {
   }
-  /** `visualization_msgs/srv/GetInteractiveMarkers_Response` */
+  /**
+   * Sequence number.
+   * Set to the sequence number of the latest update message
+   * at the time the server received the request.
+   * Clients use this to detect if any updates were missed.
+   *
+   * `visualization_msgs/srv/GetInteractiveMarkers_Response`
+   */
   interface visualization_msgs__srv__GetInteractiveMarkers_Response {
-    /**
-     * Sequence number.
-     * Set to the sequence number of the latest update message
-     * at the time the server received the request.
-     * Clients use this to detect if any updates were missed.
-     */
     sequence_number: bigint;
     /** All interactive markers provided by the server. */
     markers: visualization_msgs__msg__InteractiveMarker[];

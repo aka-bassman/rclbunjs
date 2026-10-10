@@ -1,0 +1,9 @@
+module rclbun_idl_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "No fields.")
+    struct Ping {
+      uint8 structure_needs_at_least_one_member;
+    };
+  };
+};

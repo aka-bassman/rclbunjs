@@ -123,6 +123,7 @@ const serviceCache = new Map<string, ServiceType>();
 const actionCache = new Map<string, ActionType>();
 
 function loadIdl(pkg: string, kind: InterfaceKind, name: string, text: string): void {
+  const parsed = new Map<string, MessageDefinition["definitions"]>();
   for (const d of parseRos2idl(text)) {
     if (!d.name) continue;
     const full = d.name.split("/").length === 2 ? `${d.name.split("/")[0]}/msg/${d.name.split("/")[1]}` : d.name;
@@ -131,8 +132,25 @@ function loadIdl(pkg: string, kind: InterfaceKind, name: string, text: string): 
         f.type = canonicalFieldType(f.type, pkg);
         f.isComplex = true;
       }
+      // 64-bit integers are bigint, as from .msg files
+      if (f.type === "int64" || f.type === "uint64") {
+        const big = (v: unknown) => (typeof v === "number" ? BigInt(Math.trunc(v)) : v);
+        if (f.isConstant) f.value = /^[-+]?\d+$/.test(f.valueText ?? "") ? BigInt(f.valueText!) : (big(f.value) as typeof f.value);
+        if (f.defaultValue !== undefined) f.defaultValue = (Array.isArray(f.defaultValue) ? f.defaultValue.map(big) : big(f.defaultValue)) as typeof f.defaultValue;
+      }
     }
-    definitionCache.set(full, { name: full, definitions: d.definitions });
+    // an empty struct gets a placeholder member in IDL; .msg definitions leave it out (the codec adds the byte)
+    const fields = d.definitions.filter((f) => !f.isConstant);
+    if (fields.length === 1 && fields[0]!.name === "structure_needs_at_least_one_member") d.definitions.splice(d.definitions.indexOf(fields[0]!), 1);
+    parsed.set(full, d.definitions);
+  }
+  // constants come as a separate `<Struct>_Constants` definition (the IDL module); join them to the struct
+  for (const [full, definitions] of parsed) {
+    const struct = full.endsWith("_Constants") ? parsed.get(full.slice(0, -"_Constants".length)) : undefined;
+    if (struct) struct.unshift(...definitions);
+  }
+  for (const [full, definitions] of parsed) {
+    if (!(full.endsWith("_Constants") && parsed.has(full.slice(0, -"_Constants".length)))) definitionCache.set(full, { name: full, definitions });
   }
   void kind;
   void name;
