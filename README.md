@@ -201,7 +201,7 @@ Releases use [Changesets](https://changesets.dev):
 ```sh
 bun run changeset          # describe a change (patch/minor/major); commit the file in .changeset/ with it
 bun run version-packages   # apply pending changesets: bump package.json, update CHANGELOG.md
-bun run release            # npm publish and a git tag (push it with git push --follow-tags)
+bun run publish:npm        # type checks and unit tests, then npm publish and a git tag (push it with git push --follow-tags)
 ```
 
 ## License

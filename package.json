@@ -41,7 +41,7 @@
     "test:integration": "scripts/docker-test.sh bun test test/integration",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "changeset publish"
+    "publish:npm": "bun run typecheck && bun run test:types && bun run test:unit && changeset publish"
   },
   "dependencies": {
     "@foxglove/ros2idl-parser": "0.3.6",
