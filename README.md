@@ -49,7 +49,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 | Graph | topic/service/node/action listings (also per node), publisher/subscription/client/service counts, topic endpoint info with QoS and type hash; service endpoint info and action client/server counts (Lyrical+); action endpoint info (Rolling) |
 | Validation | `validateMessage` / `assertValidMessage` / `createMessageValidator`, `getMessageSchema`, `getFieldNames`, `getFieldType`; `validator` for topic/node/namespace names |
 | Utilities | `DistroUtils`, `RMWUtils`, `features` (optional rcl features of the installed distro) |
-| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire and content filters are not available; Because of zenoh itself, a process gets slower with every entity it creates and destroys and hangs after about 65,000 of them (eclipse-zenoh/zenoh#2825), and a service client keeps about 0.5 KB per call until the 10-minute query timeout passes (forever for action result requests); a service server also keeps each request until it is answered. rclpy behaves the same. Cyclone DDS over iceoryx shared memory works (see Loaned messages), but processes that start later never learn the names of nodes already running, so the `ros2 node`/`param`/`lifecycle` CLI cannot find them (rclpy nodes alike). On Humble and Jazzy, Fast DDS 2.x keeps about 120 bytes for every publisher, subscription, client or service endpoint that ever matched, also after it is destroyed, so a process that keeps creating and destroying matched entities grows without bound (about 110 MB after 150,000 rounds of a publisher/subscription pair plus a client/service pair); rclpy grows at least as much, and Kilted and newer (Fast DDS 3) do not |
+| Middleware | Fast DDS, Cyclone DDS and Zenoh. With Zenoh, deadline and incompatible-QoS events never fire and content filters are not available; Because of zenoh itself, a process gets slower with every entity it creates and destroys and hangs after about 65,000 of them (eclipse-zenoh/zenoh#2825), and a service client keeps about 0.5 KB per call until the 10-minute query timeout passes (forever for action result requests); a service server also keeps each request until it is answered. rclpy behaves the same. Cyclone DDS over iceoryx shared memory works (see Loaned messages), but processes that start later never learn the names of nodes already running, so the `ros2 node`/`param`/`lifecycle` CLI cannot find them (rclpy nodes alike). On Humble and Jazzy, Fast DDS 2.x keeps about 120 bytes for every DDS reader or writer that ever matched (a publisher or subscription has one, a client or service two), also after it is destroyed, so a process that keeps creating and destroying matched entities grows without bound (about 110 MB after 150,000 rounds of a publisher/subscription pair plus a client/service pair); rclpy grows at least as much. Kilted and newer (Fast DDS 3) do not keep this state, and rclbunjs stays flat there |
 | Type descriptions | `~/get_type_description` served from rcl's type cache (Jazzy+), gated by `start_type_description_service` |
 | Logging | rcutils logging (console, `/rosout` with configurable `rosoutQos`, log files), logger levels, `~/get_logger_levels` / `~/set_logger_levels` (`enableLoggerService`) |
 
@@ -116,9 +116,12 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
 - Each view is a new `ArrayBuffer` over the message memory, and Bun's garbage collector counts it as an
   allocation of that size: with 1 MiB messages it collects every few messages (pauses of about 0.5 ms).
   `reuseViews: true`, a publisher or subscription option, keeps one view per message memory instead, so nothing
-  is allocated per message. The price is the safety net above: a view or array used after its callback,
-  `publish` or return is no longer caught. It reads or writes whatever that memory holds by then (a later message,
-  or a sample other processes are reading), and can crash the process once the publisher or subscription is gone.
+  is allocated per message. It remembers up to 64 message addresses per publisher or subscription and starts over
+  when it sees more, which makes it allocate again if the middleware rotates through more samples than that.
+  The price is the safety net above: a view or array used after its callback, `publish` or return is no longer
+  caught. It reads or writes whatever that memory holds by then (a later message, or a sample other processes are
+  reading). rclbunjs still detaches the views it remembers when it frees their memory and when the publisher or
+  subscription is destroyed.
 
 `benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes (median round trip, and
 the receiver's time from take to ack in parentheses):
@@ -131,8 +134,12 @@ the receiver's time from take to ack in parentheses):
 | Cyclone DDS (no loans), x86_64 | 2352 µs (334 µs) | 1770 µs (178 µs) | — |
 | Cyclone DDS + iceoryx (Jazzy), x86_64 | 1766 µs (476 µs) | 693 µs (195 µs) | 309 µs (9 µs) |
 
-With `reuseViews` on both sides the medians drop a little and the tail much more (round trip, median / 90th
-percentile; arm64 two runs each, x86_64 on a 16-core Ubuntu host one run):
+The CDR path column predates the reuse of the encode buffer by `publish(object)`; on a 16-core Ubuntu host that
+change took the Fast DDS CDR round trip from 594 to 480 µs (median) and from 1460 to 851 µs (90th percentile).
+
+With `reuseViews` on both sides the medians change little and the tail drops a lot (round trip, median / 90th
+percentile). These are later runs than the table above: arm64 two runs each on the same Docker Desktop, x86_64 one
+run on the 16-core Ubuntu host, not the Ryzen.
 
 | | default | `reuseViews` |
 |---|---|---|

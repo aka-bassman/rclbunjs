@@ -157,7 +157,11 @@ class Writer {
     // a fresh buffer that is mostly used is returned as is; otherwise trimmed
     return this.off * 4 >= this.cap * 3 ? this.buf.subarray(0, this.off) : this.buf.slice(0, this.off);
   }
-  /** Back to an empty message in the same buffer. Writes never go past `off`, so zeroing up to it restores an all-zero buffer. */
+  /**
+   * Back to an empty message in the same buffer. A write that completed left
+   * nothing past `off`, so zeroing up to it restores an all-zero buffer; one that
+   * threw may have, so such a Writer must not be reset (encodeTransient drops it).
+   */
   reset() {
     this.buf.fill(0, 0, this.off);
     this.buf[1] = 1;

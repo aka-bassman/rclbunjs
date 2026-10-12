@@ -78,8 +78,8 @@ export interface MessageType {
   /** Constants of the message; each one is also a property of this object (rclnodejs style). */
   readonly constants: Record<string, unknown>;
   encode(msg: unknown): Uint8Array;
-  /** @internal encode() into a buffer the next call of this type reuses (see Codec) */
-  encodeTransient(msg: unknown): Uint8Array;
+  /** @internal encode() into a buffer the next call of this type reuses (see Codec.encodeTransient) */
+  _encodeTransient(msg: unknown): Uint8Array;
   decode(bytes: Uint8Array, options?: DecodeOptions): any;
   /** A fresh object filled with default values. */
   create(): any;
@@ -272,7 +272,7 @@ function makeMessageType(full: string, typeSupport: () => Pointer): MessageType 
     definitions: defs,
     constants,
     encode: codec.encode,
-    encodeTransient: codec.encodeTransient,
+    _encodeTransient: codec.encodeTransient,
     decode: codec.decode,
     create: codec.create,
     typeSupport: () => (ts ??= typeSupport()),

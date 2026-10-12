@@ -185,7 +185,30 @@ describe("loaned messages", () => {
     if (!sub.canLoanMessages) expect(views.size).toBe(1);
     expect(messages.size).toBeLessThan(20);
     expect(views.size).toBeLessThan(20);
+    // destroying an entity detaches the views it kept
+    const last = [...messages].at(-1) as any;
     node.destroyPublisher(pub);
+    expect(() => last.pose.position.x).toThrow(TypeError);
+    node.destroySubscription(sub);
+    expect(() => kept.pose.position.x).toThrow(TypeError);
+  });
+
+  test("reuseViews detaches the views of C messages the publisher frees", () => {
+    const pub = node.createPublisher(POSE, "loaned_reuse_free", { reuseViews: true });
+    const detached = (v: any) => {
+      try {
+        void v.pose.position.x;
+        return false;
+      } catch {
+        return true;
+      }
+    };
+    const loaned = pub.canLoanMessages;
+    const views = Array.from({ length: 6 }, () => pub.borrowLoanedMessage()).map((l) => (pub.returnLoanedMessage(l), l.message));
+    // loans go back to the middleware; of the C messages, four are kept for reuse and two freed
+    expect(views.map(detached)).toEqual(loaned ? [false, false, false, false, false, false] : [false, false, false, false, true, true]);
+    node.destroyPublisher(pub);
+    expect(views.every(detached)).toBe(true);
   });
 
   test("inactive lifecycle publishers return loans; views do not leave callbacks", async () => {
@@ -249,6 +272,50 @@ describe("loaned messages", () => {
     expect(got.map((g) => g.int32)).toEqual([1, 2, 3]);
     expect(got.map((g) => g.int64)).toEqual(["-1", "-2", "-3"]);
     for (const g of got) expect(g.canLoan).toBe(subLends);
+  }, 30000);
+
+  test("a loanedMessages subscription can destroy itself in its callback", async () => {
+    // in a child with subscription loans, so the loan it holds must go back before the reader
+    const child = Bun.spawn(
+      [
+        "bun",
+        "-e",
+        `
+        const rclbun = await import(${JSON.stringify(join(import.meta.dir, "..", "..", "src", "index.ts"))});
+        await rclbun.init();
+        const node = rclbun.createNode("loaned_self_destroy");
+        const out = {};
+        for (const reuseViews of [false, true]) {
+          const sub = node.createSubscription("${POSE}", "loaned_self_destroy", { loanedMessages: true, reuseViews }, (m) => {
+            const canLoan = sub.canLoanMessages;
+            node.destroySubscription(sub);
+            let after;
+            try { after = m.pose.position.x; } catch (e) { after = e.constructor.name; }
+            out[reuseViews ? "reuse" : "plain"] = { canLoan, after };
+            if (out.plain && out.reuse) {
+              console.log(JSON.stringify(out));
+              setTimeout(() => { rclbun.shutdown(); process.exit(0); }, 100);
+            }
+          });
+        }
+        node.spin();
+        setTimeout(() => process.exit(1), 15000);
+        `,
+      ],
+      { env: { ...process.env, ROS_DISABLE_LOANED_MESSAGES: "0" }, stdout: "pipe" },
+    );
+    const pub = node.createPublisher(POSE, "loaned_self_destroy");
+    expect(await until(() => pub.subscriptionCount === 2, 10000)).toBe(true);
+    for (let i = 0; i < 20 && child.exitCode === null; i++) {
+      pub.publish({ pose: { position: { x: 5 } } });
+      await Bun.sleep(50);
+    }
+    const out = await new Response(child.stdout).text();
+    expect(await child.exited).toBe(0);
+    const got = JSON.parse(out.split("\n").find((l) => l.startsWith("{"))!);
+    // the view stops working once the subscription is gone, in both modes
+    expect(got.plain).toEqual({ canLoan: subLends, after: "TypeError" });
+    expect(got.reuse).toEqual({ canLoan: subLends, after: "TypeError" });
   }, 30000);
 
   test("rclpy receives loaned messages and publishes to a view subscription", async () => {

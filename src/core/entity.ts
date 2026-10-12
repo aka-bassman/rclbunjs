@@ -62,8 +62,9 @@ export interface EntityOptions {
    * view per message memory instead of detaching it after each message. Faster
    * for large messages (no garbage-collector pressure per message), but a view or
    * array used after its callback, publish or return is no longer caught: it
-   * reads or writes whatever that memory holds by then, and can crash the
-   * process once the publisher or subscription is destroyed. Default false.
+   * reads or writes whatever that memory holds by then. Views of memory rclbunjs
+   * frees, and all views when the entity is destroyed, are detached, but only
+   * for the last 64 message addresses it saw. Default false.
    */
   reuseViews?: boolean;
   /** Publishers: validate every published message (see validateMessage). Default false. */

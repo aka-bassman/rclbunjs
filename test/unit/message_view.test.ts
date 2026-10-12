@@ -168,9 +168,21 @@ describe("message views", () => {
     expect(again.view).toBe(a.view);
     expect(again.view.data).toBe(data);
     expect(views.open<any>(ptr(mems[1]!)).view).not.toBe(a.view);
-    // more distinct addresses than it keeps: it starts over
+    // more distinct addresses than it keeps: it starts over, forgetting views without
+    // detaching them (a publisher's borrowed message may still be using one)
     for (const m of mems) views.open(ptr(m));
-    expect(views.open<any>(ptr(mems[0]!)).view).not.toBe(a.view);
-    views.clear();
+    const b = views.open<any>(ptr(mems[0]!));
+    expect(b.view).not.toBe(a.view);
+    expect(a.view.width).toBe(7);
+    // memory about to be freed: its view and the arrays taken from it stop working
+    const bData = b.view.data;
+    views.detach(ptr(mems[0]!));
+    expect(() => b.view.width).toThrow(TypeError);
+    expect(bData.length).toBe(0);
+    expect(views.open<any>(ptr(mems[0]!)).view).not.toBe(b.view);
+    // entity destroyed: every view it remembers
+    const last = views.open<any>(ptr(mems[69]!));
+    views.detachAll();
+    expect(() => last.view.width).toThrow(TypeError);
   });
 });

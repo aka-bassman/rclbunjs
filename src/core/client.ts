@@ -91,7 +91,7 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
   #send(request: MessageArg<Req>, pending: Pending, validate: boolean | undefined): bigint {
     this.assertAlive();
     if (validate ?? this.#validate) assertValidMessage(request, this.typeClass.request, this.#validationOptions);
-    const bytes = this.typeClass.request.encodeTransient(request);
+    const bytes = this.typeClass.request._encodeTransient(request);
     const seq = checkRc(lib.rb_client_send(this.handle, bytes, bytes.length), `send request to ${this.serviceName}`);
     this.#pending.set(seq, pending);
     return seq;

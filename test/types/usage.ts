@@ -52,6 +52,8 @@ srv.configureIntrospection(node.getClock(), rclbun.QoS.profileSystemDefault, rcl
 node.createPublisher("std_msgs/msg/String", "t", { qosOverridingOptions: rclbun.QoSOverridingOptions.withDefaultPolicies() });
 // the options type can be named
 const frameOptions: rclbun.EntityOptions = { qos: rclbun.QoS.profileSensorData, reuseViews: true };
+// @ts-expect-error reuseViews is a boolean
+void ({ reuseViews: 1 } satisfies rclbun.EntityOptions);
 node.createSubscription("geometry_msgs/msg/PoseWithCovariance", "pose", { ...frameOptions, loanedMessages: true }, (m) => m.covariance[0]);
 node.getClock().addClockCallback({ _post_callback: (j) => j.delta + 1n }, true, 1n, 0n);
 

@@ -222,21 +222,33 @@ const MAX_REUSED = 64;
  * per message triggers a collection every few messages.
  */
 export class ReusedViews {
-  readonly #views = new Map<number, MessageViewMethods<unknown>>();
+  readonly #views = new Map<number, { view: MessageViewMethods<unknown>; ab: ArrayBuffer }>();
 
   constructor(readonly info: ViewInfo) {}
 
   open<T>(p: Pointer): { view: MessageView<T>; release(): void } {
-    let view = this.#views.get(p as number);
-    if (!view) {
+    let e = this.#views.get(p as number);
+    if (!e) {
+      // forgotten, not detached: a publisher's borrowed message may still use its view
       if (this.#views.size >= MAX_REUSED) this.#views.clear();
-      view = new this.info.View(new DataView(toArrayBuffer(p, 0, this.info.size)), 0);
-      this.#views.set(p as number, view);
+      const ab = toArrayBuffer(p, 0, this.info.size);
+      e = { view: new this.info.View(new DataView(ab), 0), ab };
+      this.#views.set(p as number, e);
     }
-    return { view: view as MessageView<T>, release: keep };
+    return { view: e.view as MessageView<T>, release: keep };
   }
 
-  clear(): void {
+  /** Detaches the view at `p`, whose memory is about to be freed. */
+  detach(p: Pointer): void {
+    const e = this.#views.get(p as number);
+    if (!e) return;
+    this.#views.delete(p as number);
+    e.ab.transfer(0);
+  }
+
+  /** Detaches every view still remembered (the entity is being destroyed). */
+  detachAll(): void {
+    for (const e of this.#views.values()) e.ab.transfer(0);
     this.#views.clear();
   }
 }

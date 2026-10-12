@@ -87,11 +87,14 @@ rclpy.spin(n)
     // A request sent right after discovery can go unanswered while the server has not
     // matched the client's response reader yet (any client library), so retry.
     let r: any;
-    for (let i = 0; i < 5 && r === undefined; i++) {
+    let tries = 0;
+    while (tries < 5 && r === undefined) {
+      tries++;
       r = await cli.sendRequestAsync({ a: 6n, b: 7n }, { timeout: 2000 }).catch((e) => {
         if (!(e instanceof rclbun.TimeoutError)) throw e;
       });
     }
+    if (tries > 1) console.warn(`py_mul answered after ${tries} requests`);
     expect(r?.sum).toBe(42n);
     srv.kill();
 
@@ -110,7 +113,7 @@ print('SUM', res.sum if res else None)
 `);
     const out = await new Response(c.stdout).text();
     expect(out).toContain("SUM 42");
-  }, 40000);
+  }, 60000); // waits and retries on both sides add up to about 45 s at worst
 
   test.skipIf(cycloneShm)("ros2 CLI sees the node and its topics", async () => {
     node.createPublisher("std_msgs/msg/String", "cli_visible");

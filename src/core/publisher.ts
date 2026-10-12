@@ -64,7 +64,7 @@ export class Publisher<T = any> extends Entity {
       bytes = msg;
     } else {
       if (options.validate ?? this.#validate) assertValidMessage(msg, this.typeClass, this.#validationOptions);
-      bytes = this.typeClass.encodeTransient(msg);
+      bytes = this.typeClass._encodeTransient(msg);
     }
     checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), `publish on ${this.topic}`);
   }
@@ -133,7 +133,10 @@ export class Publisher<T = any> extends Entity {
   #giveBack(p: Pointer, loaned: boolean): void {
     if (loaned) checkRc(lib.rb_pub_return_loaned(this.handle, p), "return a loaned message");
     else if (this.#spare.length < SPARE_MAX) this.#spare.push(p);
-    else lib.rb_msg_free(this.typeClass.typeSupport(), p);
+    else {
+      this.#views?.detach(p);
+      lib.rb_msg_free(this.typeClass.typeSupport(), p);
+    }
   }
 
   get willValidateMessage(): boolean {
@@ -179,9 +182,9 @@ export class Publisher<T = any> extends Entity {
       }
     }
     this.#loans.clear();
+    this.#views?.detachAll();
     for (const p of this.#spare) lib.rb_msg_free(this.typeClass.typeSupport(), p);
     this.#spare.length = 0;
-    this.#views?.clear();
     this.markDestroyed();
     for (const e of this._events) e.fini();
     lib.rb_pub_fini(this.handle);

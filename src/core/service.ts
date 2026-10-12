@@ -147,7 +147,7 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
     }
     let bytes: Uint8Array;
     try {
-      bytes = this.typeClass.response.encodeTransient(response);
+      bytes = this.typeClass.response._encodeTransient(response);
     } catch (e) {
       lib.rb_free(header);
       throw e;

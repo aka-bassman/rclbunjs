@@ -49,6 +49,9 @@ export class Subscription<T = any> extends Entity implements Waitable {
   #cmsg: Pointer | null = null;
   /** loanedMessages with reuseViews */
   readonly #views: ReusedViews | null;
+  /** loanedMessages: messages lent to running callbacks, given back by _fini if one destroys us */
+  readonly #lentAt: Pointer[] = [];
+  readonly #lent: { release(): void }[] = [];
   /** ArrayBuffer over the shim's serialized take buffer, kept while its address and size allow */
   #takeBuf: ArrayBuffer | null = null;
   #takeAt = 0;
@@ -182,6 +185,8 @@ export class Subscription<T = any> extends Entity implements Waitable {
         p = Number(OUT[0]) as Pointer;
       }
       const v = this.#views ? this.#views.open(p) : openView(info, p);
+      this.#lentAt.push(p);
+      this.#lent.push(v);
       try {
         if (this.#wantsInfo) {
           lib.rb_sub_last_info(this.handle, ptr(INFO));
@@ -190,8 +195,13 @@ export class Subscription<T = any> extends Entity implements Waitable {
           this.#callback(v.view);
         }
       } finally {
-        v.release();
-        if (!cmsg) lib.rb_sub_return_loaned(this.handle, p);
+        // a callback that destroyed the subscription had _fini give the message back
+        if (!this.isDestroyed()) {
+          this.#lentAt.pop();
+          this.#lent.pop();
+          v.release();
+          if (!cmsg) lib.rb_sub_return_loaned(this.handle, p);
+        }
       }
     }
   }
@@ -200,11 +210,18 @@ export class Subscription<T = any> extends Entity implements Waitable {
   _fini(): void {
     if (this.isDestroyed()) return;
     this.markDestroyed();
+    // destroyed from its own callback: that message goes back before the reader does
+    for (let i = this.#lent.length - 1; i >= 0; i--) {
+      this.#lent[i]!.release();
+      if (!this.#cmsg) lib.rb_sub_return_loaned(this.handle, this.#lentAt[i]!);
+    }
+    this.#lent.length = 0;
+    this.#lentAt.length = 0;
+    this.#views?.detachAll();
     for (const e of this._events) e.fini();
     lib.rb_sub_fini(this.handle);
     if (this.#cmsg) lib.rb_msg_free(this.typeClass.typeSupport(), this.#cmsg);
     this.#cmsg = null;
-    this.#views?.clear();
     this.#takeBuf = null;
   }
 }
