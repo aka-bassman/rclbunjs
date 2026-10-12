@@ -2,7 +2,7 @@
 // the strings/sequences left in a reused C message by the previous take.
 // Measures glibc main-arena bytes per call (allocations on the JS thread) and
 // exits 1 if any call type retains more than 16 bytes per call.
-//   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh bun test/soak/take_leak.ts
+//   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh bun test/soak/takeLeak.ts
 import { cc } from "bun:ffi";
 import { join } from "node:path";
 import * as rclbun from "../../src/index.ts";

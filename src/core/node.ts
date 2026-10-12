@@ -20,23 +20,23 @@ import { Context } from "./context.ts";
 import type { EntityOptions } from "./entity.ts";
 import { NameValidationError, OperationError, TypeValidationError } from "./errors.ts";
 import { Executor, type Waitable, type WaitableSets } from "./executor.ts";
-import type { EventCallbacks } from "./event_handler.ts";
+import type { EventCallbacks } from "./eventHandler.ts";
 import { Logging } from "./logging.ts";
 import { Publisher } from "./publisher.ts";
 import { QoS } from "./qos.ts";
-import { applyQoSOverrides } from "./qos_overriding_options.ts";
+import { applyQoSOverrides } from "./qosOverridingOptions.ts";
 import { ServiceResponse, Service, type ServiceRequestHandler } from "./service.ts";
 import { Subscription, type SubscriptionCallback } from "./subscription.ts";
-import { ObservableSubscription } from "./observable_subscription.ts";
-import type { MessageView } from "./message_view.ts";
+import { ObservableSubscription } from "./observableSubscription.ts";
+import type { MessageView } from "./messageView.ts";
 import { Time } from "./time.ts";
 import { GuardCondition, Rate, Timer, type TimerInfo } from "./timer.ts";
 import { Parameter, ParameterDescriptor, ParameterType } from "./parameter.ts";
-import { ParameterManager } from "./parameter_manager.ts";
-import { ParameterClient } from "./parameter_client.ts";
-import { ParameterEventHandler, ParameterWatcher } from "./parameter_event_handler.ts";
-import { TimeSource } from "./time_source.ts";
-import { TypeDescriptionService } from "./type_description_service.ts";
+import { ParameterManager } from "./parameterManager.ts";
+import { ParameterClient } from "./parameterClient.ts";
+import { ParameterEventHandler, ParameterWatcher } from "./parameterEventHandler.ts";
+import { TimeSource } from "./timeSource.ts";
+import { TypeDescriptionService } from "./typeDescriptionService.ts";
 import type { KnownOr, MessageOf, MessageTypeName, RequestOf, ResponseOf, ServiceTypeName } from "../types.ts";
 
 void ServiceResponse;
@@ -711,7 +711,7 @@ export class Node {
     return this.#endpoints(1, topic, noDemangle);
   }
 
-  // ---- parameters (see parameter_manager.ts) ---------------------------------
+  // ---- parameters (see parameterManager.ts) ---------------------------------
 
   declareParameter(p: Parameter, d?: ParameterDescriptor, ignoreOverride = false): Parameter {
     return this._parameters.declareParameter(p, d, ignoreOverride);

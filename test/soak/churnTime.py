@@ -1,5 +1,5 @@
-# Same churn cycle as churn_time.ts, with rclpy.
-#   RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh python3 test/soak/churn_time.py
+# Same churn cycle as churnTime.ts, with rclpy.
+#   RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh python3 test/soak/churnTime.py
 import os, time, rclpy
 from std_msgs.msg import String
 from std_srvs.srv import Trigger

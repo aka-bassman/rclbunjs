@@ -1,12 +1,12 @@
 // Loaned messages: message memory lent by the middleware (rcl_borrow_loaned_message /
-// rcl_take_loaned_message), presented as views (message_view.ts).
+// rcl_take_loaned_message), presented as views (messageView.ts).
 import type { Pointer } from "bun:ffi";
 import { readFileSync } from "node:fs";
 import type { MessageType } from "../interfaces/registry.ts";
 import { json } from "../native/ffi.ts";
 import { lib } from "../native/loader.ts";
 import { OperationError } from "./errors.ts";
-import { compileView, firstVariableField, type Layout, type MessageView, type ViewInfo } from "./message_view.ts";
+import { compileView, firstVariableField, type Layout, type MessageView, type ViewInfo } from "./messageView.ts";
 
 const views = new WeakMap<MessageType, ViewInfo>();
 

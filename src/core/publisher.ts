@@ -5,11 +5,11 @@ import { Entity, type EntityOptions } from "./entity.ts";
 import { QoS } from "./qos.ts";
 import type { Pointer } from "bun:ffi";
 import type { MessageArg } from "../types.ts";
-import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
-import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
+import { assertValidMessage, type MessageValidationOptions } from "./messageValidation.ts";
+import { createEvents, type EventCallbacks, type QoSEvent } from "./eventHandler.ts";
 import { OperationError } from "./errors.ts";
-import { openView, ReusedViews } from "./message_view.ts";
-import { cycloneDds11, hasFixedArray, LoanedMessage, viewInfo } from "./loaned_message.ts";
+import { openView, ReusedViews } from "./messageView.ts";
+import { cycloneDds11, hasFixedArray, LoanedMessage, viewInfo } from "./loanedMessage.ts";
 
 export { LoanedMessage };
 

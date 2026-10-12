@@ -13,7 +13,7 @@ const {
   validateMessage,
   assertValidMessage,
   createMessageValidator,
-} = await import("../../src/core/message_validation.ts");
+} = await import("../../src/core/messageValidation.ts");
 
 /** Issues as [field, problem] pairs. */
 const problems = (obj: unknown, type: string, options?: Parameters<typeof validateMessage>[2]) =>

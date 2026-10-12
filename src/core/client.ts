@@ -7,7 +7,7 @@ import { AbortError, TimeoutError } from "./errors.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
 import type { MessageArg } from "../types.ts";
-import { assertValidMessage, type MessageValidationOptions } from "./message_validation.ts";
+import { assertValidMessage, type MessageValidationOptions } from "./messageValidation.ts";
 import type { Clock } from "./clock.ts";
 import { configureIntrospection, type ServiceIntrospectionStates } from "./service.ts";
 

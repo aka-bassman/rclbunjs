@@ -1,7 +1,7 @@
 // RSS growth per kind of entity churn (create + destroy), to compare RMWs and
-// client libraries; see churn_rss.py for the same with rclpy.
-//   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh bun test/soak/churn_rss.ts
-//   SOAK_KINDS=client,node scripts/docker-test.sh bun test/soak/churn_rss.ts
+// client libraries; see churnRss.py for the same with rclpy.
+//   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh bun test/soak/churnRss.ts
+//   SOAK_KINDS=client,node scripts/docker-test.sh bun test/soak/churnRss.ts
 import * as rclbun from "../../src/index.ts";
 await rclbun.init();
 const node = rclbun.createNode("churn");

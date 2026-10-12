@@ -29,7 +29,7 @@ let pending: ((v: { x: number; y: number }) => void) | null = null;
 node.createSubscription("geometry_msgs/msg/Vector3", "lb_ack", { qos }, (m: any) => pending?.(m));
 
 async function run(label: string, echoMode: string, echoEnv: Record<string, string>, send: (seq: bigint) => void, pubOptions: rclbun.EntityOptions = {}) {
-  const child = Bun.spawn(["bun", join(import.meta.dir, "loaned_echo.ts"), echoMode], { env: { ...process.env, ...echoEnv }, stdout: "pipe", stderr: "inherit" });
+  const child = Bun.spawn(["bun", join(import.meta.dir, "loanedEcho.ts"), echoMode], { env: { ...process.env, ...echoEnv }, stdout: "pipe", stderr: "inherit" });
   const reader = child.stdout.getReader();
   const first = JSON.parse(new TextDecoder().decode((await reader.read()).value).split("\n")[0]!);
   const pub = node.createPublisher(FRAME, "lb_frame", { qos, ...pubOptions });

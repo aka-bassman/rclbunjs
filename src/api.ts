@@ -28,24 +28,24 @@ export { Node, NodeOptions } from "./core/node.ts";
 export type { NamesAndTypes, TopicEndpointInfo, ServiceEndpointInfo, NodeOptionsInit } from "./core/node.ts";
 export { ActionEndpointInfo } from "./core/node.ts";
 export { Publisher, LoanedMessage } from "./core/publisher.ts";
-export { isFixedSizeMessage } from "./core/loaned_message.ts";
-export type { MessageView, MessageViewMethods } from "./core/message_view.ts";
+export { isFixedSizeMessage } from "./core/loanedMessage.ts";
+export type { MessageView, MessageViewMethods } from "./core/messageView.ts";
 export { Subscription, MessageInfo } from "./core/subscription.ts";
 export type { ContentFilter, SubscriptionCallback } from "./core/subscription.ts";
-export { PublisherEventCallbacks, SubscriptionEventCallbacks } from "./core/event_handler.ts";
+export { PublisherEventCallbacks, SubscriptionEventCallbacks } from "./core/eventHandler.ts";
 export { Client } from "./core/client.ts";
 export { Service, ServiceResponse, ServiceIntrospectionStates } from "./core/service.ts";
-export { TypeDescriptionService } from "./core/type_description_service.ts";
+export { TypeDescriptionService } from "./core/typeDescriptionService.ts";
 export { Timer, GuardCondition, Rate } from "./core/timer.ts";
 export type { TimerInfo } from "./core/timer.ts";
 export { QoS, HistoryPolicy, ReliabilityPolicy, DurabilityPolicy, LivelinessPolicy, QoSPolicyKind } from "./core/qos.ts";
-export { QoSOverridingOptions } from "./core/qos_overriding_options.ts";
-export type { QoSOverridingResult } from "./core/qos_overriding_options.ts";
+export { QoSOverridingOptions } from "./core/qosOverridingOptions.ts";
+export type { QoSOverridingResult } from "./core/qosOverridingOptions.ts";
 export { Clock, ROSClock, ClockChange, ClockEvent } from "./core/clock.ts";
 export type { ClockCallbackObject, JumpInfo } from "./core/clock.ts";
 export { Time, Duration, ClockType } from "./core/time.ts";
 export { Logging, LoggingSeverity } from "./core/logging.ts";
-export { TimeSource } from "./core/time_source.ts";
+export { TimeSource } from "./core/timeSource.ts";
 export {
   Parameter,
   ParameterType,
@@ -54,9 +54,9 @@ export {
   IntegerRange,
   DEFAULT_NUMERIC_RANGE_TOLERANCE,
 } from "./core/parameter.ts";
-export { ParameterClient } from "./core/parameter_client.ts";
-export { ParameterEventHandler, ParameterWatcher } from "./core/parameter_event_handler.ts";
-export type { ParameterEvent } from "./core/parameter_event_handler.ts";
+export { ParameterClient } from "./core/parameterClient.ts";
+export { ParameterEventHandler, ParameterWatcher } from "./core/parameterEventHandler.ts";
+export type { ParameterEvent } from "./core/parameterEventHandler.ts";
 export {
   ActionClient,
   ActionServer,
@@ -80,8 +80,8 @@ export function createLifecycleNode(
 ): LifecycleNode {
   return new LifecycleNode(name, namespace, context, options, enableCommunicationInterface);
 }
-export { ObservableSubscription } from "./core/observable_subscription.ts";
-export type { ObservableLike, Observer, Unsubscribable } from "./core/observable_subscription.ts";
+export { ObservableSubscription } from "./core/observableSubscription.ts";
+export type { ObservableLike, Observer, Unsubscribable } from "./core/observableSubscription.ts";
 export { validator } from "./core/validator.ts";
 export {
   ValidationProblem,
@@ -91,7 +91,7 @@ export {
   validateMessage,
   assertValidMessage,
   createMessageValidator,
-} from "./core/message_validation.ts";
+} from "./core/messageValidation.ts";
 export type {
   MessageSchema,
   MessageField,
@@ -100,9 +100,9 @@ export type {
   MessageValidationIssue,
   MessageValidationResult,
   MessageValidator,
-} from "./core/message_validation.ts";
+} from "./core/messageValidation.ts";
 export { DistroUtils, RMWUtils } from "./core/distro.ts";
-export { getActionNamesAndTypes, getActionClientNamesAndTypesByNode, getActionServerNamesAndTypesByNode } from "./core/action_graph.ts";
+export { getActionNamesAndTypes, getActionClientNamesAndTypesByNode, getActionServerNamesAndTypesByNode } from "./core/actionGraph.ts";
 export { Logging as logging } from "./core/logging.ts";
 /** Optional rcl features available in this ROS 2 installation. */
 export { features } from "./native/loader.ts";

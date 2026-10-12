@@ -1,8 +1,8 @@
 // Time per churn cycle (create + destroy a publisher, subscription, client and
 // service; a temporary node every 20th cycle) as cycles accumulate. A rising
 // ms/cycle means the middleware keeps state from destroyed entities; see
-// churn_time.py for the same with rclpy.
-//   RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh bun test/soak/churn_time.ts
+// churnTime.py for the same with rclpy.
+//   RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh bun test/soak/churnTime.ts
 //   SOAK_CYCLES=3000 ... (default 6000)
 import * as rclbun from "../../src/index.ts";
 await rclbun.init();

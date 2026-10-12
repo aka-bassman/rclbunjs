@@ -1,4 +1,4 @@
-// CDR codec vs rclpy golden vectors (test/interop/gen_golden.py).
+// CDR codec vs rclpy golden vectors (test/interop/genGolden.py).
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 

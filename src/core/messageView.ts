@@ -6,7 +6,7 @@
 // strings or sequences), which is also what middlewares can loan.
 //
 // The layout comes from the introspection typesupport (rb_msg_layout, see
-// loaned_message.ts); each struct is compiled (new Function) into a class with
+// loanedMessage.ts); each struct is compiled (new Function) into a class with
 // one getter/setter per field. This module has no native dependency.
 import { toArrayBuffer, type Pointer } from "bun:ffi";
 import { RangeValidationError, TypeValidationError } from "./errors.ts";

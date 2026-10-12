@@ -1,6 +1,6 @@
 """Generates CDR golden vectors with rclpy for the codec unit tests.
 
-Run inside the dev container:  python3 test/interop/gen_golden.py test/fixtures
+Run inside the dev container:  python3 test/interop/genGolden.py test/fixtures
 Writes golden.json and copies the needed interface definitions so the unit
 tests can run on a host without ROS (AMENT_PREFIX_PATH=test/fixtures/ament).
 """

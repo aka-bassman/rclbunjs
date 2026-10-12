@@ -1,4 +1,4 @@
-// bun examples/add_two_ints.ts — service server and client in one process
+// bun examples/addTwoInts.ts — service server and client in one process
 import * as rclbun from "rclbunjs";
 
 await rclbun.init();

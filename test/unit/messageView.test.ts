@@ -3,7 +3,7 @@
 import { describe, expect, test } from "bun:test";
 import { ptr } from "bun:ffi";
 import { RangeValidationError, TypeValidationError } from "../../src/core/errors.ts";
-import { compileView, openView, ReusedViews, type Layout } from "../../src/core/message_view.ts";
+import { compileView, openView, ReusedViews, type Layout } from "../../src/core/messageView.ts";
 
 // type ids: rosidl_typesupport_introspection_c/field_types.h
 const F32 = 1, F64 = 2, CHAR = 4, BOOL = 6, U8 = 8, I16 = 11, U32 = 12, I64 = 15, U64 = 14, STR = 16, MSG = 18;

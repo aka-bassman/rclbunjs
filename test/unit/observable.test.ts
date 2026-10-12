@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { from, map, toArray } from "rxjs";
-import { MiniSubject, ObservableSubscription } from "../../src/core/observable_subscription.ts";
+import { MiniSubject, ObservableSubscription } from "../../src/core/observableSubscription.ts";
 
 describe("ObservableSubscription without rxjs", () => {
   test("MiniSubject delivers, unsubscribes and completes", () => {

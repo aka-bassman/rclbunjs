@@ -1,5 +1,5 @@
-# rclpy counterpart of churn_rss.ts (RSS growth per round of create + destroy).
-#   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh python3 test/soak/churn_rss.py
+# rclpy counterpart of churnRss.ts (RSS growth per round of create + destroy).
+#   RMW_IMPLEMENTATION=rmw_cyclonedds_cpp scripts/docker-test.sh python3 test/soak/churnRss.py
 import gc, time, rclpy
 from std_srvs.srv import Trigger
 

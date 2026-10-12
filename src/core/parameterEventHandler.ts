@@ -3,7 +3,7 @@
 import { EventEmitter } from "node:events";
 import type { Node } from "./node.ts";
 import { Parameter } from "./parameter.ts";
-import type { ParameterClient } from "./parameter_client.ts";
+import type { ParameterClient } from "./parameterClient.ts";
 import { QoS } from "./qos.ts";
 import type { Subscription } from "./subscription.ts";
 

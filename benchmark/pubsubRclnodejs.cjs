@@ -1,4 +1,4 @@
-// node benchmark/pubsub_rclnodejs.cjs (run where rclnodejs is installed) — same scenarios as pubsub.ts
+// node benchmark/pubsubRclnodejs.cjs (run where rclnodejs is installed) — same scenarios as pubsub.ts
 const rclnodejs = require("rclnodejs");
 (async () => {
   await rclnodejs.init();

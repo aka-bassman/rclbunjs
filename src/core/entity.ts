@@ -2,8 +2,8 @@
 import type { Pointer } from "bun:ffi";
 import { OperationError } from "./errors.ts";
 import type { QoS } from "./qos.ts";
-import type { QoSOverridingOptions } from "./qos_overriding_options.ts";
-import type { MessageValidationOptions } from "./message_validation.ts";
+import type { QoSOverridingOptions } from "./qosOverridingOptions.ts";
+import type { MessageValidationOptions } from "./messageValidation.ts";
 
 /** Converts typed arrays to plain arrays (rclnodejs 'plain' mode / enableTypedArray:false). */
 export function toPlain(v: unknown): unknown {

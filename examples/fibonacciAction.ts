@@ -1,4 +1,4 @@
-// bun examples/fibonacci_action.ts — action server and client
+// bun examples/fibonacciAction.ts — action server and client
 import * as rclbun from "rclbunjs";
 
 await rclbun.init();

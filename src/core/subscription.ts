@@ -1,13 +1,13 @@
 import { ptr, toArrayBuffer, type Pointer } from "bun:ffi";
 import { lib } from "../native/loader.ts";
 import { check, checkRc, cstr, cstrArray, json } from "../native/ffi.ts";
-import { createEvents, type EventCallbacks, type QoSEvent } from "./event_handler.ts";
+import { createEvents, type EventCallbacks, type QoSEvent } from "./eventHandler.ts";
 import type { MessageType } from "../interfaces/registry.ts";
 import { convertForDelivery, Entity, type EntityOptions } from "./entity.ts";
 import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
-import { openView, ReusedViews, type ViewInfo } from "./message_view.ts";
-import { cycloneDds11, viewInfo } from "./loaned_message.ts";
+import { openView, ReusedViews, type ViewInfo } from "./messageView.ts";
+import { cycloneDds11, viewInfo } from "./loanedMessage.ts";
 
 export class MessageInfo {
   constructor(

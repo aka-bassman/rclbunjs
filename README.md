@@ -199,7 +199,7 @@ scripts/test-matrix.sh jazzy - cc lyrical rmw_zenoh_cpp cc     # several distro/
 scripts/docker-test.sh bash -c 'scripts/build-test-msgs.sh && source /tmp/rclbun_test_msgs/install/setup.bash && bun benchmark/loaned.ts'
 ```
 
-`test/interop/gen_golden.py` regenerates the CDR golden vectors with rclpy.
+`test/interop/genGolden.py` regenerates the CDR golden vectors with rclpy.
 
 CI (`.github/workflows/ci.yml`) runs the unit tests and type checks, then the integration suite for Humble, Jazzy,
 Kilted, Lyrical and Rolling on x64 and arm64 (plus Jazzy with Cyclone DDS, and Jazzy and Lyrical with Zenoh), both
