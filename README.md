@@ -123,32 +123,26 @@ node.createSubscription("my_msgs/msg/Frame", "frames", { loanedMessages: true },
   reading). rclbunjs still detaches the views it remembers when it frees their memory and when the publisher or
   subscription is destroyed.
 
-`benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes (median round trip, and
-the receiver's time from take to ack in parentheses):
+`benchmark/loaned.ts` compares the paths for 1 MiB frames between two processes. All numbers below come from
+the same runs: Jazzy in Docker on a 16-core x86_64 Ubuntu host, 1000 frames, two runs per middleware (ranges
+are the two runs). Median round trip, and the receiver's time from take to ack in parentheses:
 
 | | CDR path | loaned publish, view receive | loaned on both sides |
 |---|---|---|---|
-| Fast DDS, arm64 (Docker Desktop) | 1189 µs (83 µs) | 391 µs (29 µs) | 350 µs (7 µs) |
-| Fast DDS, x86_64 (Ryzen 7 5700U) | 2395 µs (550 µs) | 1106 µs (201 µs) | 766 µs (25 µs) |
-| Cyclone DDS (no loans), arm64 | 1144 µs (62 µs) | 470 µs (27 µs) | — |
-| Cyclone DDS (no loans), x86_64 | 2352 µs (334 µs) | 1770 µs (178 µs) | — |
-| Cyclone DDS + iceoryx (Jazzy), x86_64 | 1766 µs (476 µs) | 693 µs (195 µs) | 309 µs (9 µs) |
+| Fast DDS | 488–489 µs (136–141 µs) | 305–329 µs (42–47 µs) | 274–280 µs (6 µs) |
+| Cyclone DDS (no loans) | 671–685 µs (98–108 µs) | 553–570 µs (40–44 µs) | — |
+| Cyclone DDS + iceoryx | 310–320 µs (123–129 µs) | 194–216 µs (73–79 µs) | 112–116 µs (4 µs) |
 
-The CDR path column predates the reuse of the encode buffer by `publish(object)`; on a 16-core Ubuntu host that
-change took the Fast DDS CDR round trip from 594 to 480 µs (median) and from 1460 to 851 µs (90th percentile).
-
-With `reuseViews` on both sides the medians change little and the tail drops a lot (round trip, median / 90th
-percentile). These are later runs than the table above: arm64 two runs each on the same Docker Desktop, x86_64 one
-run on the 16-core Ubuntu host, not the Ryzen.
+With `reuseViews` on both sides the medians change little and the 90th percentile mostly drops a lot (round
+trip, median / 90th percentile):
 
 | | default | `reuseViews` |
 |---|---|---|
-| Fast DDS, loaned publish, view receive, arm64 | 436–443 / 2879–9823 µs | 378–388 / 434–464 µs |
-| Fast DDS, loaned on both sides, arm64 | 401–422 / 3004–8934 µs | 346–347 / 393–395 µs |
-| Cyclone DDS (no loans), C messages on both sides, arm64 | 549–1018 / 2573–4357 µs | 455–463 / 512–525 µs |
-| Fast DDS, loaned publish, view receive, x86_64 | 326 / 632 µs | 302 / 326 µs |
-| Fast DDS, loaned on both sides, x86_64 | 272 / 607 µs | 279 / 306 µs |
-| Cyclone DDS (no loans), C messages on both sides, x86_64 | 615 / 1009 µs | 540 / 670 µs |
+| Fast DDS, loaned publish, view receive | 305–329 / 632–645 µs | 291–366 / 313–383 µs |
+| Fast DDS, loaned on both sides | 274–280 / 622–828 µs | 260–272 / 271–281 µs |
+| Cyclone DDS (no loans), C messages on both sides | 553–570 / 997 µs | 552–570 / 643–665 µs |
+| Cyclone DDS + iceoryx, loaned publish, view receive | 194–216 / 519–1074 µs | 182–191 / 224–1470 µs |
+| Cyclone DDS + iceoryx, loaned on both sides | 112–116 / 471–547 µs | 98–105 / 110–115 µs |
 
 ## Typed messages
 

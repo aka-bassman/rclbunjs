@@ -21,7 +21,8 @@
     "src",
     "test",
     "bin",
-    "examples"
+    "examples",
+    "benchmark"
   ],
   "exclude": [
     "test/types"
