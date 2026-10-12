@@ -15,7 +15,7 @@ Lyrical and Rolling, with Fast DDS, Cyclone DDS and Zenoh (`rmw_zenoh_cpp`), on 
 
 ## Requirements
 
-- Bun ≥ 1.2, Linux (x86_64 or arm64)
+- Bun ≥ 1.4, Linux (x86_64 or arm64)
 - A sourced ROS 2 installation (`source /opt/ros/jazzy/setup.bash`); its headers are used to compile the shim
 
 ## Quick start
@@ -180,6 +180,7 @@ are inferred from the type name string.
 ## Development
 
 ```sh
+git clone https://github.com/aka-bassman/rclbunjs && cd rclbunjs
 bun install
 bun test test/unit                 # codec & logic tests, no ROS needed
 scripts/docker-test.sh             # integration tests in a ROS 2 container (rclpy/ros2 CLI interop)
@@ -194,6 +195,14 @@ scripts/docker-test.sh bash -c 'scripts/build-test-msgs.sh && source /tmp/rclbun
 ```
 
 `test/interop/genGolden.py` regenerates the CDR golden vectors with rclpy.
+
+Releases use [Changesets](https://changesets.dev):
+
+```sh
+bun run changeset          # describe a change (patch/minor/major); commit the file in .changeset/ with it
+bun run version-packages   # apply pending changesets: bump package.json, update CHANGELOG.md
+bun run release            # npm publish and a git tag (push it with git push --follow-tags)
+```
 
 ## License
 

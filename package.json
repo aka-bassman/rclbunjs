@@ -13,6 +13,14 @@
     }
   },
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aka-bassman/rclbunjs.git"
+  },
+  "homepage": "https://github.com/aka-bassman/rclbunjs#readme",
+  "bugs": {
+    "url": "https://github.com/aka-bassman/rclbunjs/issues"
+  },
   "engines": {
     "bun": ">=1.4.0"
   },
@@ -21,7 +29,8 @@
     "bin",
     "NOTICE",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -29,7 +38,10 @@
     "test:docker": "scripts/docker-test.sh",
     "build:native": "scripts/build-native.sh",
     "test:types": "tsc --noEmit -p test/types",
-    "test:integration": "scripts/docker-test.sh bun test test/integration"
+    "test:integration": "scripts/docker-test.sh bun test test/integration",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "dependencies": {
     "@foxglove/ros2idl-parser": "0.3.6",
@@ -44,6 +56,7 @@
     }
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@types/bun": "^1.4.2",
     "rxjs": "7.8.1",
     "typescript": "^7.0.2"
