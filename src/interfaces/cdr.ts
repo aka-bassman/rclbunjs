@@ -157,6 +157,12 @@ class Writer {
     // a fresh buffer that is mostly used is returned as is; otherwise trimmed
     return this.off * 4 >= this.cap * 3 ? this.buf.subarray(0, this.off) : this.buf.slice(0, this.off);
   }
+  /** Back to an empty message in the same buffer. Writes never go past `off`, so zeroing up to it restores an all-zero buffer. */
+  reset() {
+    this.buf.fill(0, 0, this.off);
+    this.buf[1] = 1;
+    this.off = HEADER;
+  }
 }
 
 export interface DecodeOptions {
@@ -169,6 +175,12 @@ export interface DecodeOptions {
 
 export interface Codec {
   encode(msg: unknown): Uint8Array;
+  /**
+   * Like encode, but into a buffer that the next encodeTransient() of this type
+   * reuses: for bytes that are handed to the middleware right away. A new buffer
+   * per message would count its size against the garbage collector each time.
+   */
+  encodeTransient(msg: unknown): Uint8Array;
   decode(bytes: Uint8Array, options?: DecodeOptions): any;
   create(): any;
 }
@@ -393,12 +405,25 @@ export function buildCodec(defs: MessageDefinition[]): Codec {
 
   // initial encode buffer size follows the last encoded message (+12.5%)
   let sizeHint = 256;
+  // encodeTransient's buffer; taken while writing, so a write that throws drops it
+  let spare: Writer | null = null;
   return {
     encode(msg) {
       const w = new Writer(sizeHint);
       compiled.write(w, wrap(msg));
       sizeHint = Math.max(64, w.off + (w.off >> 3) + 16);
       return w.finish();
+    },
+    encodeTransient(msg) {
+      let w = spare;
+      spare = null;
+      if (w) w.reset();
+      else w = new Writer(sizeHint);
+      compiled.write(w, wrap(msg));
+      sizeHint = Math.max(64, w.off + (w.off >> 3) + 16);
+      // keep it unless it is far bigger than the messages being sent now
+      if (w.cap <= 65536 || w.cap <= w.off * 4) spare = w;
+      return w.buf.subarray(0, w.off);
     },
     decode(bytes, options) {
       if (bytes.length < HEADER) throw new RangeValidationError("CDR buffer too short");

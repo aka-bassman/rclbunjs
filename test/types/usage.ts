@@ -50,6 +50,9 @@ void result.valid;
 const srv = node.createService("example_interfaces/srv/AddTwoInts", "add2", (req) => ({ sum: req.a }));
 srv.configureIntrospection(node.getClock(), rclbun.QoS.profileSystemDefault, rclbun.ServiceIntrospectionStates.CONTENTS);
 node.createPublisher("std_msgs/msg/String", "t", { qosOverridingOptions: rclbun.QoSOverridingOptions.withDefaultPolicies() });
+// the options type can be named
+const frameOptions: rclbun.EntityOptions = { qos: rclbun.QoS.profileSensorData, reuseViews: true };
+node.createSubscription("geometry_msgs/msg/PoseWithCovariance", "pose", { ...frameOptions, loanedMessages: true }, (m) => m.covariance[0]);
 node.getClock().addClockCallback({ _post_callback: (j) => j.delta + 1n }, true, 1n, 0n);
 
 // default export carries the API

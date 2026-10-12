@@ -84,8 +84,15 @@ rclpy.spin(n)
 `);
     const cli = node.createClient("example_interfaces/srv/AddTwoInts", "py_mul");
     expect(await cli.waitForService(10000)).toBe(true);
-    const r: any = await cli.sendRequestAsync({ a: 6n, b: 7n }, { timeout: 5000 });
-    expect(r.sum).toBe(42n);
+    // A request sent right after discovery can go unanswered while the server has not
+    // matched the client's response reader yet (any client library), so retry.
+    let r: any;
+    for (let i = 0; i < 5 && r === undefined; i++) {
+      r = await cli.sendRequestAsync({ a: 6n, b: 7n }, { timeout: 2000 }).catch((e) => {
+        if (!(e instanceof rclbun.TimeoutError)) throw e;
+      });
+    }
+    expect(r?.sum).toBe(42n);
     srv.kill();
 
     node.createService("example_interfaces/srv/AddTwoInts", "bun_add", (req: any) => ({ sum: req.a + req.b }));
@@ -94,8 +101,12 @@ import rclpy
 from example_interfaces.srv import AddTwoInts
 rclpy.init(); n = rclpy.create_node('py_cli')
 c = n.create_client(AddTwoInts, 'bun_add'); c.wait_for_service(10.0)
-f = c.call_async(AddTwoInts.Request(a=40, b=2)); rclpy.spin_until_future_complete(n, f, timeout_sec=10.0)
-print('SUM', f.result().sum)
+res = None
+for _ in range(5):  # same race as above, from the other side
+    f = c.call_async(AddTwoInts.Request(a=40, b=2)); rclpy.spin_until_future_complete(n, f, timeout_sec=2.0)
+    if f.done():
+        res = f.result(); break
+print('SUM', res.sum if res else None)
 `);
     const out = await new Response(c.stdout).text();
     expect(out).toContain("SUM 42");

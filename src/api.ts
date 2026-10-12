@@ -23,6 +23,7 @@ import type { DecodeOptions } from "./interfaces/cdr.ts";
 import { spawn, type ChildProcess } from "node:child_process";
 
 export { Context } from "./core/context.ts";
+export type { EntityOptions } from "./core/entity.ts";
 export { Node, NodeOptions } from "./core/node.ts";
 export type { NamesAndTypes, TopicEndpointInfo, ServiceEndpointInfo, NodeOptionsInit } from "./core/node.ts";
 export { ActionEndpointInfo } from "./core/node.ts";

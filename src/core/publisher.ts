@@ -64,7 +64,7 @@ export class Publisher<T = any> extends Entity {
       bytes = msg;
     } else {
       if (options.validate ?? this.#validate) assertValidMessage(msg, this.typeClass, this.#validationOptions);
-      bytes = this.typeClass.encode(msg);
+      bytes = this.typeClass.encodeTransient(msg);
     }
     checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), `publish on ${this.topic}`);
   }

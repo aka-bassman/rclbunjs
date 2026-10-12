@@ -132,13 +132,16 @@ the receiver's time from take to ack in parentheses):
 | Cyclone DDS + iceoryx (Jazzy), x86_64 | 1766 µs (476 µs) | 693 µs (195 µs) | 309 µs (9 µs) |
 
 With `reuseViews` on both sides the medians drop a little and the tail much more (round trip, median / 90th
-percentile, two runs each, arm64):
+percentile; arm64 two runs each, x86_64 on a 16-core Ubuntu host one run):
 
 | | default | `reuseViews` |
 |---|---|---|
-| Fast DDS, loaned publish, view receive | 436–443 / 2879–9823 µs | 378–388 / 434–464 µs |
-| Fast DDS, loaned on both sides | 401–422 / 3004–8934 µs | 346–347 / 393–395 µs |
-| Cyclone DDS (no loans), C messages on both sides | 549–1018 / 2573–4357 µs | 455–463 / 512–525 µs |
+| Fast DDS, loaned publish, view receive, arm64 | 436–443 / 2879–9823 µs | 378–388 / 434–464 µs |
+| Fast DDS, loaned on both sides, arm64 | 401–422 / 3004–8934 µs | 346–347 / 393–395 µs |
+| Cyclone DDS (no loans), C messages on both sides, arm64 | 549–1018 / 2573–4357 µs | 455–463 / 512–525 µs |
+| Fast DDS, loaned publish, view receive, x86_64 | 326 / 632 µs | 302 / 326 µs |
+| Fast DDS, loaned on both sides, x86_64 | 272 / 607 µs | 279 / 306 µs |
+| Cyclone DDS (no loans), C messages on both sides, x86_64 | 615 / 1009 µs | 540 / 670 µs |
 
 ## Typed messages
 

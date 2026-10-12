@@ -148,6 +148,28 @@ describe("codec options and buffers", () => {
     }
   });
 
+  test("encodeTransient gives the bytes of encode while reusing one buffer", () => {
+    const same = (a: Uint8Array, b: Uint8Array) => Buffer.from(a).equals(Buffer.from(b));
+    // every golden value, forwards and backwards, through the per-type buffer
+    const all = goldens.flatMap(([, cases]) => cases);
+    for (const c of [...all, ...all.slice().reverse()]) {
+      const mt = getMessageType(c.type);
+      const v = expected(c.value);
+      expect(same(mt.encodeTransient(v), mt.encode(v))).toBe(true);
+    }
+    // shorter strings and arrays after longer ones: padding and NULs must be zero again
+    const js = getMessageType("sensor_msgs/msg/JointState");
+    for (const n of [5000, 3, 300, 0, 64, 1]) {
+      const msg = { name: Array.from({ length: n }, (_, i) => `j${"x".repeat(i % 7)}${i}`), position: Float64Array.from({ length: n }, (_, i) => i) };
+      expect(same(js.encodeTransient(msg), js.encode(msg))).toBe(true);
+    }
+    // a write that throws halfway leaves nothing behind: the two 1.1 land at bytes 28..44
+    // before "x" throws, where the next message has the NUL of its 20-character frame_id (36)
+    expect(() => js.encodeTransient({ position: [1.1, 1.1, "x"] })).toThrow();
+    const next = { header: { frame_id: "f".repeat(20) } };
+    expect(same(js.encodeTransient(next), js.encode(next))).toBe(true);
+  });
+
   test("truncated input throws", () => {
     const mt = getMessageType("std_msgs/msg/String");
     const bytes = mt.encode({ data: "a fairly long string value" });
