@@ -66,6 +66,8 @@ When ROS 2 shares a process with other work, such as an HTTP server:
   `build/` directory, where rclbunjs looks for it first. You can run it once, for example while building a Docker
   image, so that processes skip the TinyCC compile at startup. It needs a C compiler and a sourced ROS 2
   installation. To write the shim somewhere else, pass `--out <path>` and point `RCLBUN_SHIM` at that path.
+  In images that install only the `bun` binary, `bunx` is not on `PATH`; use `bun x rclbunjs-build-shim` (or
+  `bun x rclbunjs-typegen`) instead.
 
 ## Features
 
