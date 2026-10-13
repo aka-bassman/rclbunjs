@@ -176,7 +176,9 @@ describe("validateMessage", () => {
     expect(r.issues).toEqual([{ field: "data", problem: P.TYPE_MISMATCH, expected: "string", received: "number" }]);
     expect(validateMessage({ data: 1 }, "std_msgs/msg/Bool").issues[0]).toMatchObject({ expected: "boolean", received: "number" });
     expect(validateMessage({ data: "1" }, "std_msgs/msg/Int32").issues[0]).toMatchObject({ expected: "number", received: "string" });
-    expect(validateMessage({ data: null }, "std_msgs/msg/Float64").issues[0]).toMatchObject({ expected: "number", received: "null" });
+    // a null field counts as missing: the codec encodes its default
+    expect(validateMessage({ data: null }, "std_msgs/msg/Float64").valid).toBe(true);
+    expect(problems({ data: null }, "std_msgs/msg/Float64", { checkRequired: true })).toEqual([["data", P.MISSING_FIELD]]);
     expect(validateMessage({ data: [1] }, "std_msgs/msg/Float32").issues[0]).toMatchObject({ expected: "number", received: "array" });
     expect(problems({ x: "1", y: {}, z: 0 }, "geometry_msgs/msg/Vector3")).toEqual([
       ["x", P.TYPE_MISMATCH],
@@ -280,7 +282,8 @@ describe("validateMessage", () => {
     expect(problems({ bool_values: [true, 0] }, "test_msgs/msg/UnboundedSequences")).toEqual([["bool_values[1]", P.TYPE_MISMATCH]]);
     // array-likes are accepted by the encoder
     expect(validateMessage({ int32_values: { length: 2, 0: 1, 1: 2 } }, "test_msgs/msg/UnboundedSequences").valid).toBe(true);
-    for (const v of [5, "abc", null, { a: 1 }]) {
+    expect(validateMessage({ int32_values: null }, "test_msgs/msg/UnboundedSequences").valid).toBe(true);
+    for (const v of [5, "abc", { a: 1 }]) {
       const r = validateMessage({ int32_values: v }, "test_msgs/msg/UnboundedSequences");
       expect(r.issues).toEqual([{ field: "int32_values", problem: P.TYPE_MISMATCH, expected: "array", received: r.issues[0]!.received }]);
     }

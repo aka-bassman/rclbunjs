@@ -1,6 +1,7 @@
 // Loads the native shim: a prebuilt shared library if present (see
-// scripts/build-native.sh), otherwise compiles src/native/shim.c at runtime
+// bin/rclbunjs-build-shim.ts), otherwise compiles src/native/shim.c at runtime
 // with bun:ffi's built-in TinyCC against the sourced ROS 2 installation.
+// Loading happens on first use, so the package imports without ROS 2.
 import { cc, dlopen, FFIType, type Pointer } from "bun:ffi";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -153,7 +154,8 @@ export const symbols = {
   rb_graph_action_endpoint_info: { returns: CSTR, args: [P, I32, P] },
 } as const;
 
-const LIBS = [
+/** Libraries the shim links against. */
+export const LIBS = [
   "rcl",
   "rcl_action",
   "rcutils",
@@ -177,48 +179,126 @@ export function rosRoot(): string {
   );
 }
 
-function loadNative() {
-  const prebuilt = process.env.RCLBUN_SHIM ?? join(import.meta.dir, "..", "..", "build", "librclbunjs_shim.so");
-  if (existsSync(prebuilt) && process.env.RCLBUN_FORCE_CC !== "1") {
-    return dlopen(prebuilt, symbols);
-  }
-  const root = rosRoot();
+/** Include dirs for compiling the shim against the ROS 2 install at `root`. */
+export function shimIncludeDirs(root: string): string[] {
   const includeRoot = join(root, "include");
   // Only nested package dirs (include/<pkg>/<pkg>/...). Adding flat-layout dirs
   // (e.g. Humble's include/rcutils/time.h) would shadow system headers.
-  const include = [
+  return [
     includeRoot,
     ...readdirSync(includeRoot)
       .filter((d) => existsSync(join(includeRoot, d, d)))
       .map((d) => join(includeRoot, d)),
   ];
+}
+
+/** `RB_DISTRO_<DISTRO>` for the sourced distro (shim.c checks it), or null. */
+export function distroDefine(): string | null {
   const distro = (process.env.ROS_DISTRO ?? "").toUpperCase().replace(/[^A-Z0-9_]/g, "");
+  return distro ? `RB_DISTRO_${distro}` : null;
+}
+
+/** Path of the prebuilt shim that is loaded instead of compiling with TinyCC, if it exists. */
+export function prebuiltShimPath(): string {
+  return process.env.RCLBUN_SHIM ?? join(import.meta.dir, "..", "..", "build", "librclbunjs_shim.so");
+}
+
+function loadNative() {
+  const prebuilt = prebuiltShimPath();
+  if (existsSync(prebuilt) && process.env.RCLBUN_FORCE_CC !== "1") {
+    return dlopen(prebuilt, symbols);
+  }
+  const root = rosRoot();
+  const define = distroDefine();
   return cc({
     source: join(import.meta.dir, "shim.c"),
-    include,
+    include: shimIncludeDirs(root),
     library: LIBS,
     flags: [`-L${join(root, "lib")}`],
-    define: distro ? { [`RB_DISTRO_${distro}`]: "1" } : {},
+    define: define ? { [define]: "1" } : {},
     symbols,
   });
 }
 
-const native = loadNative();
-export const lib = native.symbols;
-export type NativeLib = typeof lib;
+export type NativeLib = ReturnType<typeof loadNative>["symbols"];
+
+let loaded: NativeLib | null = null;
+let failure: Error | null = null;
+
+function load(): NativeLib {
+  if (loaded) return loaded;
+  if (failure) throw failure;
+  try {
+    loaded = loadNative().symbols;
+  } catch (e) {
+    failure = e instanceof Error ? e : new Error(String(e));
+    throw failure;
+  }
+  lib = loaded;
+  setFeatures(loaded.rb_features());
+  return loaded;
+}
+
+/**
+ * The shim's functions. The first access loads the shim (and throws if that
+ * fails); after that this binding is the loaded symbol table itself.
+ */
+export let lib: NativeLib = new Proxy({} as NativeLib, { get: (_, key) => load()[key as keyof NativeLib] });
+
+/**
+ * Loads the native shim if that has not happened yet and returns the error that
+ * prevented it (no ROS 2 sourced, compile failure, ...), or null. Never throws.
+ */
+export function loadError(): Error | null {
+  try {
+    load();
+  } catch {}
+  return failure;
+}
+
+/** True if the native shim loads (see loadError). Never throws. */
+export function isAvailable(): boolean {
+  return loadError() === null;
+}
 
 /** Optional rcl features compiled into the shim (see rb_features in shim.c). */
-const featureBits = lib.rb_features();
-export const features = {
-  timerCallInfo: (featureBits & 1) !== 0,
-  serviceIntrospection: (featureBits & 2) !== 0,
-  typeDescriptionService: (featureBits & 4) !== 0,
-  matchedEvents: (featureBits & 8) !== 0,
-  loggerService: (featureBits & 16) !== 0,
-  rosoutSubloggers: (featureBits & 32) !== 0,
+export interface Features {
+  readonly timerCallInfo: boolean;
+  readonly serviceIntrospection: boolean;
+  readonly typeDescriptionService: boolean;
+  readonly matchedEvents: boolean;
+  readonly loggerService: boolean;
+  readonly rosoutSubloggers: boolean;
   /** `getClientsInfoByService` / `getServersInfoByService`, `countActionClients` / `countActionServers` (Lyrical+) */
-  serviceEndpointInfo: (featureBits & 64) !== 0,
+  readonly serviceEndpointInfo: boolean;
   /** `getActionClientsInfoByAction` / `getActionServersInfoByAction` (Rolling) */
-  actionEndpointInfo: (featureBits & 128) !== 0,
+  readonly actionEndpointInfo: boolean;
+}
+
+const FEATURE_BITS: Record<keyof Features, number> = {
+  timerCallInfo: 1,
+  serviceIntrospection: 2,
+  typeDescriptionService: 4,
+  matchedEvents: 8,
+  loggerService: 16,
+  rosoutSubloggers: 32,
+  serviceEndpointInfo: 64,
+  actionEndpointInfo: 128,
 };
+
+/**
+ * Optional rcl features of this ROS 2 installation. Until the shim is loaded,
+ * reading one loads it; then they are plain booleans.
+ */
+export const features = {} as Features;
+for (const name of Object.keys(FEATURE_BITS) as (keyof Features)[]) {
+  Object.defineProperty(features, name, { enumerable: true, configurable: true, get: () => (load(), features[name]) });
+}
+
+function setFeatures(bits: number): void {
+  for (const [name, bit] of Object.entries(FEATURE_BITS)) {
+    Object.defineProperty(features, name, { enumerable: true, value: (bits & bit) !== 0 });
+  }
+}
+
 export type { Pointer };

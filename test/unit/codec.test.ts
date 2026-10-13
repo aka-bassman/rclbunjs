@@ -183,6 +183,19 @@ describe("codec options and buffers", () => {
   });
 });
 
+describe("null fields", () => {
+  test("encode like missing ones: the field's default value", () => {
+    const t = getMessageType("test_msgs/msg/Defaults");
+    const nulls = Object.fromEntries(Object.keys(t.create()).map((k) => [k, null]));
+    expect(t.encode(nulls)).toEqual(t.encode({}));
+    expect(t.decode(t.encode(nulls))).toEqual(t.create());
+    for (const type of ["test_msgs/msg/Strings", "test_msgs/msg/WStrings", "test_msgs/msg/UnboundedSequences", "test_msgs/msg/Arrays", "test_msgs/msg/Nested"]) {
+      const m = getMessageType(type);
+      expect([type, m.encode(Object.fromEntries(Object.keys(m.create()).map((k) => [k, null])))]).toEqual([type, m.encode({})]);
+    }
+  });
+});
+
 describe("bare values (rclnodejs publish('hello'))", () => {
   test("are encoded as the data field", () => {
     expect(getMessageType("std_msgs/msg/String").decode(getMessageType("std_msgs/msg/String").encode("hello"))).toEqual({ data: "hello" });

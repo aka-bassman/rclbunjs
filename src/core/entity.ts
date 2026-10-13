@@ -67,6 +67,12 @@ export interface EntityOptions {
    * for the last 64 message addresses it saw. Default false.
    */
   reuseViews?: boolean;
+  /**
+   * Subscriptions: deliver at most this many messages per second. Every message
+   * is still taken from the middleware (the queue keeps draining), but the ones
+   * that come too soon are dropped before they are decoded. Default: no limit.
+   */
+  maxHz?: number;
   /** Publishers: validate every published message (see validateMessage). Default false. */
   validateMessages?: boolean;
   /** Clients: validate every request. Default false. */

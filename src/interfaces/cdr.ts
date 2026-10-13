@@ -5,6 +5,7 @@
 //   int64/uint64 -> bigint; other numbers -> number; bool -> boolean;
 //   string/wstring -> string; numeric primitive arrays -> TypedArray (except
 //   int64/uint64/bool/string, which are plain arrays); nested -> plain objects.
+//   When encoding, a field that is undefined or null gets its default value.
 //
 // Every struct is compiled (new Function) into straight-line read / write /
 // create functions; nested structs and arrays call each other's functions.
@@ -255,14 +256,14 @@ export function buildCodec(defs: MessageDefinition[]): Codec {
         const def = f.defaultValue === undefined ? '""' : lit(String(f.defaultValue));
         if (f.type === "wstring") rd.push(`r.off = o; const ${fv} = r.wstring(); o = r.off;`);
         else rd.push(`${alignExpr("o", 4)} n = dv.getUint32(o, true); o += 4; const ${fv} = n === 0 ? "" : r.str(o, n); o += n;`);
-        wr.push(`x = v[${key}]; if (x === undefined) x = ${def}; ${stringWrite(f, "x")}`);
+        wr.push(`x = v[${key}]; if (x == null) x = ${def}; ${stringWrite(f, "x")}`);
         cr.push(`${key}: ${def}`);
       } else {
         const p = prim(f);
         const def = f.defaultValue === undefined ? zeroLiteral(p) : K(coerce(p, f.defaultValue, f.name));
         rd.push(`${alignExpr("o", p.size)} const ${fv} = ${readExpr(p, "o")}; o += ${p.size};`);
         wr.push(
-          `x = v[${key}]; if (x === undefined) x = ${def};`,
+          `x = v[${key}]; if (x == null) x = ${def};`,
           `if (w.off + ${p.size * 2} > w.cap) w.grow(${p.size * 2}); o = w.off; ${alignExpr("o", p.size)}`,
           `w.dv.set${p.dv}(o, ${coerceExpr(p, "x", f.name)}, true); w.off = o + ${p.size};`,
         );
@@ -361,8 +362,8 @@ export function buildCodec(defs: MessageDefinition[]): Codec {
       : "";
     fns.push(
       `function wa${a}(w, x) {
-        if (x === undefined) x = ${encDefault};
-        if (x === null || typeof x !== "object" || typeof x.length !== "number") throw new TypeValidationError(${lit(`field '${name}' expects an array`)});
+        if (x == null) x = ${encDefault};
+        if (typeof x !== "object" || typeof x.length !== "number") throw new TypeValidationError(${lit(`field '${name}' expects an array`)});
         const n = x.length; ${lengthCheck}
         if (n === 0) return;
         ${fastTyped}

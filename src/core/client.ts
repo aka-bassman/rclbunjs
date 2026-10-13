@@ -27,6 +27,8 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
   readonly loggerName: string;
   readonly #pending = new Map<bigint, Pending>();
   readonly #qos: QoS;
+  /** @internal resolved service name */
+  readonly _name: string;
   #validate: boolean;
   #validationOptions: MessageValidationOptions;
 
@@ -48,6 +50,7 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
     this.typeClass = srvType;
     this.loggerName = loggerName;
     this.#qos = qos;
+    this._name = String(lib.rb_client_service_name(h));
     this.#validate = options.validateRequests === true;
     this.#validationOptions = options.validationOptions ?? { strict: true, checkTypes: true };
   }
@@ -70,7 +73,7 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
   }
 
   get serviceName(): string {
-    return String(lib.rb_client_service_name(this.handle));
+    return this._name;
   }
 
   /**
@@ -97,9 +100,18 @@ export class Client<Req = any, Resp = any> extends Entity implements Waitable {
     return seq;
   }
 
-  /** Sends a request; `callback` receives the response once the node spins. */
+  /**
+   * Sends a request; `callback` receives the response once the node spins. An
+   * exception from `callback`, or a response that cannot be decoded, goes to the
+   * node's onError handler (kind "client").
+   */
   sendRequest(request: MessageArg<Req>, callback: (response: Resp) => void, options: { validate?: boolean } = {}): void {
-    this.#send(request, { resolve: callback, reject: (e) => queueMicrotask(() => { throw e; }) }, options.validate);
+    this.#send(request, {
+      resolve: callback,
+      reject: (e) => {
+        throw e;
+      },
+    }, options.validate);
   }
 
   /** Sends a request and resolves with the response (node must be spinning). */

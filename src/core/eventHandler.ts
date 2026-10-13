@@ -48,11 +48,14 @@ export type EventCallbacks = Partial<Record<Kind, (status: any) => void>>;
 /** @internal one rcl_event_t bound to a callback */
 export class QoSEvent implements Waitable {
   readonly handle: Pointer;
+  /** topic of the publisher or subscription */
+  readonly _name: string;
   #cb: (status: any) => void;
   #destroyed = false;
 
-  constructor(entityHandle: Pointer, isSubscription: boolean, kind: Kind, cb: (status: any) => void) {
+  constructor(entityHandle: Pointer, isSubscription: boolean, kind: Kind, cb: (status: any) => void, topic: string) {
     this.handle = check(lib.rb_event_init(entityHandle, isSubscription ? 1 : 0, KIND[kind]), `QoS event '${kind}'`);
+    this._name = topic;
     this.#cb = cb;
   }
 
@@ -74,14 +77,14 @@ export class QoSEvent implements Waitable {
 }
 
 /** Creates the events requested in `callbacks` for an entity. */
-export function createEvents(entityHandle: Pointer, isSubscription: boolean, callbacks: EventCallbacks | undefined): QoSEvent[] {
+export function createEvents(entityHandle: Pointer, isSubscription: boolean, callbacks: EventCallbacks | undefined, topic: string): QoSEvent[] {
   if (!callbacks) return [];
   const out: QoSEvent[] = [];
   for (const k of Object.keys(KIND) as Kind[]) {
     const cb = callbacks[k];
     if (typeof cb !== "function") continue;
     if (k === "messageLost" && !isSubscription) continue;
-    out.push(new QoSEvent(entityHandle, isSubscription, k, cb));
+    out.push(new QoSEvent(entityHandle, isSubscription, k, cb, topic));
   }
   return out;
 }

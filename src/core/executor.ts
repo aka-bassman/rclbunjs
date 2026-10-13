@@ -12,6 +12,28 @@ export interface Waitable {
   /** @internal called on the JS thread when rcl_wait reported it ready */
   execute(): void;
   isDestroyed(): boolean;
+  /** @internal topic or service name, for error reports */
+  readonly _name?: string;
+}
+
+/** What raised an error that the executor caught. */
+export type NodeErrorKind = "subscription" | "timer" | "client" | "service" | "event" | "guard" | "executor";
+
+export interface NodeErrorContext {
+  kind: NodeErrorKind;
+  /** topic of a subscription or event, or name of a service or client */
+  name?: string;
+}
+
+/**
+ * Receives errors raised while the node's executor runs callbacks (callback
+ * exceptions, failed takes, undecodable messages) or waits (`kind: "executor"`).
+ */
+export type NodeErrorHandler = (error: unknown, context: NodeErrorContext) => void;
+
+interface Failure {
+  error: unknown;
+  context: NodeErrorContext;
 }
 
 export interface WaitableSets {
@@ -24,6 +46,7 @@ export interface WaitableSets {
 }
 
 const KINDS = ["subscriptions", "guards", "timers", "clients", "services", "events"] as const;
+const ERROR_KINDS: NodeErrorKind[] = ["subscription", "guard", "timer", "client", "service", "event"];
 // Dispatch order (matches rclnodejs): timers, events, subscriptions, guards, clients, services
 const ORDER = [2, 5, 0, 1, 3, 4];
 
@@ -39,7 +62,7 @@ function pack(sets: WaitableSets): { packed: BigUint64Array; flat: Waitable[][] 
   return { packed, flat };
 }
 
-function dispatch(flat: Waitable[][], ready: Uint8Array, errors: unknown[]): void {
+function dispatch(flat: Waitable[][], ready: Uint8Array, failures: Failure[]): void {
   const offsets: number[] = [];
   let o = 0;
   for (const l of flat) {
@@ -55,7 +78,8 @@ function dispatch(flat: Waitable[][], ready: Uint8Array, errors: unknown[]): voi
       try {
         w.execute();
       } catch (e) {
-        errors.push(e);
+        const kind = ERROR_KINDS[k]!;
+        failures.push({ error: e, context: w._name === undefined ? { kind } : { kind, name: w._name } });
       }
     }
   }
@@ -64,6 +88,7 @@ function dispatch(flat: Waitable[][], ready: Uint8Array, errors: unknown[]): voi
 export class Executor {
   #ctx: () => Pointer | null;
   #collect: () => WaitableSets;
+  #onError: () => NodeErrorHandler | undefined;
   #exec: Pointer | null = null;
   #cb: JSCallback | null = null;
   #armed = false;
@@ -73,9 +98,10 @@ export class Executor {
   #packed: BigUint64Array | null = null;
   #keepAlive: ReturnType<typeof setInterval> | null = null;
 
-  constructor(context: () => Pointer | null, collect: () => WaitableSets) {
+  constructor(context: () => Pointer | null, collect: () => WaitableSets, onError: () => NodeErrorHandler | undefined) {
     this.#ctx = context;
     this.#collect = collect;
+    this.#onError = onError;
   }
 
   get spinning(): boolean {
@@ -128,9 +154,10 @@ export class Executor {
     const rc = lib.rb_wait_sync(ctx, ptr(packed), timeoutNs, ptr(ready));
     if (rc < 0) throw new NativeError(`rcl_wait: ${lastError()}`);
     if (rc !== 0) return;
-    const errors: unknown[] = [];
-    dispatch(flat, ready, errors);
-    if (errors.length) throw errors[0];
+    const failures: Failure[] = [];
+    dispatch(flat, ready, failures);
+    const left = this.#handle(failures);
+    if (left.length) throw left[0];
   }
 
   destroy(): void {
@@ -159,26 +186,43 @@ export class Executor {
     this.#armed = true;
   }
 
+  /** Hands failures to the onError handler; returns the errors it did not take (no handler, or it threw). */
+  #handle(failures: Failure[]): unknown[] {
+    if (failures.length === 0) return [];
+    const handler = this.#onError();
+    if (!handler) return failures.map((f) => f.error);
+    const left: unknown[] = [];
+    for (const f of failures) {
+      try {
+        handler(f.error, f.context);
+      } catch (e) {
+        left.push(e);
+      }
+    }
+    return left;
+  }
+
   #onReady(code: number): void {
     this.#armed = false;
     if (this.#destroyed || !this.#exec) return;
-    const errors: unknown[] = [];
+    const failures: Failure[] = [];
     if (code === 0) {
       const total = this.#flat.reduce((n, l) => n + l.length, 0);
       if (total > 0) {
         const ready = new Uint8Array(toArrayBuffer(lib.rb_exec_ready_ptr(this.#exec)!, 0, total));
-        dispatch(this.#flat, ready, errors);
+        dispatch(this.#flat, ready, failures);
       }
     } else if (code < 0) {
-      errors.push(new NativeError(`rcl_wait failed: ${lastError()}`));
+      failures.push({ error: new NativeError(`rcl_wait failed: ${lastError()}`), context: { kind: "executor" } });
     }
     try {
       this.#arm();
     } catch (e) {
-      errors.push(e);
+      failures.push({ error: e, context: { kind: "executor" } });
     }
     void this.#packed;
-    for (const e of errors) {
+    // without a handler, errors surface as uncaught exceptions (as they always have)
+    for (const e of this.#handle(failures)) {
       queueMicrotask(() => {
         throw e;
       });

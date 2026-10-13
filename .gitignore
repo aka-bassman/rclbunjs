@@ -4,3 +4,4 @@ build/
 # plans, notes, reference clone and scratch files (kept out of the repository)
 local/
 .claude/
+dist/

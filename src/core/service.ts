@@ -83,6 +83,8 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
   readonly loggerName: string;
   readonly #handler: ServiceRequestHandler<Req, Resp>;
   readonly #qos: QoS;
+  /** @internal resolved service name */
+  readonly _name: string;
 
   /** @internal */
   constructor(
@@ -110,6 +112,7 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
     this.loggerName = loggerName;
     this.#handler = handler;
     this.#qos = qos;
+    this._name = String(lib.rb_service_name(h));
   }
 
   get qos(): QoS {
@@ -117,7 +120,7 @@ export class Service<Req = any, Resp = any> extends Entity implements Waitable {
   }
 
   get serviceName(): string {
-    return String(lib.rb_service_name(this.handle));
+    return this._name;
   }
 
   getOptions(): EntityOptions {

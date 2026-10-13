@@ -26,6 +26,7 @@ export { Context } from "./core/context.ts";
 export type { EntityOptions } from "./core/entity.ts";
 export { Node, NodeOptions } from "./core/node.ts";
 export type { NamesAndTypes, TopicEndpointInfo, ServiceEndpointInfo, NodeOptionsInit } from "./core/node.ts";
+export type { NodeErrorHandler, NodeErrorContext, NodeErrorKind } from "./core/executor.ts";
 export { ActionEndpointInfo } from "./core/node.ts";
 export { Publisher, LoanedMessage } from "./core/publisher.ts";
 export { isFixedSizeMessage } from "./core/loanedMessage.ts";
@@ -105,16 +106,26 @@ export { DistroUtils, RMWUtils } from "./core/distro.ts";
 export { getActionNamesAndTypes, getActionClientNamesAndTypesByNode, getActionServerNamesAndTypesByNode } from "./core/actionGraph.ts";
 export { Logging as logging } from "./core/logging.ts";
 /** Optional rcl features available in this ROS 2 installation. */
-export { features } from "./native/loader.ts";
+export { features, isAvailable, loadError } from "./native/loader.ts";
+export type { Features } from "./native/loader.ts";
 export * from "./core/errors.ts";
 export { toJSONSafe, toJSONString } from "./core/entity.ts";
 export { getMessageType, getServiceType, getActionType } from "./interfaces/registry.ts";
 export type { MessageType, ServiceType, ActionType, TypeName } from "./interfaces/registry.ts";
 export type { DecodeOptions } from "./interfaces/cdr.ts";
 
-/** Initializes `context` (default context) with ROS arguments from `argv`. */
-export async function init(context: Context = Context.defaultContext(), argv: string[] = process.argv): Promise<void> {
+export interface InitOptions {
+  /** Also call {@link installSignalHandlers}. Default false. */
+  handleSignals?: boolean;
+}
+
+/**
+ * Initializes `context` (default context) with ROS arguments from `argv`. The
+ * first call loads the native shim; it throws if no ROS 2 installation is sourced.
+ */
+export async function init(context: Context = Context.defaultContext(), argv: string[] = process.argv, options: InitOptions = {}): Promise<void> {
   context.init(argv);
+  if (options.handleSignals) installSignalHandlers();
 }
 
 export function shutdown(context: Context = Context.defaultContext()): void {
@@ -307,9 +318,20 @@ export function ros2Launch(packageName: string, launchFile: string, args: string
 /** Installed interface packages / interfaces (from the ament index). */
 export const interfaces = { packages: listInterfacePackages, list: listInterfaces };
 
-let signalHandler: (() => void) | null = () => shutdownAll();
-process.on("SIGINT", signalHandler);
+let signalHandler: (() => void) | null = null;
 
+/**
+ * Shuts down all contexts on SIGINT. Unlike rclnodejs, rclbunjs does not do this
+ * on import. A SIGINT listener replaces the runtime's default exit on Ctrl-C:
+ * the process exits only once nothing else keeps it alive.
+ */
+export function installSignalHandlers(): void {
+  if (signalHandler) return;
+  signalHandler = () => shutdownAll();
+  process.on("SIGINT", signalHandler);
+}
+
+/** Removes the handler of {@link installSignalHandlers} (no-op if none is installed). */
 export function removeSignalHandlers(): void {
   if (signalHandler) process.off("SIGINT", signalHandler);
   signalHandler = null;

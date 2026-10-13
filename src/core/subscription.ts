@@ -8,6 +8,7 @@ import type { Waitable } from "./executor.ts";
 import { QoS } from "./qos.ts";
 import { openView, ReusedViews, type ViewInfo } from "./messageView.ts";
 import { cycloneDds11, viewInfo } from "./loanedMessage.ts";
+import { RangeValidationError } from "./errors.ts";
 
 export class MessageInfo {
   constructor(
@@ -36,10 +37,36 @@ const INFO = new BigInt64Array(5);
 // Messages drained per wake-up before yielding back to the event loop.
 const MAX_TAKE = 256;
 
+/**
+ * @internal the maxHz limit. The next slot is one period after the previous
+ * slot, not after `now`, so the rate does not drop to the next multiple of the
+ * source period; after a gap longer than a period it restarts from `now`.
+ */
+export class RateGate {
+  readonly #gapMs: number;
+  #nextAt = 0;
+
+  constructor(maxHz: number) {
+    this.#gapMs = 1000 / maxHz;
+  }
+
+  /** False if a message at `now` (ms) comes too soon after the last one let through. */
+  due(now: number): boolean {
+    if (now < this.#nextAt) return false;
+    const next = this.#nextAt + this.#gapMs;
+    this.#nextAt = now >= next ? now + this.#gapMs : next;
+    return true;
+  }
+}
+
 export class Subscription<T = any> extends Entity implements Waitable {
   readonly typeClass: MessageType;
   readonly loggerName: string;
   readonly isRaw: boolean;
+  /** @internal resolved topic name */
+  readonly _name: string;
+  /** error message prefix for takes, built once instead of per message */
+  readonly #takeWhat: string;
   readonly #callback: SubscriptionCallback<any>;
   readonly #wantsInfo: boolean;
   readonly #qos: QoS;
@@ -55,6 +82,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
   /** ArrayBuffer over the shim's serialized take buffer, kept while its address and size allow */
   #takeBuf: ArrayBuffer | null = null;
   #takeAt = 0;
+  readonly #gate: RateGate | null;
   /** @internal */
   readonly _events: QoSEvent[];
   /** @internal set by the node: parks its wait thread before we mutate reader state */
@@ -70,6 +98,10 @@ export class Subscription<T = any> extends Entity implements Waitable {
     callback: SubscriptionCallback<T>,
     eventCallbacks?: EventCallbacks,
   ) {
+    const maxHz = options.maxHz;
+    if (maxHz !== undefined && !(typeof maxHz === "number" && maxHz > 0)) {
+      throw new RangeValidationError(`maxHz must be a positive number, got ${String(maxHz)}`);
+    }
     const qos = QoS.from(options.qos);
     // compiled first: throws for types that are not fixed-size
     const view = options.loanedMessages ? viewInfo(msgType) : null;
@@ -84,13 +116,16 @@ export class Subscription<T = any> extends Entity implements Waitable {
     this.typeClass = msgType;
     this.loggerName = loggerName;
     this.isRaw = options.isRaw === true;
+    this._name = String(lib.rb_sub_topic(h));
+    this.#takeWhat = `take on ${this._name}`;
+    this.#gate = maxHz === undefined || maxHz === Infinity ? null : new RateGate(maxHz);
     this.#callback = callback;
     this.#wantsInfo = callback.length >= 2;
     this.#qos = qos;
     this.#view = view;
     this.#views = view && options.reuseViews === true ? new ReusedViews(view) : null;
     if (view && !this.canLoanMessages) this.#cmsg = check(lib.rb_msg_alloc(msgType.typeSupport()), "allocate a message");
-    this._events = createEvents(h, true, eventCallbacks);
+    this._events = createEvents(h, true, eventCallbacks, this._name);
   }
 
   /**
@@ -106,7 +141,7 @@ export class Subscription<T = any> extends Entity implements Waitable {
   }
 
   get topic(): string {
-    return String(lib.rb_sub_topic(this.handle));
+    return this._name;
   }
 
   get publisherCount(): number {
@@ -151,8 +186,10 @@ export class Subscription<T = any> extends Entity implements Waitable {
   execute(): void {
     if (this.#view) return this.#executeViews(this.#view);
     for (let i = 0; i < MAX_TAKE && !this.isDestroyed(); i++) {
-      const n = Number(checkRc(lib.rb_sub_take(this.handle, ptr(OUT)), `take on ${this.topic}`));
+      const n = Number(checkRc(lib.rb_sub_take(this.handle, ptr(OUT)), this.#takeWhat));
       if (n === 0) return;
+      // maxHz: taken (the queue keeps draining) but neither decoded nor delivered
+      if (this.#gate && !this.#gate.due(performance.now())) continue;
       // a new ArrayBuffer per take would count n bytes against the GC each time; the
       // bytes are copied out below, so one buffer over the take memory can be reused
       const at = Number(OUT[0]);
@@ -178,11 +215,15 @@ export class Subscription<T = any> extends Entity implements Waitable {
     for (let i = 0; i < MAX_TAKE && !this.isDestroyed(); i++) {
       let p: Pointer;
       if (cmsg) {
-        if (checkRc(lib.rb_sub_take_c(this.handle, cmsg), `take on ${this.topic}`) === 0) return;
+        if (checkRc(lib.rb_sub_take_c(this.handle, cmsg), this.#takeWhat) === 0) return;
         p = cmsg;
       } else {
-        if (checkRc(lib.rb_sub_take_loaned(this.handle, ptr(OUT)), `take a loaned message on ${this.topic}`) === 0) return;
+        if (checkRc(lib.rb_sub_take_loaned(this.handle, ptr(OUT)), this.#takeWhat) === 0) return;
         p = Number(OUT[0]) as Pointer;
+      }
+      if (this.#gate && !this.#gate.due(performance.now())) {
+        if (!cmsg) lib.rb_sub_return_loaned(this.handle, p);
+        continue;
       }
       const v = this.#views ? this.#views.open(p) : openView(info, p);
       this.#lentAt.push(p);

@@ -1,7 +1,8 @@
 // Message validation (rclnodejs lib/message_validation.js) over registry
 // definitions. Accepts every input form the CDR codec encodes: number or
 // bigint for integers, decimal strings for int64/uint64, TypedArrays, plain
-// arrays and array-likes for sequences, null/undefined for nested messages.
+// arrays and array-likes for sequences; a null field counts as missing (the
+// codec encodes its default value).
 import type { MessageDefinition, MessageDefinitionField } from "@foxglove/message-definition";
 import { getMessageType, type MessageType, type TypeName } from "../interfaces/registry.ts";
 import { MessageValidationError, TypeValidationError } from "./errors.ts";
@@ -317,7 +318,7 @@ function checkMessage(v: unknown, d: MessageDefinition, path: string, c: Ctx): v
   for (const f of s.fields) {
     const p = join(path, f.name);
     const x = o[f.name];
-    if (x === undefined) {
+    if (x === undefined || x === null) {
       if (c.checkRequired) c.issues.push({ field: p, problem: ValidationProblem.MISSING_FIELD, expected: f.type });
     } else if (f.isArray) checkArray(x, f, p, c);
     else checkElement(x, f, p, c);

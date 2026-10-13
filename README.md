@@ -2,8 +2,8 @@
 
 A ROS 2 client library for [Bun](https://bun.sh), written in TypeScript on top of `bun:ffi`.
 
-- **No node-gyp, no N-API, no Python codegen.** A small pointer-only C shim over `rcl` is compiled at
-  startup by Bun's built-in TinyCC (or prebuilt with `scripts/build-native.sh`).
+- **No node-gyp, no N-API, no Python codegen.** A small pointer-only C shim over `rcl` is compiled on
+  first use by Bun's built-in TinyCC (or prebuilt with `bunx rclbunjs-build-shim`).
 - **rclnodejs-shaped API**, so existing rclnodejs code ports with few changes.
 - **TypeScript first**: optional generated typings make `createPublisher("geometry_msgs/msg/Twist", …)`
   fully typed.
@@ -33,12 +33,46 @@ node.spin(); // non-blocking: callbacks run on Bun's event loop
 
 More examples are in [`examples/`](examples): talker/listener, a service, an action, parameters and a lifecycle node.
 
+## Using rclbunjs inside a larger application
+
+When ROS 2 shares a process with other work, such as an HTTP server:
+
+- **Loading.** Importing rclbunjs does not need ROS 2. The native shim is loaded or compiled on first use,
+  normally in `init()`, which throws if no ROS 2 installation is sourced. `isAvailable()` and `loadError()`
+  attempt the load once and report the result without throwing. QoS, `removeROSArgs`, and the
+  message codec for types found on `AMENT_PREFIX_PATH` also work without the shim.
+- **Signals.** rclbunjs installs no SIGINT handler on import, so Ctrl-C keeps the runtime's default behavior
+  (exit). `init(context, argv, { handleSignals: true })` or `installSignalHandlers()` adds a handler that
+  shuts down every context, the way rclnodejs does on import. With that handler, the process exits on Ctrl-C
+  only once nothing else keeps it alive. `removeSignalHandlers()` removes it.
+- **Errors.** The executor catches exceptions from subscription, timer, guard, QoS event and `sendRequest`
+  callbacks, along with failed takes, undecodable messages and wait failures. By default it rethrows each one as
+  an uncaught exception. Give the node an `onError` handler to receive them instead:
+
+  ```ts
+  const node = rclbun.createNode("gcs", "", undefined, {
+    onError: (error, { kind, name }) => log.warn(`ROS ${kind} ${name ?? ""} failed`, error),
+    // kind: "subscription" | "timer" | "client" | "service" | "event" | "guard" | "executor"
+    // name: the topic, or the service name, when there is one
+  });
+  ```
+
+  Rejected promises from async callbacks are not covered. Service handler errors are logged, as before.
+- **Rate limits.** The subscription option `maxHz` delivers at most that many messages per second. Messages over
+  the limit are still taken, so the queue keeps draining, but they are dropped before decoding. Each delivery
+  slot is one period after the previous slot, so a 30 Hz limit on a 100 Hz topic delivers 30 messages per second,
+  not 25.
+- **Prebuilt shim.** `bunx rclbunjs-build-shim` compiles the shim with the system C compiler into the package's
+  `build/` directory, where rclbunjs looks for it first. You can run it once, for example while building a Docker
+  image, so that processes skip the TinyCC compile at startup. It needs a C compiler and a sourced ROS 2
+  installation. To write the shim somewhere else, pass `--out <path>` and point `RCLBUN_SHIM` at that path.
+
 ## Features
 
 | Area | Supported |
 |---|---|
 | Context/Node | `init(argv)` with `--ros-args` (remapping, `-p`, `--params-file`), namespaces, domain id, node args |
-| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, `QoSOverridingOptions` (`qos_overrides.*` parameters), typed arrays / `plain` / `json` modes, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration), loaned messages for fixed-size types |
+| Topics | publish/subscribe, raw CDR, `MessageInfo`, QoS profiles and custom QoS, `QoSOverridingOptions` (`qos_overrides.*` parameters), typed arrays / `plain` / `json` modes, `maxHz` rate limit before decoding, `waitForMessage`, `createObservableSubscription` (RxJS when installed, async iteration), loaned messages for fixed-size types |
 | Services | clients (`sendRequest`, `sendRequestAsync` with timeout/abort, `waitForService`) and services (`response.send` or return value, async handlers); service introspection via `configureIntrospection` (Jazzy+) |
 | Actions | `ActionClient` / `ActionServer` (feedback, cancel, result, goal accept/reject), wire-compatible with rclcpp/rclpy |
 | Parameters | declare/get/set/undeclare, descriptors (read-only, ranges), on/pre/post-set callbacks, CLI and YAML overrides, `/parameter_events`, the standard parameter services, `ParameterClient`, `ParameterEventHandler`, `ParameterWatcher` |
@@ -55,7 +89,7 @@ More examples are in [`examples/`](examples): talker/listener, a service, an act
 
 ## Messages
 
-Messages are plain objects. Missing fields get their default values.
+Messages are plain objects. Missing fields, and fields set to `null`, get their default values.
 
 - `int64`/`uint64` become `bigint`.
 - Numeric arrays decode to TypedArrays. Choose `serializationMode: "plain"` to get plain arrays instead.
@@ -176,6 +210,7 @@ are inferred from the type name string.
 - Actions and lifecycle are implemented in TypeScript over plain services and topics. They are wire-compatible with
   rcl_action and rcl_lifecycle, including remapping of action names.
 - `int64` arrays decode to `bigint[]`. Other numeric arrays decode to TypedArrays.
+- Importing rclbunjs installs no SIGINT handler (see [Using rclbunjs inside a larger application](#using-rclbunjs-inside-a-larger-application)).
 
 ## Development
 
@@ -189,6 +224,7 @@ RMW_IMPLEMENTATION=rmw_zenoh_cpp scripts/docker-test.sh       # starts rmw_zenoh
 RCLBUN_CYCLONE_SHM=1 scripts/docker-test.sh                    # Cyclone DDS over iceoryx (Linux hosts only: RouDi needs /dev/shm ACLs)
 ROS_DISTRO=humble scripts/docker-test.sh                       # humble, jazzy, kilted, lyrical, rolling
 bunx tsc --noEmit && bunx tsc --noEmit -p test/types
+bun run build:types                # dist/*.d.ts, the published declarations (also run by npm pack/publish)
 SOAK_MINUTES=60 scripts/docker-test.sh bun test/soak/soak.ts   # long-running stability / memory trend
 scripts/test-matrix.sh jazzy - cc lyrical rmw_zenoh_cpp cc     # several distro/RMW/shim combinations
 scripts/docker-test.sh bash -c 'scripts/build-test-msgs.sh && source /tmp/rclbun_test_msgs/install/setup.bash && bun benchmark/loaned.ts'

@@ -19,7 +19,7 @@ import { Clock, ROSClock } from "./clock.ts";
 import { Context } from "./context.ts";
 import type { EntityOptions } from "./entity.ts";
 import { NameValidationError, OperationError, TypeValidationError } from "./errors.ts";
-import { Executor, type Waitable, type WaitableSets } from "./executor.ts";
+import { Executor, type NodeErrorHandler, type Waitable, type WaitableSets } from "./executor.ts";
 import type { EventCallbacks } from "./eventHandler.ts";
 import { Logging } from "./logging.ts";
 import { Publisher } from "./publisher.ts";
@@ -51,6 +51,14 @@ export interface NodeOptionsInit {
   startTypeDescriptionService?: boolean;
   /** Serve ~/get_logger_levels and ~/set_logger_levels. Default false. */
   enableLoggerService?: boolean;
+  /**
+   * Receives the errors that the node's executor catches: exceptions from
+   * subscription, timer, guard, event and `sendRequest` callbacks, failed takes,
+   * undecodable messages, and wait failures. Without it they are rethrown as
+   * uncaught exceptions. Read when an error occurs, so it can be set later via
+   * `node.options.onError`.
+   */
+  onError?: NodeErrorHandler;
 }
 
 export class NodeOptions {
@@ -61,6 +69,7 @@ export class NodeOptions {
   rosoutQos: QoS | string = QoS.profileRosoutDefault;
   startTypeDescriptionService = true;
   enableLoggerService = false;
+  onError: NodeErrorHandler | undefined = undefined;
 
   constructor(init: NodeOptionsInit = {}) {
     Object.assign(this, init);
@@ -208,7 +217,7 @@ export class Node {
     void a.keep;
     this.#logger = new Logging(String(lib.rb_node_logger_name(this.handle)));
     this.#clock = new ROSClock();
-    this.#executor = new Executor(() => this.context.handle, () => this.#collect());
+    this.#executor = new Executor(() => this.context.handle, () => this.#collect(), () => this.#options.onError);
     context.addNode(this);
     this._parameters = new ParameterManager(this, this.#options);
     this._timeSource = new TimeSource(this);

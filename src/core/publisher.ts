@@ -20,6 +20,9 @@ export class Publisher<T = any> extends Entity {
   readonly typeClass: MessageType;
   readonly loggerName: string;
   readonly #qos: QoS;
+  readonly #topic: string;
+  /** error message prefix for publish, built once instead of per message */
+  readonly #publishWhat: string;
   #validate: boolean;
   #validationOptions: MessageValidationOptions;
   /** @internal */
@@ -38,10 +41,12 @@ export class Publisher<T = any> extends Entity {
     this.typeClass = msgType;
     this.loggerName = loggerName;
     this.#qos = qos;
+    this.#topic = String(lib.rb_pub_topic(h));
+    this.#publishWhat = `publish on ${this.#topic}`;
     this.#validate = options.validateMessages === true;
     this.#validationOptions = options.validationOptions ?? { strict: true, checkTypes: true };
     this.#reuseViews = options.reuseViews === true;
-    this._events = createEvents(h, false, eventCallbacks);
+    this._events = createEvents(h, false, eventCallbacks, this.#topic);
   }
 
   get qos(): QoS {
@@ -49,7 +54,7 @@ export class Publisher<T = any> extends Entity {
   }
 
   get topic(): string {
-    return String(lib.rb_pub_topic(this.handle));
+    return this.#topic;
   }
 
   /**
@@ -66,7 +71,7 @@ export class Publisher<T = any> extends Entity {
       if (options.validate ?? this.#validate) assertValidMessage(msg, this.typeClass, this.#validationOptions);
       bytes = this.typeClass._encodeTransient(msg);
     }
-    checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), `publish on ${this.topic}`);
+    checkRc(lib.rb_pub_publish(this.handle, bytes, bytes.length), this.#publishWhat);
   }
 
   /**
